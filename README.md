@@ -7,7 +7,7 @@ This repository contains my personal dotfiles, which are managed using **GNU Sto
 1. **Clone the repository**:
    First, clone this repository to your local machine:
    ```bash
-   git clone https://github.com/your-username/dotfiles.git ~/
+   git clone https://github.com/bearylabs/dotfiles.git ~/
    cd ~/dotfiles
    ```
 
