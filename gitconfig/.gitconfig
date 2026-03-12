@@ -1,0 +1,5 @@
+[user]
+	name = bearylabs
+	email = info@beary.cloud	
+[init]
+	defaultBranch = main
