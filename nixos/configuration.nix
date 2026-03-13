@@ -54,6 +54,7 @@
   # Enable Cosmic Dekstop Environment
   services.displayManager.cosmic-greeter.enable = true;
   services.desktopManager.cosmic.enable = true;
+  # Enable hyprland window manager
   programs.hyprland.enable = true;
 
   # Configure keymap in X11
@@ -93,7 +94,7 @@
     description = "Hendrik Rudek";
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [
-    #  thunderbird
+      thunderbird
     ];
     # Use zsh as the default login shell
     shell = pkgs.zsh;
@@ -131,23 +132,24 @@
   waybar
   # inputs.zen-browser.packages.${pkgs.system}.default
   ];
-fonts = {
-    packages = with pkgs; [
-      nerd-fonts.terminess-ttf
-      nerd-fonts.blex-mono
-      ibm-plex
-      openmoji-color	
-    ];       
-    fontconfig = {
-        defaultFonts = {
-          sansSerif = [ "IBM Plex Sans" ];
-          serif = [ "IBM Plex Serif" ];
-          monospace = [ "Terminess Nerd Font" ];
-          emoji = [ "OpenMoji Color" ];
-        };
-    };
-    enableDefaultFonts = true;
-  };
+
+# fonts = {
+#     packages = with pkgs; [
+#       nerd-fonts.terminess-ttf
+#       nerd-fonts.blex-mono
+#       ibm-plex
+#       openmoji-color	
+#     ];       
+#     fontconfig = {
+#         defaultFonts = {
+#           sansSerif = [ "IBM Plex Sans" ];
+#           serif = [ "IBM Plex Serif" ];
+#           monospace = [ "Terminess Nerd Font" ];
+#           emoji = [ "OpenMoji Color" ];
+#         };
+#     };
+#     enableDefaultFonts = true;
+#   };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
