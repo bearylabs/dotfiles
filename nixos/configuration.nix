@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       /etc/nixos/hardware-configuration.nix
+      <home-manager/nixos>
     ];
 
   # Bootloader.
@@ -97,6 +98,7 @@
     # Use zsh as the default login shell
     shell = pkgs.zsh;
   };
+  home-manager.users.hrudek = import ./home.nix;
 
   # Install firefox.
   programs.firefox.enable = true;
@@ -123,6 +125,7 @@
   ripgrep
   fd
   kitty
+  ghostty
   vscode
   wofi
   waybar
