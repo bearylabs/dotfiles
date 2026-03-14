@@ -1,0 +1,28 @@
+{
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "F4",
+        description: Some("screenshot"),
+    ): Spawn("flameshot gui"),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "d",
+        description: Some("Menu"),
+    ): Spawn("wofi --show drun"),
+    (
+        modifiers: [
+            Super,
+        ],
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Return",
+        description: Some("terminal"),
+    ): Spawn("ghostty"),
+}
