@@ -88,6 +88,14 @@ in
     #media-session.enable = true;
   };
 
+  services.tailscale = {
+    enable = true;
+    # Enable tailscale at startup
+
+    # If you would like to use a preauthorized key
+    #authKeyFile = "/run/secrets/tailscale_key";
+  };
+
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
@@ -100,7 +108,7 @@ in
       thunderbird
     ];
     # Use zsh as the default login shell
-    shell = pkgs.zsh;
+    shell = pkgs.fish;
   };
   home-manager.users.hrudek = import ./home.nix;
 
@@ -110,9 +118,15 @@ in
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # Enable modern nix CLI + flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   # Enable zsh and some common modules (completions, etc.)
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false; # optional, disable if you prefer manual config
+  
+  # Enable fish shell
+  programs.fish.enable = true;
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -132,6 +146,7 @@ in
   btop
 
   # terminal
+  fish
   kitty
   ghostty
   tmux
@@ -143,15 +158,7 @@ in
   obsidian
   zen-browser.default
   ];
-
-  services.tailscale = {
-      enable = true;
-      # Enable tailscale at startup
-
-      # If you would like to use a preauthorized key
-      #authKeyFile = "/run/secrets/tailscale_key";
-    };
-
+  environment.sessionVariables.MOZ_ENABLE_WAYLAND = "1";
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
