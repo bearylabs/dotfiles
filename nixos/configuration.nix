@@ -140,6 +140,7 @@ in
   wget
   ripgrep
   fd
+  bind # nslookup
 
   # monitoring
   htop
