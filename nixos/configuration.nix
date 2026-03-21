@@ -141,6 +141,8 @@ in
   ripgrep
   fd
   bind # nslookup
+  nmap
+  shell-gpt
 
   # monitoring
   htop
@@ -157,9 +159,11 @@ in
   wofi
   waybar
   obsidian
+  rpi-imager
   zen-browser.default
   ];
-  environment.sessionVariables.MOZ_ENABLE_WAYLAND = "1";
+
+
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
