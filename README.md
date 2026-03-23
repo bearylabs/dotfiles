@@ -2,14 +2,18 @@
 
 ## NixOS
 
+Start a temporary shell with git installed
 ```
 nix-shell -p git
-git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
-sudo rm -rf /etc/nixos
-sudo ln -s ~/dotfiles/nixos /etc/nixos
-sudo nixos-generate-config
-sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-sudo nix-channel --update
+```
+
+```
+git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles && \
+sudo mv /etc/nixos /etc/nixos.backup && \
+sudo ln -s ~/dotfiles/nixos /etc/nixos && \
+sudo nixos-generate-config && \
+sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager && \
+sudo nix-channel --update && \
 sudo nixos-rebuild switch
 ```
 

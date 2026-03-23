@@ -128,6 +128,8 @@ in
   # Enable fish shell
   programs.fish.enable = true;
 
+  programs.nix-ld.enable = true;
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
@@ -161,7 +163,8 @@ in
   waybar
   obsidian
   rpi-imager
-  zen-browser.default
+  mediawriter
+  zen-browser.default  
   ];
 
 
