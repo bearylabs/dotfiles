@@ -142,7 +142,8 @@ in
   fd
   bind # nslookup
   nmap
-  shell-gpt
+  gemini-cli
+  codex
 
   # monitoring
   htop
