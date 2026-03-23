@@ -22,7 +22,6 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.initrd.luks.devices."luks-2723324d-4040-4b46-ba9a-7264d39885ea".device = "/dev/disk/by-uuid/2723324d-4040-4b46-ba9a-7264d39885ea";
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -58,11 +57,11 @@ in
   services.displayManager.cosmic-greeter.enable = true;
   services.desktopManager.cosmic.enable = true;
   # Enable hyprland window manager
-  programs.hyprland.enable = true;
+  programs.hyprland.enable = true;2
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    layout = "de";
+    layout = "us";
     variant = "";
   };
 
