@@ -3,16 +3,9 @@
         modifiers: [
             Super,
         ],
-        key: "F4",
-        description: Some("screenshot"),
-    ): Spawn("flameshot gui"),
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "d",
-        description: Some("Menu"),
-    ): Spawn("wofi --show drun"),
+        key: "Return",
+        description: Some("terminal"),
+    ): Spawn("ghostty"),
     (
         modifiers: [
             Super,
@@ -22,7 +15,23 @@
         modifiers: [
             Super,
         ],
-        key: "Return",
-        description: Some("terminal"),
-    ): Spawn("ghostty"),
+        key: "m",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "f",
+    ): Maximize,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "d",
+        description: Some("Menu"),
+    ): Spawn("wofi --show drun"),
+    (
+        modifiers: [],
+        key: "Print",
+    ): Spawn("flameshot gui"),
 }

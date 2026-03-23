@@ -57,7 +57,7 @@ in
   services.displayManager.cosmic-greeter.enable = true;
   services.desktopManager.cosmic.enable = true;
   # Enable hyprland window manager
-  programs.hyprland.enable = true;2
+  programs.hyprland.enable = true;
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -143,6 +143,7 @@ in
   fd
   bind # nslookup
   nmap
+  usbutils
   gemini-cli
   codex
 
