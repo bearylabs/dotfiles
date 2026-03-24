@@ -1,6 +1,8 @@
 # Places
 set -gx TEERM xterm-256color
-
+set -gx DOOMDIR $HOME/.doom.d
+set -gx PATH $HOME/.config/emacs/bin $PATH 
+alias emacs "emacs --init-directory $HOME/.config/emacs"
 
 if status is-interactive
     # Commands to run in interactive sessions can go here

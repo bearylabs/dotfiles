@@ -3,9 +3,14 @@
         modifiers: [
             Super,
         ],
-        key: "Return",
-        description: Some("terminal"),
-    ): Spawn("ghostty"),
+        key: "f",
+    ): Maximize,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "q",
+    ): Disable,
     (
         modifiers: [
             Super,
@@ -18,11 +23,36 @@
         key: "m",
     ): Disable,
     (
+        modifiers: [],
+        key: "Print",
+    ): Spawn("flameshot gui"),
+    (
         modifiers: [
             Super,
         ],
-        key: "f",
-    ): Maximize,
+        key: "g",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "q",
+    ): Close,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "space",
+    ): ToggleWindowFloating,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Return",
+        description: Some("terminal"),
+    ): Spawn("ghostty"),
     (
         modifiers: [
             Super,
@@ -30,8 +60,4 @@
         key: "d",
         description: Some("Menu"),
     ): Spawn("wofi --show drun"),
-    (
-        modifiers: [],
-        key: "Print",
-    ): Spawn("flameshot gui"),
 }

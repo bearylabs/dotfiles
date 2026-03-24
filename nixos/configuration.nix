@@ -8,6 +8,9 @@ let
   zen-browser = import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz") {
     inherit pkgs;
   };
+  emacs-overlay = import (builtins.fetchTarball {
+    url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
+  });
 in
 
 {
@@ -116,6 +119,9 @@ in
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.overlays = [
+    emacs-overlay
+  ];
 
   # Enable modern nix CLI + flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -135,6 +141,7 @@ in
   # editors
   vim
   vscode
+  emacs
 
   # cli tools
   git
@@ -146,6 +153,7 @@ in
   usbutils
   gemini-cli
   codex
+  ispell
 
   # monitoring
   htop
@@ -157,6 +165,9 @@ in
   ghostty
   tmux
 
+  # Language
+  python3
+
   # desktop
   flameshot
   wofi
@@ -164,9 +175,57 @@ in
   obsidian
   rpi-imager
   mediawriter
-  zen-browser.default  
-  ];
+  zen-browser.default
 
+  # Emacs dependencies
+  emacsPackages.pbcopy
+  emacsPackages.vterm
+  libvterm
+  libtool
+  gcc
+  glibc
+  libcxx
+  gdb
+  cmake
+  gnumake
+  libgcc
+  ];
+  
+  fonts = {
+    packages = with pkgs; [
+      nerd-fonts.terminess-ttf
+      nerd-fonts.blex-mono
+      ibm-plex
+      openmoji-color
+    ];
+  };
+
+  services.interception-tools = {
+    enable = true;
+    plugins = [ pkgs.interception-tools-plugins.dual-function-keys ];
+
+    udevmonConfig = ''
+      - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${pkgs.interception-tools-plugins.dual-function-keys}/bin/dual-function-keys -c /etc/dual-function-keys.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
+        DEVICE:
+          EVENTS:
+            EV_KEY: [KEY_LEFTALT, KEY_LEFTMETA]
+    '';
+  };
+
+  environment.etc."dual-function-keys.yaml".text = ''
+    ---
+    MAPPINGS:
+      # swap left alt and super
+      - KEY: KEY_LEFTALT
+        TAP: KEY_LEFTMETA
+        HOLD: KEY_LEFTMETA
+        HOLD_START: BEFORE_CONSUME
+
+      - KEY: KEY_LEFTMETA
+        TAP: KEY_LEFTALT
+        HOLD: KEY_LEFTALT
+        HOLD_START: BEFORE_CONSUME
+  '';
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
