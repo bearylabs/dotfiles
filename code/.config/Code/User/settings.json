@@ -1,0 +1,92 @@
+{
+  // ===== Vim (Evil-like) =====
+  "vim.leader": "<space>",
+  "vim.useSystemClipboard": true,
+  "vim.hlsearch": true,
+  "vim.incsearch": true,
+  "vim.useCtrlKeys": true,
+  "vim.normalModeKeyBindingsNonRecursive": [
+    {
+      "before": ["<space>"],
+      "commands": ["whichkey.show"],
+    },
+  ],
+  "vim.visualModeKeyBindingsNonRecursive": [
+    {
+      "before": ["<space>"],
+      "commands": ["whichkey.show"],
+    },
+  ],
+  "whichkey.delay": 200,
+  "whichkey.bindingOverrides": [
+    {
+      "keys": "a",
+      "name": "+AI",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "a",
+          "name": "Open Codex Sidebar",
+          "type": "command",
+          "command": "chatgpt.openSidebar",
+        },
+        {
+          "key": "c",
+          "name": "Open Copilot Chat",
+          "type": "command",
+          "command": "workbench.action.chat.open",
+        },
+      ],
+    },
+    {
+      "keys": "o",
+      "name": "+Open",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "t",
+          "name": "Toggle Terminal",
+          "type": "command",
+          "command": "workbench.action.terminal.toggleTerminal",
+        },
+      ],
+    },
+  ],
+
+  //
+
+  // ===== Suggestions / LSP feel =====
+  "editor.suggestSelection": "first",
+  "editor.inlineSuggest.enabled": true,
+  "editor.quickSuggestionsDelay": 10,
+  "editor.hover.delay": 100,
+  //
+  // ===== Formatting =====
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+  },
+  //
+  // ===== Git =====
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  //
+  // ===== End =====
+  //
+  "editor.minimap.enabled": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "material-icon-theme.folders.color": "#42a5f5",
+  "material-icon-theme.folders.theme": "classic",
+  "projectManager.git.baseFolders": ["~/"],
+  "terminal.integrated.defaultProfile.linux": "fish",
+  "workbench.activityBar.location": "bottom",
+  "workbench.colorTheme": "GitHub Dark",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.startupEditor": "none",
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "breadcrumbs.enabled": false,
+  "workbench.editor.showTabs": "none",
+}
