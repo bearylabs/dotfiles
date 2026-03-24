@@ -5,21 +5,25 @@
 { config, pkgs, ... }:
 
 let
-  zen-browser = import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz") {
-    inherit pkgs;
-  };
-  emacs-overlay = import (builtins.fetchTarball {
-    url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
-  });
+  zen-browser =
+    import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz")
+      {
+        inherit pkgs;
+      };
+  emacs-overlay = import (
+    builtins.fetchTarball {
+      url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
+    }
+  );
 in
 
 {
-  
-  imports =
-    [ # Include the results of the hardware scan.
-      /etc/nixos/hardware-configuration.nix
-      <home-manager/nixos>
-    ];
+
+  imports = [
+    # Include the results of the hardware scan.
+    /etc/nixos/hardware-configuration.nix
+    <home-manager/nixos>
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -54,7 +58,7 @@ in
   };
 
   # Enable the X11 windowing system.
-  # services.xserver.enable = true; 
+  # services.xserver.enable = true;
 
   # Enable Cosmic Dekstop Environment
   services.displayManager.cosmic-greeter.enable = true;
@@ -105,7 +109,10 @@ in
   users.users.hrudek = {
     isNormalUser = true;
     description = "Hendrik Rudek";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+    ];
     packages = with pkgs; [
       thunderbird
     ];
@@ -124,12 +131,15 @@ in
   ];
 
   # Enable modern nix CLI + flakes
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   # Enable zsh and some common modules (completions, etc.)
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false; # optional, disable if you prefer manual config
-  
+
   # Enable fish shell
   programs.fish.enable = true;
 
@@ -138,59 +148,60 @@ in
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  # editors
-  vim
-  vscode
-  emacs
+    # editors
+    vim
+    vscode
+    emacs
 
-  # cli tools
-  git
-  wget
-  ripgrep
-  fd
-  bind # nslookup
-  nmap
-  usbutils
-  gemini-cli
-  codex
-  ispell
+    # cli tools
+    git
+    wget
+    ripgrep
+    fd
+    bind # nslookup
+    nmap
+    usbutils
+    gemini-cli
+    codex
+    ispell
+    nixfmt
 
-  # monitoring
-  htop
-  btop
+    # monitoring
+    htop
+    btop
 
-  # terminal
-  fish
-  kitty
-  ghostty
-  tmux
+    # terminal
+    fish
+    kitty
+    ghostty
+    tmux
 
-  # Language
-  python3
+    # Language
+    python3
 
-  # desktop
-  flameshot
-  wofi
-  waybar
-  obsidian
-  rpi-imager
-  mediawriter
-  zen-browser.default
+    # desktop
+    flameshot
+    wofi
+    waybar
+    obsidian
+    rpi-imager
+    mediawriter
+    zen-browser.default
 
-  # Emacs dependencies
-  emacsPackages.pbcopy
-  emacsPackages.vterm
-  libvterm
-  libtool
-  gcc
-  glibc
-  libcxx
-  gdb
-  cmake
-  gnumake
-  libgcc
+    # Emacs dependencies
+    emacsPackages.pbcopy
+    emacsPackages.vterm
+    libvterm
+    libtool
+    gcc
+    glibc
+    libcxx
+    gdb
+    cmake
+    gnumake
+    libgcc
   ];
-  
+
   fonts = {
     packages = with pkgs; [
       nerd-fonts.terminess-ttf
