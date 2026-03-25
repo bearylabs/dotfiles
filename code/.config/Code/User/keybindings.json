@@ -69,7 +69,7 @@
   {
     "key": "escape",
     "command": "workbench.action.closeAuxiliaryBar",
-    "when": "auxiliaryBarVisible"
+    "when": "auxiliaryBarVisible" // workaround: always closes the aux bar, otherwise codex and gemini aren't detected
   },
   {
     "key": "q",
