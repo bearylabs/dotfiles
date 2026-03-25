@@ -8,14 +8,14 @@
   "vim.normalModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"],
-    },
+      "commands": ["whichkey.show"]
+    }
   ],
   "vim.visualModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"],
-    },
+      "commands": ["whichkey.show"]
+    }
   ],
   "whichkey.delay": 200,
   "whichkey.bindingOverrides": [
@@ -26,17 +26,23 @@
       "bindings": [
         {
           "key": "a",
-          "name": "Open Codex Sidebar",
+          "name": "Open Codex Chat",
           "type": "command",
-          "command": "chatgpt.openSidebar",
+          "command": "chatgpt.openSidebar"
         },
         {
           "key": "c",
           "name": "Open Copilot Chat",
           "type": "command",
-          "command": "workbench.action.chat.open",
+          "command": "workbench.action.chat.open"
         },
-      ],
+        {
+          "key": "g",
+          "name": "Open Gemini Chat",
+          "type": "command",
+          "command": "cloudcode.gemini.chatView.focus"
+        }
+      ]
     },
     {
       "keys": "o",
@@ -47,10 +53,10 @@
           "key": "t",
           "name": "Toggle Terminal",
           "type": "command",
-          "command": "workbench.action.terminal.toggleTerminal",
-        },
-      ],
-    },
+          "command": "workbench.action.terminal.toggleTerminal"
+        }
+      ]
+    }
   ],
 
   //
@@ -64,7 +70,7 @@
   // ===== Formatting =====
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit",
+    "source.organizeImports": "explicit"
   },
   //
   // ===== Git =====
@@ -85,8 +91,9 @@
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "breadcrumbs.enabled": false,
   "workbench.editor.showTabs": "none",
+  "http.systemCertificatesNode": true
 }
