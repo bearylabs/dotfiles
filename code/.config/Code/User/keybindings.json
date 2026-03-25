@@ -63,6 +63,11 @@
     "when": "openEditorsFocus && !inputFocus"
   },
   {
+    "command": "workbench.action.closeGroup",
+    "key": "shift+d",
+    "when": "openEditorsFocus && !inputFocus"
+  },
+  {
     "command": "workbench.action.closeActiveEditor",
     "key": "c",
     "when": "openEditorsFocus && !inputFocus"
@@ -91,6 +96,11 @@
     "key": "q",
     "command": "workbench.action.toggleSidebarVisibility",
     "when": "openEditorsFocus && !inputFocus"
+  },
+  {
+    "key": "w",
+    "command": "workbench.action.closePanel",
+    "when": "panelFocus && !inputFocus"
   },
   {
     "key": "escape",

@@ -8,14 +8,14 @@
   "vim.normalModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"]
-    }
+      "commands": ["whichkey.show"],
+    },
   ],
   "vim.visualModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"]
-    }
+      "commands": ["whichkey.show"],
+    },
   ],
   "whichkey.delay": 200,
   "whichkey.bindingOverrides": [
@@ -28,21 +28,21 @@
           "key": "a",
           "name": "Open Codex Chat",
           "type": "command",
-          "command": "chatgpt.openSidebar"
+          "command": "chatgpt.openSidebar",
         },
         {
           "key": "c",
           "name": "Open Copilot Chat",
           "type": "command",
-          "command": "workbench.action.chat.open"
+          "command": "workbench.action.chat.open",
         },
         {
           "key": "g",
           "name": "Open Gemini Chat",
           "type": "command",
-          "command": "cloudcode.gemini.chatView.focus"
-        }
-      ]
+          "command": "cloudcode.gemini.chatView.focus",
+        },
+      ],
     },
     {
       "keys": "o",
@@ -53,22 +53,28 @@
           "key": "t",
           "name": "Toggle terminal",
           "type": "command",
-          "command": "workbench.action.togglePanel"
-        }
-      ]
+          "command": "workbench.action.togglePanel",
+        },
+        {
+          "key": "p",
+          "name": "Project sidebar",
+          "type": "command",
+          "command": "workbench.view.explorer",
+        },
+      ],
     },
     {
       "keys": "w.c",
       "name": "Close editor group",
       "type": "command",
-      "command": "workbench.action.closeGroup"
+      "command": "workbench.action.closeGroup",
     },
     {
-      "keys": "b.b",
+      "keys": "b.B",
       "name": "Show all buffers/editors",
       "type": "command",
-      "command": "workbench.files.action.focusOpenEditorsView"
-    }
+      "command": "workbench.files.action.focusOpenEditorsView",
+    },
   ],
   // ===== Editor Settings =====
   "editor.suggestSelection": "first",
@@ -77,9 +83,7 @@
   "editor.hover.delay": 100,
   "editor.stickyScroll.enabled": false,
   "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
-  },
+  "editor.codeActionsOnSave": { "source.organizeImports": "explicit" },
   "editor.minimap.enabled": false,
   //
   // ===== Git =====
@@ -100,10 +104,11 @@
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "breadcrumbs.enabled": false,
-  "workbench.editor.showTabs": "none",
   "http.systemCertificatesNode": true,
-  "update.mode": "none"
+  "update.mode": "none",
+  "workbench.panel.showLabels": false,
+  "workbench.editor.showTabs": "single",
 }
