@@ -8,19 +8,21 @@
     (
         modifiers: [
             Super,
+            Shift,
         ],
         key: "q",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-    ): Disable,
+    ): Close,
     (
         modifiers: [
             Super,
         ],
         key: "m",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "q",
     ): Disable,
     (
         modifiers: [],
@@ -30,22 +32,16 @@
         modifiers: [
             Super,
         ],
-        key: "g",
-    ): Disable,
+        key: "F1",
+        description: Some("IDE"),
+    ): Spawn("code"),
     (
         modifiers: [
             Super,
-            Shift,
         ],
-        key: "q",
-    ): Close,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "space",
-    ): ToggleWindowFloating,
+        key: "d",
+        description: Some("Menu"),
+    ): Spawn("wofi --show drun"),
     (
         modifiers: [
             Super,
@@ -57,7 +53,18 @@
         modifiers: [
             Super,
         ],
-        key: "d",
-        description: Some("Menu"),
-    ): Spawn("wofi --show drun"),
+        key: "g",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "space",
+    ): ToggleWindowFloating,
+    (
+        modifiers: [
+            Super,
+        ],
+    ): Disable,
 }
