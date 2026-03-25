@@ -165,6 +165,7 @@ in
     codex
     ispell
     nixfmt
+    lazygit
 
     # monitoring
     htop
