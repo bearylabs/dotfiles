@@ -171,6 +171,8 @@ in
     ispell
     nixfmt
     lazygit
+    parted
+    psmisc
 
     # monitoring
     htop
