@@ -74,14 +74,14 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
+  "editor.minimap.enabled": false,
   //
   // ===== Git =====
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
-  //
+
   // ===== End =====
   //
-  "editor.minimap.enabled": false,
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
   "material-icon-theme.folders.color": "#42a5f5",
