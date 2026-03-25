@@ -84,6 +84,7 @@
   //
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
+  "window.restoreWindows": "none",
   "material-icon-theme.folders.color": "#42a5f5",
   "material-icon-theme.folders.theme": "classic",
   "projectManager.git.baseFolders": ["~/"],
