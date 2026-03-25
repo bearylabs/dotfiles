@@ -5,6 +5,11 @@
 { config, pkgs, ... }:
 
 let
+  unstable =
+    import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/nixos-unstable.tar.gz")
+      {
+        config = config.nixpkgs.config;
+      };
   zen-browser =
     import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz")
       {
@@ -150,7 +155,7 @@ in
   environment.systemPackages = with pkgs; [
     # editors
     vim
-    vscode
+    unstable.vscode
     emacs
 
     # cli tools
@@ -161,8 +166,8 @@ in
     bind # nslookup
     nmap
     usbutils
-    gemini-cli
-    codex
+    unstable.gemini-cli
+    unstable.codex
     ispell
     nixfmt
     lazygit
@@ -184,7 +189,7 @@ in
     flameshot
     wofi
     waybar
-    obsidian
+    unstable.obsidian
     rpi-imager
     mediawriter
     zen-browser.default
