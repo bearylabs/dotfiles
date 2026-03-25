@@ -51,23 +51,25 @@
       "bindings": [
         {
           "key": "t",
-          "name": "Toggle Terminal",
+          "name": "Toggle terminal",
           "type": "command",
-          "command": "workbench.action.terminal.toggleTerminal"
+          "command": "workbench.action.togglePanel"
         }
       ]
+    },
+    {
+      "keys": "w.c",
+      "name": "Close editor group",
+      "type": "command",
+      "command": "workbench.action.closeGroup"
     }
   ],
-
-  //
-
-  // ===== Suggestions / LSP feel =====
+  // ===== Editor Settings =====
   "editor.suggestSelection": "first",
   "editor.inlineSuggest.enabled": true,
   "editor.quickSuggestionsDelay": 10,
   "editor.hover.delay": 100,
-  //
-  // ===== Formatting =====
+  "editor.stickyScroll.enabled": false,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"

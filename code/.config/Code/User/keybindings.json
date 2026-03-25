@@ -70,5 +70,21 @@
     "key": "escape",
     "command": "workbench.action.closeAuxiliaryBar",
     "when": "auxiliaryBarVisible"
+  },
+  {
+    "key": "q",
+    "command": "workbench.action.toggleSidebarVisibility",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "key": "escape",
+    "command": "workbench.action.focusActiveEditorGroup",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+escape",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { "text": "\u001b" },
+    "when": "terminalFocus"
   }
 ]
