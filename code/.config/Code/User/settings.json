@@ -110,5 +110,8 @@
   "http.systemCertificatesNode": true,
   "update.mode": "none",
   "workbench.panel.showLabels": false,
-  "workbench.editor.showTabs": "single",
+  "workbench.editor.showTabs": "none",
+  "chat.unifiedAgentsBar.enabled": true,
+  "window.menuBarVisibility": "compact",
+  "window.commandCenter": false,
 }
