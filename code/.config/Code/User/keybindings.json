@@ -58,6 +58,17 @@
     "when": "filesExplorerFocus && !inputFocus"
   },
   {
+    "command": "workbench.action.closeActiveEditor",
+    "key": "d",
+    "when": "openEditorsFocus && !inputFocus"
+  },
+  {
+    "command": "workbench.action.closeActiveEditor",
+    "key": "c",
+    "when": "openEditorsFocus && !inputFocus"
+  },
+
+  {
     "key": "ctrl+shift+5",
     "command": "editor.emmet.action.matchTag"
   },
@@ -75,6 +86,11 @@
     "key": "q",
     "command": "workbench.action.toggleSidebarVisibility",
     "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "key": "q",
+    "command": "workbench.action.toggleSidebarVisibility",
+    "when": "openEditorsFocus && !inputFocus"
   },
   {
     "key": "escape",
