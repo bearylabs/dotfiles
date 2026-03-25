@@ -99,4 +99,5 @@
   "breadcrumbs.enabled": false,
   "workbench.editor.showTabs": "none",
   "http.systemCertificatesNode": true,
+  "update.mode": "none",
 }
