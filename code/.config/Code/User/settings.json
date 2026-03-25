@@ -19,51 +19,51 @@
   ],
   "whichkey.delay": 200,
   "whichkey.bindingOverrides": [
-    {
-      "keys": "a",
-      "name": "+AI",
-      "type": "bindings",
-      "bindings": [
-        {
-          "key": "a",
-          "name": "Open Codex Chat",
-          "type": "command",
-          "command": "chatgpt.openSidebar",
-        },
-        {
-          "key": "c",
-          "name": "Open Copilot Chat",
-          "type": "command",
-          "command": "workbench.action.chat.open",
-        },
-        {
-          "key": "g",
-          "name": "Open Gemini Chat",
-          "type": "command",
-          "command": "cloudcode.gemini.chatView.focus",
-        },
-      ],
-    },
-    {
-      "keys": "o",
-      "name": "+Open",
-      "type": "bindings",
-      "bindings": [
-        {
-          "key": "t",
-          "name": "Toggle terminal",
-          "type": "command",
-          "command": "workbench.action.togglePanel",
-        },
-        {
-          "key": "p",
-          "name": "Project sidebar",
-          "type": "command",
-          "command": "workbench.view.explorer",
-        },
-      ],
-    },
-    {
+   {
+    "keys": "o",
+    "name": "+Open",
+    "type": "bindings",
+    "position": 10,
+    "bindings": [
+      {
+        "key": "t",
+        "name": "Toggle terminal",
+        "type": "command",
+        "command": "workbench.action.togglePanel"
+      },
+      {
+        "key": "p",
+        "name": "Project sidebar",
+        "type": "command",
+        "command": "workbench.view.explorer"
+      },
+      {
+        "key": "a",
+        "name": "+AI",
+        "type": "bindings",
+        "bindings": [
+          {
+            "key": "a",
+            "name": "Open Codex Chat",
+            "type": "command",
+            "command": "chatgpt.openSidebar"
+          },
+          {
+            "key": "c",
+            "name": "Open Copilot Chat",
+            "type": "command",
+            "command": "workbench.action.chat.open"
+          },
+          {
+            "key": "g",
+            "name": "Open Gemini Chat",
+            "type": "command",
+            "command": "cloudcode.gemini.chatView.focus"
+          }
+        ]
+      }
+    ]
+  }   {
       "keys": "w.c",
       "name": "Close editor group",
       "type": "command",
@@ -74,6 +74,12 @@
       "name": "Show all buffers/editors",
       "type": "command",
       "command": "workbench.files.action.focusOpenEditorsView",
+    },
+    {
+      "keys": "s.u",
+      "name": "History",
+      "type": "command",
+      "command": "timeline.focus",
     },
   ],
   // ===== Editor Settings =====

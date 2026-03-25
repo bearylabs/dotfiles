@@ -2,27 +2,14 @@
   {
     "key": "space",
     "command": "whichkey.show",
-    "when": "!editorTextFocus && !inputFocus && !terminalFocus && activeEditorGroupEmpty && !sideBarFocus"
+    "when": "!filesExplorerFocus && !editorTextFocus && !inputFocus && !terminalFocus && activeEditorGroupEmpty && !auxiliaryBarVisible"
   },
-  {
-    "key": "ctrl+shift+b",
-    "command": "workbench.action.terminal.focusPrevious",
-    "when": "terminalFocus"
-  },
+
   {
     "key": "ctrl+shift+j",
     "command": "workbench.action.togglePanel"
   },
-  {
-    "key": "ctrl+shift+n",
-    "command": "workbench.action.terminal.new",
-    "when": "terminalFocus"
-  },
-  {
-    "key": "ctrl+shift+w",
-    "command": "workbench.action.terminal.kill",
-    "when": "terminalFocus"
-  },
+
   {
     "command": "workbench.action.toggleSidebarVisibility",
     "key": "ctrl+e"
@@ -47,11 +34,7 @@
     "command": "explorer.newFolder",
     "when": "explorerViewletFocus"
   },
-  {
-    "key": "shift+n",
-    "command": "workbench.action.newWindow",
-    "when": "!explorerViewletFocus"
-  },
+
   {
     "command": "deleteFile",
     "key": "d",
@@ -72,11 +55,6 @@
     "key": "c",
     "when": "openEditorsFocus && !inputFocus"
   },
-
-  {
-    "key": "ctrl+shift+5",
-    "command": "editor.emmet.action.matchTag"
-  },
   {
     "key": "escape",
     "command": "workbench.action.closeSidebar",
@@ -96,6 +74,11 @@
     "key": "q",
     "command": "workbench.action.toggleSidebarVisibility",
     "when": "openEditorsFocus && !inputFocus"
+  },
+  {
+    "key": "q",
+    "command": "workbench.action.toggleSidebarVisibility",
+    "when": "timelineFocused && !inputFocus"
   },
   {
     "key": "w",
