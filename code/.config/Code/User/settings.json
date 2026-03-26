@@ -8,14 +8,14 @@
   "vim.normalModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"],
-    },
+      "commands": ["whichkey.show"]
+    }
   ],
   "vim.visualModeKeyBindingsNonRecursive": [
     {
       "before": ["<space>"],
-      "commands": ["whichkey.show"],
-    },
+      "commands": ["whichkey.show"]
+    }
   ],
   "whichkey.delay": 800,
   "whichkey.sortOrder": "alphabetically",
@@ -34,15 +34,15 @@
               "key": "",
               "name": "default",
               "type": "command",
-              "command": "workbench.action.terminal.focus",
+              "command": "workbench.action.terminal.focus"
             },
             {
               "key": "when:activePanel == 'terminal'",
               "name": "Hide panel",
               "type": "command",
-              "command": "workbench.action.togglePanel",
-            },
-          ],
+              "command": "workbench.action.togglePanel"
+            }
+          ]
         },
         {
           "key": "p",
@@ -53,15 +53,15 @@
               "key": "",
               "name": "default",
               "type": "command",
-              "command": "workbench.view.explorer",
+              "command": "workbench.view.explorer"
             },
             {
               "key": "when:explorerViewletVisible",
               "name": "Hide sidebar",
               "type": "command",
-              "command": "workbench.action.toggleSidebarVisibility",
-            },
-          ],
+              "command": "workbench.action.toggleSidebarVisibility"
+            }
+          ]
         },
         {
           "key": "d",
@@ -72,21 +72,21 @@
               "key": "",
               "name": "default",
               "type": "command",
-              "command": "workbench.view.debug",
+              "command": "workbench.view.debug"
             },
             {
               "key": "when:activeViewlet == 'workbench.view.debug'",
               "name": "Hide sidebar",
               "type": "command",
-              "command": "workbench.action.toggleSidebarVisibility",
-            },
-          ],
+              "command": "workbench.action.toggleSidebarVisibility"
+            }
+          ]
         },
         {
           "key": "D",
           "name": "Open debug console",
           "type": "command",
-          "command": "workbench.debug.action.toggleRepl",
+          "command": "workbench.debug.action.toggleRepl"
         },
         {
           "key": "a",
@@ -97,47 +97,47 @@
               "key": "a",
               "name": "Open Codex Chat",
               "type": "command",
-              "command": "chatgpt.openSidebar",
+              "command": "chatgpt.openSidebar"
             },
             {
               "key": "c",
               "name": "Open Copilot Chat",
               "type": "command",
-              "command": "workbench.action.chat.open",
+              "command": "workbench.action.chat.open"
             },
             {
               "key": "g",
               "name": "Open Gemini Chat",
               "type": "command",
-              "command": "cloudcode.gemini.chatView.focus",
-            },
-          ],
-        },
-      ],
+              "command": "cloudcode.gemini.chatView.focus"
+            }
+          ]
+        }
+      ]
     },
     {
       "keys": "w.c",
       "name": "Close editor group",
       "type": "command",
-      "command": "workbench.action.closeGroup",
+      "command": "workbench.action.closeGroup"
     },
     {
       "keys": "b.B",
       "name": "Show all buffers/editors",
       "type": "command",
-      "command": "workbench.files.action.focusOpenEditorsView",
+      "command": "workbench.files.action.focusOpenEditorsView"
     },
     {
       "keys": "s.u",
       "name": "History",
       "type": "command",
-      "command": "timeline.focus",
+      "command": "timeline.focus"
     },
     {
       "keys": ":",
       "name": "M-x",
       "type": "command",
-      "command": "workbench.action.showCommands",
+      "command": "workbench.action.showCommands"
     },
     {
       "keys": "c",
@@ -148,19 +148,19 @@
           "key": "c",
           "name": "Compile",
           "type": "command",
-          "command": "workbench.action.tasks.build",
+          "command": "workbench.action.tasks.build"
         },
         {
           "key": "d",
           "name": "Jump to definition",
           "type": "command",
-          "command": "editor.action.revealDefinition",
+          "command": "editor.action.revealDefinition"
         },
         {
           "key": "D",
           "name": "Jump to references",
           "type": "command",
-          "command": "editor.action.goToReferences",
+          "command": "editor.action.goToReferences"
         },
         {
           "key": "f",
@@ -171,33 +171,33 @@
               "key": "editorHasSelection",
               "name": "Format selection",
               "type": "command",
-              "command": "editor.action.formatSelection",
+              "command": "editor.action.formatSelection"
             },
             {
               "key": "",
               "name": "Format document",
               "type": "command",
-              "command": "editor.action.formatDocument",
-            },
-          ],
+              "command": "editor.action.formatDocument"
+            }
+          ]
         },
         {
           "key": "i",
           "name": "Find implementations",
           "type": "command",
-          "command": "editor.action.goToImplementation",
+          "command": "editor.action.goToImplementation"
         },
         {
           "key": "t",
           "name": "Find type definition",
           "type": "command",
-          "command": "editor.action.goToTypeDefinition",
+          "command": "editor.action.goToTypeDefinition"
         },
         {
           "key": "w",
           "name": "Delete trailing whitespace",
           "type": "command",
-          "command": "editor.action.trimTrailingWhitespace",
+          "command": "editor.action.trimTrailingWhitespace"
         },
         {
           "key": "x",
@@ -208,35 +208,35 @@
               "key": "",
               "name": "default",
               "type": "command",
-              "command": "workbench.actions.view.problems",
+              "command": "workbench.actions.view.problems"
             },
             {
               "key": "when:view.workbench.panel.markers.view.visible",
               "name": "Hide problems",
               "type": "command",
-              "command": "workbench.action.closePanel",
-            },
-          ],
-        },
-      ],
+              "command": "workbench.action.closePanel"
+            }
+          ]
+        }
+      ]
     },
     {
       "keys": ["."],
       "name": "Find file",
       "type": "command",
-      "command": "workbench.action.quickOpen",
+      "command": "workbench.action.quickOpen"
     },
     {
       "keys": " ",
       "name": "Find file in project",
       "type": "command",
-      "command": "workbench.action.quickOpen",
+      "command": "workbench.action.quickOpen"
     },
     {
       "keys": "<",
       "name": "Switch buffer",
       "type": "command",
-      "command": "workbench.action.showAllEditors",
+      "command": "workbench.action.showAllEditors"
     },
     {
       "keys": "\t",
@@ -247,56 +247,56 @@
           "key": "\t",
           "name": "Display workspaces",
           "type": "command",
-          "command": "workbench.action.switchWindow",
+          "command": "workbench.action.switchWindow"
         },
         {
           "key": "n",
           "name": "New Workspace",
           "type": "command",
-          "command": "workbench.action.newWindow",
-        },
-      ],
+          "command": "workbench.action.newWindow"
+        }
+      ]
     },
     {
       "keys": "0",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "1",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "2",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "3",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "4",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "5",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "6",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "7",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "8",
-      "position": -1,
+      "position": -1
     },
     {
       "keys": "9",
-      "position": -1,
-    },
+      "position": -1
+    }
   ],
   // ===== Editor Settings =====
   "editor.suggestSelection": "first",
@@ -325,7 +325,7 @@
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "breadcrumbs.enabled": false,
   "http.systemCertificatesNode": true,
@@ -340,10 +340,11 @@
   "github-enterprise.uri": "https://siempelkamp.ghe.com",
 
   "github.copilot.advanced": {
-    "authProvider": "github-enterprise",
+    "authProvider": "github-enterprise"
   },
 
   "github.copilot.nextEditSuggestions.enabled": true,
   "workbench.activityBar.location": "hidden",
   "window.menuBarVisibility": "compact",
+  "window.commandCenter": false
 }

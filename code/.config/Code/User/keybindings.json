@@ -15,7 +15,7 @@
     "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus"
   },
   {
-    "key": "alt+space",
+    "key": "ctrl+shift+space",
     "command": "whichkey.show",
     "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus"
   },
