@@ -335,16 +335,8 @@
   "sqldeveloper.datagrid.fontFamily": "Consolas, 'Courier New', monospace",
   "chat.viewSessions.orientation": "stacked",
 
-  // ==================== GITHUB & COPILOT ====================
-
-  "github-enterprise.uri": "https://siempelkamp.ghe.com",
-
-  "github.copilot.advanced": {
-    "authProvider": "github-enterprise"
-  },
-
-  "github.copilot.nextEditSuggestions.enabled": true,
   "workbench.activityBar.location": "hidden",
   "window.menuBarVisibility": "compact",
-  "window.commandCenter": false
+  "window.commandCenter": false,
+  "files.simpleDialog.enable": true
 }
