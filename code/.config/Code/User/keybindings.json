@@ -2,18 +2,64 @@
   {
     "key": "space",
     "command": "whichkey.show",
-    "when": "!filesExplorerFocus && !editorTextFocus && !inputFocus && !terminalFocus && activeEditorGroupEmpty && !auxiliaryBarVisible"
+    "when": "activeEditorGroupEmpty && focusedView == '' && !whichkeyActive && !inputFocus && !auxiliaryBarVisible"
+  },
+  {
+    "key": "space",
+    "command": "whichkey.show",
+    "when": "sideBarFocus && !inputFocus && !whichkeyActive || view.workbench.panel.markers.view.visible && !inputFocus"
+  },
+  {
+    "key": "shift+space",
+    "command": "whichkey.show",
+    "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus"
+  },
+  {
+    "key": "t",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "t",
+      "when": "activePanel == 'terminal'"
+    },
+    "when": "whichkeyVisible && activePanel == 'terminal'"
+  },
+  {
+    "key": "p",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "p",
+      "when": "explorerViewletVisible"
+    },
+    "when": "whichkeyVisible && explorerViewletVisible"
+  },
+  {
+    "key": "d",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "d",
+      "when": "activeViewlet == 'workbench.view.debug'"
+    },
+    "when": "whichkeyVisible && activeViewlet == 'workbench.view.debug'"
+  },
+  {
+    "key": "c",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "c",
+      "when": "editorHasSelection"
+    },
+    "when": "whichkeyVisible && editorHasSelection"
+  },
+  {
+    "key": "x",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "x",
+      "when": "view.workbench.panel.markers.view.visible"
+    },
+    "when": "whichkeyVisible && view.workbench.panel.markers.view.visible"
   },
 
-  {
-    "key": "ctrl+shift+j",
-    "command": "workbench.action.togglePanel"
-  },
-
-  {
-    "command": "workbench.action.toggleSidebarVisibility",
-    "key": "ctrl+e"
-  },
   {
     "command": "workbench.files.action.focusFilesExplorer",
     "key": "ctrl+e",
@@ -62,6 +108,11 @@
   },
   {
     "key": "escape",
+    "command": "workbench.action.closeSidebar",
+    "when": "sideBarFocus && activeViewlet == 'workbench.view.debug'"
+  },
+  {
+    "key": "escape",
     "command": "workbench.action.closeAuxiliaryBar",
     "when": "auxiliaryBarVisible" // workaround: always closes the aux bar, otherwise codex and gemini aren't detected
   },
@@ -72,12 +123,12 @@
   },
   {
     "key": "q",
-    "command": "workbench.action.toggleSidebarVisibility",
+    "command": "workbench.action.togglePanel",
     "when": "openEditorsFocus && !inputFocus"
   },
   {
     "key": "q",
-    "command": "workbench.action.toggleSidebarVisibility",
+    "command": "workbench.action.togglePanel",
     "when": "timelineFocused && !inputFocus"
   },
   {
