@@ -116,6 +116,12 @@
       ]
     },
     {
+      "keys": "p.o",
+      "name": "Open folder",
+      "type": "command",
+      "command": "workbench.action.files.openFolder"
+    },
+    {
       "keys": "w.c",
       "name": "Close editor group",
       "type": "command",
