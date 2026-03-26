@@ -17,53 +17,105 @@
       "commands": ["whichkey.show"],
     },
   ],
-  "whichkey.delay": 200,
+  "whichkey.delay": 800,
+  "whichkey.sortOrder": "alphabetically",
   "whichkey.bindingOverrides": [
-   {
-    "keys": "o",
-    "name": "+Open",
-    "type": "bindings",
-    "position": 10,
-    "bindings": [
-      {
-        "key": "t",
-        "name": "Toggle terminal",
-        "type": "command",
-        "command": "workbench.action.togglePanel"
-      },
-      {
-        "key": "p",
-        "name": "Project sidebar",
-        "type": "command",
-        "command": "workbench.view.explorer"
-      },
-      {
-        "key": "a",
-        "name": "+AI",
-        "type": "bindings",
-        "bindings": [
-          {
-            "key": "a",
-            "name": "Open Codex Chat",
-            "type": "command",
-            "command": "chatgpt.openSidebar"
-          },
-          {
-            "key": "c",
-            "name": "Open Copilot Chat",
-            "type": "command",
-            "command": "workbench.action.chat.open"
-          },
-          {
-            "key": "g",
-            "name": "Open Gemini Chat",
-            "type": "command",
-            "command": "cloudcode.gemini.chatView.focus"
-          }
-        ]
-      }
-    ]
-  }   {
+    {
+      "keys": "o",
+      "name": "+Open",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "t",
+          "name": "Open terminal",
+          "type": "conditional",
+          "bindings": [
+            {
+              "key": "",
+              "name": "default",
+              "type": "command",
+              "command": "workbench.action.terminal.focus",
+            },
+            {
+              "key": "when:activePanel == 'terminal'",
+              "name": "Hide panel",
+              "type": "command",
+              "command": "workbench.action.togglePanel",
+            },
+          ],
+        },
+        {
+          "key": "p",
+          "name": "Project sidebar",
+          "type": "conditional",
+          "bindings": [
+            {
+              "key": "",
+              "name": "default",
+              "type": "command",
+              "command": "workbench.view.explorer",
+            },
+            {
+              "key": "when:explorerViewletVisible",
+              "name": "Hide sidebar",
+              "type": "command",
+              "command": "workbench.action.toggleSidebarVisibility",
+            },
+          ],
+        },
+        {
+          "key": "d",
+          "name": "Start a debugger",
+          "type": "conditional",
+          "bindings": [
+            {
+              "key": "",
+              "name": "default",
+              "type": "command",
+              "command": "workbench.view.debug",
+            },
+            {
+              "key": "when:activeViewlet == 'workbench.view.debug'",
+              "name": "Hide sidebar",
+              "type": "command",
+              "command": "workbench.action.toggleSidebarVisibility",
+            },
+          ],
+        },
+        {
+          "key": "D",
+          "name": "Open debug console",
+          "type": "command",
+          "command": "workbench.debug.action.toggleRepl",
+        },
+        {
+          "key": "a",
+          "name": "+AI",
+          "type": "bindings",
+          "bindings": [
+            {
+              "key": "a",
+              "name": "Open Codex Chat",
+              "type": "command",
+              "command": "chatgpt.openSidebar",
+            },
+            {
+              "key": "c",
+              "name": "Open Copilot Chat",
+              "type": "command",
+              "command": "workbench.action.chat.open",
+            },
+            {
+              "key": "g",
+              "name": "Open Gemini Chat",
+              "type": "command",
+              "command": "cloudcode.gemini.chatView.focus",
+            },
+          ],
+        },
+      ],
+    },
+    {
       "keys": "w.c",
       "name": "Close editor group",
       "type": "command",
@@ -80,6 +132,170 @@
       "name": "History",
       "type": "command",
       "command": "timeline.focus",
+    },
+    {
+      "keys": ":",
+      "name": "M-x",
+      "type": "command",
+      "command": "workbench.action.showCommands",
+    },
+    {
+      "keys": "c",
+      "name": "+Code",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "c",
+          "name": "Compile",
+          "type": "command",
+          "command": "workbench.action.tasks.build",
+        },
+        {
+          "key": "d",
+          "name": "Jump to definition",
+          "type": "command",
+          "command": "editor.action.revealDefinition",
+        },
+        {
+          "key": "D",
+          "name": "Jump to references",
+          "type": "command",
+          "command": "editor.action.goToReferences",
+        },
+        {
+          "key": "f",
+          "name": "Format buffer/region",
+          "type": "conditional",
+          "bindings": [
+            {
+              "key": "editorHasSelection",
+              "name": "Format selection",
+              "type": "command",
+              "command": "editor.action.formatSelection",
+            },
+            {
+              "key": "",
+              "name": "Format document",
+              "type": "command",
+              "command": "editor.action.formatDocument",
+            },
+          ],
+        },
+        {
+          "key": "i",
+          "name": "Find implementations",
+          "type": "command",
+          "command": "editor.action.goToImplementation",
+        },
+        {
+          "key": "t",
+          "name": "Find type definition",
+          "type": "command",
+          "command": "editor.action.goToTypeDefinition",
+        },
+        {
+          "key": "w",
+          "name": "Delete trailing whitespace",
+          "type": "command",
+          "command": "editor.action.trimTrailingWhitespace",
+        },
+        {
+          "key": "x",
+          "name": "List errors",
+          "type": "conditional",
+          "bindings": [
+            {
+              "key": "",
+              "name": "default",
+              "type": "command",
+              "command": "workbench.actions.view.problems",
+            },
+            {
+              "key": "when:view.workbench.panel.markers.view.visible",
+              "name": "Hide problems",
+              "type": "command",
+              "command": "workbench.action.closePanel",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      "keys": ["."],
+      "name": "Find file",
+      "type": "command",
+      "command": "workbench.action.quickOpen",
+    },
+    {
+      "keys": " ",
+      "name": "Find file in project",
+      "type": "command",
+      "command": "workbench.action.quickOpen",
+    },
+    {
+      "keys": "<",
+      "name": "Switch buffer",
+      "type": "command",
+      "command": "workbench.action.showAllEditors",
+    },
+    {
+      "keys": "\t",
+      "name": "+Workspace",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "\t",
+          "name": "Display workspaces",
+          "type": "command",
+          "command": "workbench.action.switchWindow",
+        },
+        {
+          "key": "n",
+          "name": "New Workspace",
+          "type": "command",
+          "command": "workbench.action.newWindow",
+        },
+      ],
+    },
+    {
+      "keys": "0",
+      "position": -1,
+    },
+    {
+      "keys": "1",
+      "position": -1,
+    },
+    {
+      "keys": "2",
+      "position": -1,
+    },
+    {
+      "keys": "3",
+      "position": -1,
+    },
+    {
+      "keys": "4",
+      "position": -1,
+    },
+    {
+      "keys": "5",
+      "position": -1,
+    },
+    {
+      "keys": "6",
+      "position": -1,
+    },
+    {
+      "keys": "7",
+      "position": -1,
+    },
+    {
+      "keys": "8",
+      "position": -1,
+    },
+    {
+      "keys": "9",
+      "position": -1,
     },
   ],
   // ===== Editor Settings =====
@@ -105,7 +321,6 @@
   "material-icon-theme.folders.theme": "classic",
   "projectManager.git.baseFolders": ["~/"],
   "terminal.integrated.defaultProfile.linux": "fish",
-  "workbench.activityBar.location": "bottom",
   "workbench.colorTheme": "Catppuccin Macchiato",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
@@ -115,9 +330,20 @@
   "breadcrumbs.enabled": false,
   "http.systemCertificatesNode": true,
   "update.mode": "none",
-  "workbench.panel.showLabels": false,
   "workbench.editor.showTabs": "none",
   "chat.unifiedAgentsBar.enabled": true,
+  "sqldeveloper.datagrid.fontFamily": "Consolas, 'Courier New', monospace",
+  "chat.viewSessions.orientation": "stacked",
+
+  // ==================== GITHUB & COPILOT ====================
+
+  "github-enterprise.uri": "https://siempelkamp.ghe.com",
+
+  "github.copilot.advanced": {
+    "authProvider": "github-enterprise",
+  },
+
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.activityBar.location": "hidden",
   "window.menuBarVisibility": "compact",
-  "window.commandCenter": false,
 }
