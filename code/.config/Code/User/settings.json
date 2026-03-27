@@ -329,6 +329,7 @@
   "editor.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
   "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
   "terminal.integrated.defaultProfile.linux": "fish",
+  "terminal.integrated.commandsToSkipShell": ["whichkey.show"],
   "workbench.colorTheme": "Catppuccin Macchiato",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
