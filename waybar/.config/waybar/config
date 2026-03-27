@@ -6,17 +6,21 @@
   "margin-top": 0,
   "margin-left": 0,
   "margin-right": 0,
-  "modules-left": ["sway/workspaces", "custom/split-indicator"],
-  "modules-center": ["clock"],
+  "modules-left": [
+    "sway/workspaces",
+    "custom/split-indicator"
+  ],
+  "modules-center": [
+    "clock"
+  ],
   "modules-right": [
     "sway/language",
     "pulseaudio",
     "tray",
     "battery",
     "custom/notifications",
-    "custom/logout"
+    "custom/power"
   ],
-
   "sway/workspaces": {
     "disable-scroll": true,
     "all-outputs": true,
@@ -34,14 +38,12 @@
       "10": []
     }
   },
-
   "custom/split-indicator": {
     "exec": "/home/hrudek/.config/waybar/scripts/sway-split-indicator",
     "return-type": "json",
     "restart-interval": 1,
     "tooltip": true
   },
-
   "clock": {
     "format": "{:%H:%M  |  %a %d %b}",
     "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
@@ -52,32 +54,32 @@
       "on-scroll": 1
     }
   },
-
   "custom/notifications": {
     "format": "",
     "tooltip": false,
     "on-click": "swaync-client -t",
     "on-click-right": "swaync-client -d"
   },
-
   "sway/language": {
     "format": "  {}",
     "min-length": 5,
     "tooltip": true,
     "on-click": "swaymsg input type:keyboard xkb_switch_layout next"
   },
-
   "pulseaudio": {
     "format": "{icon}  {volume}%",
     "format-muted": "󰖁",
     "format-bluetooth": "󰂯  {volume}%",
     "format-icons": {
-      "default": ["󰕿", "󰖀", "󰕾"]
+      "default": [
+        "󰕿",
+        "󰖀",
+        "󰕾"
+      ]
     },
     "scroll-step": 1,
     "on-click": "pavucontrol"
   },
-
   "battery": {
     "states": {
       "warning": 30,
@@ -87,18 +89,30 @@
     "format-charging": "󰂄  {capacity}%",
     "format-plugged": "󰚥  {capacity}%",
     "format-full": "󰁹  100%",
-    "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰁹"],
+    "format-icons": [
+      "󰂎",
+      "󰁺",
+      "󰁼",
+      "󰁾",
+      "󰂀",
+      "󰁹"
+    ],
     "tooltip-format": "{capacity}% {time}"
   },
-
   "tray": {
     "icon-size": 14,
     "spacing": 8
   },
-
-  "custom/logout": {
-    "format": "󰍃",
-    "tooltip": false,
-    "on-click": "swaynag -t warning -m 'Exit sway session?' -B 'Log out' 'swaymsg exit'"
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": true,
+    "tooltip-format": "Power",
+    "menu": "on-click",
+    "menu-file": "/home/hrudek/.config/waybar/power-menu.xml",
+    "menu-actions": {
+      "logout": "/home/hrudek/.config/waybar/scripts/power-menu logout",
+      "restart": "/home/hrudek/.config/waybar/scripts/power-menu restart",
+      "poweroff": "/home/hrudek/.config/waybar/scripts/power-menu poweroff"
+    }
   }
 }

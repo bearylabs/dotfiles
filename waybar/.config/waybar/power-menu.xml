@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkMenu" id="menu">
+    <child>
+      <object class="GtkMenuItem" id="logout">
+        <property name="label">󰍃  Log out</property>
+        <property name="visible">true</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="restart">
+        <property name="label">󰜉  Restart</property>
+        <property name="visible">true</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="poweroff">
+        <property name="label">󰐥  Power off</property>
+        <property name="visible">true</property>
+      </object>
+    </child>
+  </object>
+</interface>

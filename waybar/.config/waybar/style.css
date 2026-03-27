@@ -60,12 +60,12 @@ tooltip label {
 #pulseaudio,
 #battery,
 #tray,
-#custom-logout {
+#custom-power {
   background: alpha(@base, 0.96);
   color: @text;
   margin-top: 1px;
   margin-bottom: 1px;
-  padding: 0 12px;
+  padding: 0 8px;
   border: 1px solid @surface1;
   border-radius: 12px;
 }
@@ -182,9 +182,11 @@ tooltip label {
   color: @red;
 }
 
-#custom-logout {
+#custom-power {
   background: @red;
   border-color: @red;
   color: @crust;
   font-weight: 700;
+  min-width: 22px;
+  padding: 0 9px;
 }

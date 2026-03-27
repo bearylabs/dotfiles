@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+case "${1:-}" in
+  logout)
+    swaynag -t warning -m "Log out of Sway?" -B "Log out" "swaymsg exit"
+    ;;
+  restart)
+    swaynag -t warning -m "Restart the machine?" -B "Restart" "systemctl reboot"
+    ;;
+  poweroff)
+    swaynag -t warning -m "Shut down the machine?" -B "Shut down" "systemctl poweroff"
+    ;;
+  *)
+    printf 'Usage: %s {logout|restart|poweroff}\n' "${0##*/}" >&2
+    exit 1
+    ;;
+esac
