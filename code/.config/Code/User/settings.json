@@ -7,14 +7,22 @@
   "vim.useCtrlKeys": true,
   "vim.normalModeKeyBindingsNonRecursive": [
     {
-      "before": ["<space>"],
-      "commands": ["whichkey.show"]
+      "before": [
+        "<space>"
+      ],
+      "commands": [
+        "whichkey.show"
+      ]
     }
   ],
   "vim.visualModeKeyBindingsNonRecursive": [
     {
-      "before": ["<space>"],
-      "commands": ["whichkey.show"]
+      "before": [
+        "<space>"
+      ],
+      "commands": [
+        "whichkey.show"
+      ]
     }
   ],
   "whichkey.delay": 800,
@@ -227,7 +235,9 @@
       ]
     },
     {
-      "keys": ["."],
+      "keys": [
+        "."
+      ],
       "name": "Find file",
       "type": "command",
       "command": "workbench.action.files.openFile"
@@ -311,13 +321,14 @@
   "editor.hover.delay": 100,
   "editor.stickyScroll.enabled": false,
   "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": { "source.organizeImports": "explicit" },
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
   "editor.minimap.enabled": false,
   //
   // ===== Git =====
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
-
   // ===== End =====
   //
   "explorer.confirmDelete": false,
@@ -325,16 +336,23 @@
   "window.restoreWindows": "none",
   "material-icon-theme.folders.color": "#42a5f5",
   "material-icon-theme.folders.theme": "classic",
-  "projectManager.git.baseFolders": ["~/"],
+  "projectManager.git.baseFolders": [
+    "~/"
+  ],
   "editor.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
   "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
   "terminal.integrated.defaultProfile.linux": "fish",
-  "terminal.integrated.commandsToSkipShell": ["whichkey.show"],
+  "terminal.integrated.commandsToSkipShell": [
+    "whichkey.show"
+  ],
   "workbench.colorTheme": "Catppuccin Macchiato",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
   "breadcrumbs.enabled": false,
   "http.systemCertificatesNode": true,
@@ -343,7 +361,6 @@
   "chat.unifiedAgentsBar.enabled": true,
   "sqldeveloper.datagrid.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
   "chat.viewSessions.orientation": "stacked",
-
   "workbench.activityBar.location": "hidden",
   "window.menuBarVisibility": "compact",
   "window.commandCenter": false,
