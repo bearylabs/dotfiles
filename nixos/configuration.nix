@@ -68,6 +68,8 @@ in
   # Use GDM for session selection instead of the COSMIC greeter, which was
   # taking over the session handoff and starting cosmic-session.
   services.displayManager.gdm.enable = true;
+  # Keep COSMIC available in GDM as a fallback desktop session.
+  services.desktopManager.cosmic.enable = true;
   # Enable hyprland window manager
   programs.hyprland.enable = true;
 
@@ -204,10 +206,12 @@ in
 
     # desktop
     flameshot
+    networkmanagerapplet
+    pavucontrol
     wofi
     waybar
     wl-clipboard # Copy/Paste functionality.
-    mako # Notification utility.
+    swaynotificationcenter # Notification center and daemon for Wayland.
     unstable.obsidian
     rpi-imager
     mediawriter
@@ -229,9 +233,9 @@ in
 
   fonts = {
     packages = with pkgs; [
-      nerd-fonts.terminess-ttf
-      nerd-fonts.blex-mono
-      ibm-plex
+      inter
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.symbols-only
       openmoji-color
     ];
   };

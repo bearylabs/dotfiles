@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+
+SWAYMSG_BIN = os.environ.get("SWAYMSG_BIN", "swaymsg")
+SUBSCRIPTIONS = json.dumps(["binding", "window", "workspace", "mode"])
+STATE_TEXT = {
+    "horizontal": "H",
+    "vertical": "V",
+    "auto": "A",
+    "unavailable": "?",
+}
+STATE_TOOLTIP = {
+    "horizontal": "Next split: horizontal",
+    "vertical": "Next split: vertical",
+    "auto": "Next split: automatic",
+    "unavailable": "Split indicator unavailable: Sway IPC not ready",
+}
+
+
+def swaymsg(*args):
+    return subprocess.run(
+        [SWAYMSG_BIN, *args],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+
+def emit(state, tooltip=None, extra_class=None):
+    classes = [state]
+    if extra_class:
+        classes.append(extra_class)
+
+    payload = {
+        "text": STATE_TEXT[state],
+        "tooltip": tooltip or STATE_TOOLTIP[state],
+        "class": classes,
+    }
+    print(json.dumps(payload), flush=True)
+    return payload
+
+
+def focused_trail(node, trail=None):
+    trail = (trail or []) + [node]
+    if node.get("focused"):
+        return trail
+
+    for key in ("nodes", "floating_nodes"):
+        for child in node.get(key, []):
+            result = focused_trail(child, trail)
+            if result:
+                return result
+
+    return None
+
+
+def derive_state_from_tree():
+    result = swaymsg("-t", "get_tree", "--raw")
+    if result.returncode != 0 or not result.stdout.strip():
+        return "unavailable", STATE_TOOLTIP["unavailable"]
+
+    try:
+        tree = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return "unavailable", "Split indicator unavailable: invalid Sway tree"
+
+    trail = focused_trail(tree) or []
+    orientation_hint = None
+
+    for node in reversed(trail):
+        layout = node.get("layout")
+        if layout == "splith":
+            return "horizontal", STATE_TOOLTIP["horizontal"]
+        if layout == "splitv":
+            return "vertical", STATE_TOOLTIP["vertical"]
+
+        orientation = node.get("orientation")
+        if orientation in {"horizontal", "vertical"} and orientation_hint is None:
+            orientation_hint = orientation
+
+    if orientation_hint:
+        return "auto", f"Next split: automatic ({orientation_hint} container)"
+
+    return "auto", STATE_TOOLTIP["auto"]
+
+
+def binding_state(event):
+    if event.get("change") != "run":
+        return None
+
+    command = event.get("binding", {}).get("command", "")
+    tokens = command.replace(",", " ").split()
+
+    if "splith" in tokens:
+        return "horizontal", STATE_TOOLTIP["horizontal"]
+    if "splitv" in tokens:
+        return "vertical", STATE_TOOLTIP["vertical"]
+
+    return None
+
+
+def subscribe():
+    return subprocess.Popen(
+        [SWAYMSG_BIN, "-m", "-t", "subscribe", SUBSCRIPTIONS],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+
+
+def main():
+    last_payload = None
+
+    while True:
+        state, tooltip = derive_state_from_tree()
+        extra_class = "unavailable" if state == "unavailable" else None
+        payload = {
+            "state": state,
+            "tooltip": tooltip,
+            "extra_class": extra_class,
+        }
+        if payload != last_payload:
+            emit(state, tooltip, extra_class=extra_class)
+            last_payload = payload
+
+        process = subscribe()
+        if process.stdout is None:
+            payload = {
+                "state": "unavailable",
+                "tooltip": STATE_TOOLTIP["unavailable"],
+                "extra_class": "unavailable",
+            }
+            if payload != last_payload:
+                emit("unavailable", extra_class="unavailable")
+                last_payload = payload
+            time.sleep(1)
+            continue
+
+        for line in process.stdout:
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            immediate = binding_state(event)
+            if immediate is not None:
+                state, tooltip = immediate
+                payload = {
+                    "state": state,
+                    "tooltip": tooltip,
+                    "extra_class": None,
+                }
+                if payload != last_payload:
+                    emit(state, tooltip)
+                    last_payload = payload
+                continue
+
+            state, tooltip = derive_state_from_tree()
+            extra_class = "unavailable" if state == "unavailable" else None
+            payload = {
+                "state": state,
+                "tooltip": tooltip,
+                "extra_class": extra_class,
+            }
+            if payload != last_payload:
+                emit(state, tooltip, extra_class=extra_class)
+                last_payload = payload
+
+        process.wait()
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)

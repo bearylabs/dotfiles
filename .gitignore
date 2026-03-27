@@ -3,3 +3,6 @@ hardware-configuration.nix
 
 # Cosmic Desktop
 cosmic/**/pinned_workspaces
+
+# Python
+__pycache__/

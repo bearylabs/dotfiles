@@ -1,205 +1,190 @@
-/* =============================================================================
- *
- * Waybar configuration
- *
- * Configuration reference: https://github.com/Alexays/Waybar/wiki/Configuration
- *
- * =========================================================================== */
+@define-color rosewater #f4dbd6;
+@define-color flamingo #f0c6c6;
+@define-color pink #f5bde6;
+@define-color mauve #c6a0f6;
+@define-color red #ed8796;
+@define-color maroon #ee99a0;
+@define-color peach #f5a97f;
+@define-color yellow #eed49f;
+@define-color green #a6da95;
+@define-color teal #8bd5ca;
+@define-color sky #91d7e3;
+@define-color sapphire #7dc4e4;
+@define-color blue #8aadf4;
+@define-color lavender #b7bdf8;
+@define-color text #cad3f5;
+@define-color subtext1 #b8c0e0;
+@define-color subtext0 #a5adcb;
+@define-color overlay2 #939ab7;
+@define-color overlay1 #8087a2;
+@define-color overlay0 #6e738d;
+@define-color surface2 #5b6078;
+@define-color surface1 #494d64;
+@define-color surface0 #363a4f;
+@define-color base #24273a;
+@define-color mantle #1e2030;
+@define-color crust #181926;
 
-
-
-
-/* -----------------------------------------------------------------------------
- * Keyframes
- * -------------------------------------------------------------------------- */
-
- @keyframes blink-warning {
-    70% {
-        color: white;
-    }
-
-    to {
-        color: white;
-        background-color: orange;
-    }
-}
-
-@keyframes blink-critical {
-    70% {
-      color: white;
-    }
-
-    to {
-        color: white;
-        background-color: red;
-    }
-}
-
-
-/* -----------------------------------------------------------------------------
- * Base styles
- * -------------------------------------------------------------------------- */
-
-/* Reset all styles */
 * {
-    border: none;
-    border-radius: 0;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
+  border: none;
+  border-radius: 0;
+  font-family: "Inter", "JetBrainsMono Nerd Font", "Symbols Nerd Font", sans-serif;
+  font-size: 13px;
+  min-height: 0;
 }
 
-/* The whole bar */
-#waybar {
-    background: #323232;
-    color: white;
-    font-family: Cantarell, Noto Sans, sans-serif;
-    font-size: 13px;
+window#waybar {
+  background: @mantle;
+  color: @text;
 }
 
-/* Each module */
-#battery,
+window#waybar > box {
+  padding: 2px 6px;
+}
+
+tooltip {
+  background: @mantle;
+  border: 1px solid @surface1;
+  border-radius: 12px;
+}
+
+tooltip label {
+  color: @text;
+}
+
+#workspaces,
+#custom-split-indicator,
 #clock,
-#cpu,
-#custom-keyboard-layout,
-#memory,
-#mode,
-#network,
+#custom-notifications,
+#language,
 #pulseaudio,
-#temperature,
-#tray {
-    padding-left: 10px;
-    padding-right: 10px;
+#battery,
+#tray,
+#custom-logout {
+  background: alpha(@base, 0.96);
+  color: @text;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  padding: 0 12px;
+  border: 1px solid @surface1;
+  border-radius: 12px;
 }
 
-
-/* -----------------------------------------------------------------------------
- * Module styles
- * -------------------------------------------------------------------------- */
-
-#battery {
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-#battery.warning {
-    color: orange;
-}
-
-#battery.critical {
-    color: red;
-}
-
-#battery.warning.discharging {
-    animation-name: blink-warning;
-    animation-duration: 3s;
-}
-
-#battery.critical.discharging {
-    animation-name: blink-critical;
-    animation-duration: 2s;
-}
-
-#clock {
-    font-weight: bold;
-}
-
-#cpu {
-  /* No styles */
-}
-
-#cpu.warning {
-    color: orange;
-}
-
-#cpu.critical {
-    color: red;
-}
-
-#memory {
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-#memory.warning {
-    color: orange;
-}
-
-#memory.critical {
-    color: red;
-    animation-name: blink-critical;
-    animation-duration: 2s;
-}
-
-#mode {
-    background: #64727D;
-    border-top: 2px solid white;
-    /* To compensate for the top border and still have vertical centering */
-    padding-bottom: 2px;
-}
-
-#network {
-    /* No styles */
-}
-
-#network.disconnected {
-    color: orange;
-}
-
-#pulseaudio {
-    font-weight: bold;
-    /* No styles */
-}
-
-#pulseaudio.muted {
-    /* No styles */
-}
-
-#custom-spotify {
-    color: rgb(102, 220, 105);
-}
-
-#temperature {
-    /* No styles */
-}
-
-#temperature.critical {
-    color: red;
-}
-
-#tray {
-    /* No styles */
-}
-
-#window {
-    font-weight: bold;
+#workspaces {
+  padding: 0 6px;
 }
 
 #workspaces button {
-    font-weight: bold;
-    padding: 0 0.5em;
-    margin: 0.25em;
-    color: white;
-      transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
-  }
-  #workspaces button.active {
-      color: white;
-      background: rgb(24, 24, 24);
-      border-radius: 5px;
-      /* border-bottom: 3px solid white; */
-  }
-  #workspaces button.focused {
-    color: white;
-  }
-  #workspaces button.urgent {
-      background:  rgba(255, 200, 0, 0.35);
-      border-bottom: 3px dashed white;
-      color: white;
-  }
-  #workspaces button:hover {
-    background: rgb(39, 39, 39);
-      color: white;
-  }
-  
+  color: @overlay2;
+  padding: 0 8px;
+  margin: 1px 2px;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 999px;
+  transition: none;
+}
+
+#workspaces button:hover {
+  background: @surface0;
+  color: @text;
+  box-shadow: inherit;
+  text-shadow: inherit;
+}
+
+#workspaces button.focused {
+  background: @mauve;
+  color: @crust;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 999px;
+}
+
+#workspaces button.urgent {
+  background: @red;
+  color: @crust;
+}
+
+#custom-split-indicator {
+  min-width: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: @overlay2;
+}
+
+#custom-split-indicator.horizontal {
+  background: alpha(@sky, 0.14);
+  border-color: alpha(@sky, 0.45);
+  color: @sky;
+}
+
+#custom-split-indicator.vertical {
+  background: alpha(@teal, 0.14);
+  border-color: alpha(@teal, 0.45);
+  color: @teal;
+}
+
+#custom-split-indicator.auto {
+  background: alpha(@surface0, 0.9);
+  border-color: @surface1;
+  color: @overlay1;
+}
+
+#custom-split-indicator.unavailable {
+  background: alpha(@surface0, 0.9);
+  border-color: @surface1;
+  color: @red;
+}
+
+#clock {
+  background: linear-gradient(135deg, @mauve, @blue);
+  color: @crust;
+  font-weight: 700;
+  padding: 0 18px;
+}
+
+#custom-notifications {
+  color: @lavender;
+}
+
+#language {
+  color: @yellow;
+}
+
+#pulseaudio {
+  color: @sky;
+}
+
+#battery {
+  color: @green;
+}
+
+#tray {
+  padding: 0 10px;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+  background: @peach;
+  border-radius: 8px;
+}
+
+#battery.warning:not(.charging) {
+  color: @peach;
+}
+
+#battery.critical:not(.charging) {
+  color: @red;
+}
+
+#custom-logout {
+  background: @red;
+  border-color: @red;
+  color: @crust;
+  font-weight: 700;
+}

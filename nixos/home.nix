@@ -3,6 +3,19 @@
 {
   home.stateVersion = "24.11";
 
+  fonts.fontconfig = {
+    enable = true;
+    defaultFonts = {
+      sansSerif = [ "Inter" ];
+      serif = [ "Inter" ];
+      monospace = [
+        "JetBrainsMono Nerd Font"
+        "Symbols Nerd Font"
+      ];
+      emoji = [ "OpenMoji Color" ];
+    };
+  };
+
   home.file.".config/Code/User/keybindings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/code/.config/Code/User/keybindings.json";
 

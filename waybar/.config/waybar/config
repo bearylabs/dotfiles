@@ -1,137 +1,104 @@
-// =============================================================================
-//
-// Waybar configuration
-//
-// Configuration reference: https://github.com/Alexays/Waybar/wiki/Configuration
-//
-// =============================================================================
-
 {
-    // -------------------------------------------------------------------------
-    // Global configuration
-    // -------------------------------------------------------------------------
+  "layer": "top",
+  "position": "top",
+  "height": 32,
+  "spacing": 8,
+  "margin-top": 0,
+  "margin-left": 0,
+  "margin-right": 0,
+  "modules-left": ["sway/workspaces", "custom/split-indicator"],
+  "modules-center": ["clock"],
+  "modules-right": [
+    "sway/language",
+    "pulseaudio",
+    "tray",
+    "battery",
+    "custom/notifications",
+    "custom/logout"
+  ],
 
-    "layer": "top",
-
-    "position": "top",
-
-    // If height property would be not present, it'd be calculated dynamically
-    "height": 30,
-
-    "modules-left": [
-        "hyprland/workspaces"
-        
-    ],
-    "modules-center": [
-        "hyprland/window"
-    ],
-    "modules-right": [
-        "tray",
-	"pulseaudio",
-        "network",
-        "memory",
-        "cpu",
-        "temperature",
-        "hyprland/language",       
-        "clock#date",
-        "clock#time"
-        
-		
-    ],
-
-
-    // -------------------------------------------------------------------------
-    // Modules
-    // -------------------------------------------------------------------------
-
-   
-
-    "clock#time": {
-        "interval": 1,
-        "format": "{:%H:%M:%S}",
-        "tooltip": false
-    },
-
-    "clock#date": {
-      "interval": 10,
-      "format": "  {:%e %b %Y}", // Icon: calendar-alt
-      "tooltip-format": "{:%e %B %Y}"
-    },
-
-    "cpu": {
-        "interval": 5,
-        "format": " CPU {usage}% ({load})", // Icon: microchip
-        "states": {
-          "warning": 70,
-          "critical": 90
-        }
-    },
-
-    "hyprland/language": {
-		"format": "{short}"
-	},
-
-    "memory": {
-        "interval": 5,
-        "format": " RAM {}%", // Icon: memory
-        "states": {
-            "warning": 70,
-            "critical": 90
-        }
-    },
-
-    "network": {
-        "format-wifi" : " Wifi {bandwidthDownBits}",
-        "format-ethernet": " LAN {bandwidthDownBits}", // Icon: memory
-        "format-disconnected" : " no network",
-        "interval": 5,
-        "tooltip": false
-    },
-
-    "hyprland/mode": {
-        "format": "<span style=\"italic\">  {}</span>", // Icon: expand-arrows-alt
-        "tooltip": false
-    },
-
-    "hyprland/window": {
-        "format": "{}",
-        "max-length": 120
-    },
-
-    "hyprland/workspaces": {
-        "all-outputs": false,
-        "disable-scroll": true        
-    },
-
-    "pulseaudio": {
-        "scroll-step": 5,
-        "max-volume": 150,
-        "format": " {volume}%",
-        "format-bluetooth": " {volume}% ",
-	"format-muted": "",
-        "nospacing": 1,
-        "on-click": "pavucontrol",
-        "tooltip": false
-    },
-
-
-    "temperature": {
-      "critical-threshold": 80,
-      "interval": 5,
-      "format": "{icon}  {temperatureC}°C",
-      "format-icons": [
-          "", // Icon: temperature-empty
-          "", // Icon: temperature-quarter
-          "", // Icon: temperature-half
-          "", // Icon: temperature-three-quarters
-          ""  // Icon: temperature-full
-      ],
-      "tooltip": true
-    },
-
-    "tray": {
-        "icon-size": 21,
-        "spacing": 10
+  "sway/workspaces": {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "format": "{name}",
+    "persistent_workspaces": {
+      "1": [],
+      "2": [],
+      "3": [],
+      "4": [],
+      "5": [],
+      "6": [],
+      "7": [],
+      "8": [],
+      "9": [],
+      "10": []
     }
+  },
 
+  "custom/split-indicator": {
+    "exec": "/home/hrudek/.config/waybar/scripts/sway-split-indicator",
+    "return-type": "json",
+    "restart-interval": 1,
+    "tooltip": true
+  },
+
+  "clock": {
+    "format": "{:%H:%M  |  %a %d %b}",
+    "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
+    "calendar": {
+      "mode": "month",
+      "mode-mon-col": 3,
+      "weeks-pos": "right",
+      "on-scroll": 1
+    }
+  },
+
+  "custom/notifications": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "swaync-client -t",
+    "on-click-right": "swaync-client -d"
+  },
+
+  "sway/language": {
+    "format": "  {}",
+    "min-length": 5,
+    "tooltip": true,
+    "on-click": "swaymsg input type:keyboard xkb_switch_layout next"
+  },
+
+  "pulseaudio": {
+    "format": "{icon}  {volume}%",
+    "format-muted": "󰖁",
+    "format-bluetooth": "󰂯  {volume}%",
+    "format-icons": {
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "scroll-step": 1,
+    "on-click": "pavucontrol"
+  },
+
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon}  {capacity}%",
+    "format-charging": "󰂄  {capacity}%",
+    "format-plugged": "󰚥  {capacity}%",
+    "format-full": "󰁹  100%",
+    "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰁹"],
+    "tooltip-format": "{capacity}% {time}"
+  },
+
+  "tray": {
+    "icon-size": 14,
+    "spacing": 8
+  },
+
+  "custom/logout": {
+    "format": "󰍃",
+    "tooltip": false,
+    "on-click": "swaynag -t warning -m 'Exit sway session?' -B 'Log out' 'swaymsg exit'"
+  }
 }
