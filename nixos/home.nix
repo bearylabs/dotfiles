@@ -25,6 +25,9 @@
   home.file.".config/cosmic".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/cosmic/.config/cosmic";
 
+  home.file.".config/doom".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/doom/.config/doom";
+
   home.file.".config/fish/config.fish".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/fish/.config/fish/config.fish";
 
