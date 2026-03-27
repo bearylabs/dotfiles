@@ -246,4 +246,7 @@ gaps inner 5
 gaps outer 3
 default_border pixel 1
 default_floating_border pixel 1
-# font pango:"Terminess Nerd Font" Medium 20
+
+# Launch IDEs
+bindsym $mod+shift+m exec emacs --init-directory $HOME/.config/emacs
+bindsym $mod+m exec code
