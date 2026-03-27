@@ -3,26 +3,31 @@
         modifiers: [
             Super,
         ],
-        key: "f",
-    ): Maximize,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "q",
-    ): Close,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "m",
+        key: "g",
     ): Disable,
     (
         modifiers: [
             Super,
         ],
         key: "q",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "space",
+    ): ToggleWindowFloating,
+    (
+        modifiers: [
+            Super,
+        ],
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "space",
     ): Disable,
     (
         modifiers: [],
@@ -46,6 +51,19 @@
         modifiers: [
             Super,
         ],
+        key: "f",
+    ): Maximize,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "q",
+    ): Close,
+    (
+        modifiers: [
+            Super,
+        ],
         key: "Return",
         description: Some("terminal"),
     ): Spawn("ghostty"),
@@ -53,18 +71,6 @@
         modifiers: [
             Super,
         ],
-        key: "g",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "space",
-    ): ToggleWindowFloating,
-    (
-        modifiers: [
-            Super,
-        ],
+        key: "m",
     ): Disable,
 }

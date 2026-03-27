@@ -2,154 +2,154 @@
   {
     "key": "space",
     "command": "whichkey.show",
-    "when": "activeEditorGroupEmpty && focusedView == '' && !whichkeyActive && !inputFocus && !auxiliaryBarVisible"
+    "when": "activeEditorGroupEmpty && focusedView == '' && !whichkeyActive && !inputFocus && !auxiliaryBarVisible",
   },
   {
     "key": "space",
     "command": "whichkey.show",
-    "when": "sideBarFocus && !inputFocus && !whichkeyActive || view.workbench.panel.markers.view.visible && !inputFocus"
+    "when": "sideBarFocus && !inputFocus && !whichkeyActive || view.workbench.panel.markers.view.visible && !inputFocus",
   },
   {
     "key": "shift+space",
     "command": "whichkey.show",
-    "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus"
+    "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus",
   },
   {
     "key": "ctrl+shift+space",
     "command": "whichkey.show",
-    "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus"
+    "when": "inDebugRepl || terminalFocus|| view.workbench.panel.markers.view.visible && inputFocus",
   },
   {
     "key": "t",
     "command": "whichkey.triggerKey",
     "args": {
       "key": "t",
-      "when": "activePanel == 'terminal'"
+      "when": "activePanel == 'terminal'",
     },
-    "when": "whichkeyVisible && activePanel == 'terminal'"
+    "when": "whichkeyVisible && activePanel == 'terminal'",
   },
   {
     "key": "p",
     "command": "whichkey.triggerKey",
     "args": {
       "key": "p",
-      "when": "explorerViewletVisible"
+      "when": "explorerViewletVisible",
     },
-    "when": "whichkeyVisible && explorerViewletVisible"
+    "when": "whichkeyVisible && explorerViewletVisible",
   },
   {
     "key": "d",
     "command": "whichkey.triggerKey",
     "args": {
       "key": "d",
-      "when": "activeViewlet == 'workbench.view.debug'"
+      "when": "activeViewlet == 'workbench.view.debug'",
     },
-    "when": "whichkeyVisible && activeViewlet == 'workbench.view.debug'"
+    "when": "whichkeyVisible && activeViewlet == 'workbench.view.debug'",
   },
   {
     "key": "c",
     "command": "whichkey.triggerKey",
     "args": {
       "key": "c",
-      "when": "editorHasSelection"
+      "when": "editorHasSelection",
     },
-    "when": "whichkeyVisible && editorHasSelection"
+    "when": "whichkeyVisible && editorHasSelection",
   },
   {
     "key": "x",
     "command": "whichkey.triggerKey",
     "args": {
       "key": "x",
-      "when": "view.workbench.panel.markers.view.visible"
+      "when": "view.workbench.panel.markers.view.visible",
     },
-    "when": "whichkeyVisible && view.workbench.panel.markers.view.visible"
+    "when": "whichkeyVisible && view.workbench.panel.markers.view.visible",
   },
 
   {
     "command": "workbench.files.action.focusFilesExplorer",
     "key": "ctrl+e",
-    "when": "editorTextFocus"
+    "when": "editorTextFocus",
   },
   {
     "key": "n",
     "command": "explorer.newFile",
-    "when": "filesExplorerFocus && !inputFocus"
+    "when": "filesExplorerFocus && !inputFocus",
   },
   {
     "command": "renameFile",
     "key": "r",
-    "when": "filesExplorerFocus && !inputFocus"
+    "when": "filesExplorerFocus && !inputFocus",
   },
   {
     "key": "shift+n",
     "command": "explorer.newFolder",
-    "when": "explorerViewletFocus"
+    "when": "explorerViewletFocus",
   },
 
   {
     "command": "deleteFile",
     "key": "d",
-    "when": "filesExplorerFocus && !inputFocus"
+    "when": "filesExplorerFocus && !inputFocus",
   },
   {
     "command": "workbench.action.closeActiveEditor",
     "key": "d",
-    "when": "openEditorsFocus && !inputFocus"
+    "when": "openEditorsFocus && !inputFocus",
   },
   {
     "command": "workbench.action.closeGroup",
     "key": "shift+d",
-    "when": "openEditorsFocus && !inputFocus"
+    "when": "openEditorsFocus && !inputFocus",
   },
   {
     "command": "workbench.action.closeActiveEditor",
     "key": "c",
-    "when": "openEditorsFocus && !inputFocus"
+    "when": "openEditorsFocus && !inputFocus",
   },
   {
     "key": "escape",
     "command": "workbench.action.closeSidebar",
-    "when": "sideBarVisible && sideBarFocus && !filesExplorerFocus"
+    "when": "sideBarVisible && sideBarFocus && !filesExplorerFocus",
   },
   {
     "key": "escape",
     "command": "workbench.action.closeSidebar",
-    "when": "sideBarFocus && activeViewlet == 'workbench.view.debug'"
+    "when": "sideBarFocus && activeViewlet == 'workbench.view.debug'",
   },
   {
     "key": "escape",
     "command": "workbench.action.closeAuxiliaryBar",
-    "when": "auxiliaryBarVisible" // workaround: always closes the aux bar, otherwise codex and gemini aren't detected
+    "when": "auxiliaryBarVisible", // workaround: always closes the aux bar, otherwise codex and gemini aren't detected
   },
   {
     "key": "q",
     "command": "workbench.action.toggleSidebarVisibility",
-    "when": "filesExplorerFocus && !inputFocus"
+    "when": "filesExplorerFocus && !inputFocus",
   },
   {
     "key": "q",
     "command": "workbench.action.togglePanel",
-    "when": "openEditorsFocus && !inputFocus"
+    "when": "openEditorsFocus && !inputFocus",
   },
   {
     "key": "q",
     "command": "workbench.action.togglePanel",
-    "when": "timelineFocused && !inputFocus"
+    "when": "timelineFocused && !inputFocus",
   },
   {
     "key": "w",
     "command": "workbench.action.closePanel",
-    "when": "panelFocus && !inputFocus"
+    "when": "panelFocus && !inputFocus",
   },
   {
     "key": "escape",
     "command": "workbench.action.focusActiveEditorGroup",
-    "when": "terminalFocus"
+    "when": "terminalFocus",
   },
   {
     "key": "ctrl+escape",
     "command": "workbench.action.terminal.sendSequence",
     "args": { "text": "\u001b" },
-    "when": "terminalFocus"
-  }
+    "when": "terminalFocus",
+  },
 ]
