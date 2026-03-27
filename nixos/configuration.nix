@@ -33,8 +33,6 @@ in
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.initrd.luks.devices."luks-6d87b133-41dc-4183-ac54-5fbc2f6a2bf6".device =
-    "/dev/disk/by-uuid/6d87b133-41dc-4183-ac54-5fbc2f6a2bf6";
 
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -64,12 +62,12 @@ in
     LC_TIME = "de_DE.UTF-8";
   };
 
-  # Enable the X11 windowing system.
-  # services.xserver.enable = true;
+  # GDM still relies on the X server stack even when launching Wayland sessions.
+  services.xserver.enable = true;
 
-  # Enable Cosmic Dekstop Environment
-  services.displayManager.cosmic-greeter.enable = true;
-  services.desktopManager.cosmic.enable = true;
+  # Use GDM for session selection instead of the COSMIC greeter, which was
+  # taking over the session handoff and starting cosmic-session.
+  services.displayManager.gdm.enable = true;
   # Enable hyprland window manager
   programs.hyprland.enable = true;
 
@@ -77,6 +75,12 @@ in
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
+  };
+
+  # Make sure the greeter can see and prefer the Sway session explicitly.
+  services.displayManager = {
+    defaultSession = "sway";
+    sessionPackages = [ config.programs.sway.package ];
   };
 
   # Enables Gnome Keyring to store secrets for applications.
