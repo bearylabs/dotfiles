@@ -33,6 +33,8 @@ in
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.initrd.luks.devices."luks-6d87b133-41dc-4183-ac54-5fbc2f6a2bf6".device =
+    "/dev/disk/by-uuid/6d87b133-41dc-4183-ac54-5fbc2f6a2bf6";
 
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -70,6 +72,15 @@ in
   services.desktopManager.cosmic.enable = true;
   # Enable hyprland window manager
   programs.hyprland.enable = true;
+
+  # Enable Sway.
+  programs.sway = {
+    enable = true;
+    wrapperFeatures.gtk = true;
+  };
+
+  # Enables Gnome Keyring to store secrets for applications.
+  services.gnome.gnome-keyring.enable = true;
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -191,6 +202,8 @@ in
     flameshot
     wofi
     waybar
+    wl-clipboard # Copy/Paste functionality.
+    mako # Notification utility.
     unstable.obsidian
     rpi-imager
     mediawriter
