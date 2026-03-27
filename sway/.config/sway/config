@@ -234,6 +234,7 @@ input type:touchpad {
     natural_scroll enabled
     tap enabled
     tap_button_map lrm
+    dwt enabled
 }
 input type:pointer {
     natural_scroll enabled
