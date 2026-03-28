@@ -38,6 +38,42 @@
     "when": "whichkeyVisible && activePanel == 'terminal'"
   },
   {
+    "key": "shift+l",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "L",
+      "when": "multipleEditorGroups"
+    },
+    "when": "whichkeyVisible && multipleEditorGroups"
+  },
+  {
+    "key": "shift+h",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "H",
+      "when": "multipleEditorGroups"
+    },
+    "when": "whichkeyVisible && multipleEditorGroups"
+  },
+  {
+    "key": "shift+j",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "J",
+      "when": "multipleEditorGroups"
+    },
+    "when": "whichkeyVisible && multipleEditorGroups"
+  },
+  {
+    "key": "shift+k",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "K",
+      "when": "multipleEditorGroups"
+    },
+    "when": "whichkeyVisible && multipleEditorGroups"
+  },
+  {
     "key": "p",
     "command": "whichkey.triggerKey",
     "args": {
@@ -56,19 +92,19 @@
     "when": "whichkeyVisible && activeViewlet == 'workbench.view.debug'"
   },
   {
-    "key": "c",
+    "key": "a",
     "command": "whichkey.triggerKey",
     "args": {
-      "key": "c",
+      "key": "a",
       "when": "editorHasSelection"
     },
     "when": "whichkeyVisible && editorHasSelection"
   },
   {
-    "key": "c",
+    "key": "a",
     "command": "whichkey.triggerKey",
     "args": {
-      "key": "c",
+      "key": "a",
       "when": "view.workbench.panel.chat.view.copilot.visible"
     },
     "when": "whichkeyVisible && view.workbench.panel.chat.view.copilot.visible"
@@ -113,8 +149,14 @@
     "when": "openEditorsFocus && !inputFocus"
   },
   {
-    "command": "workbench.action.closeGroup",
     "key": "shift+d",
+    "command": "runCommands",
+    "args": {
+      "commands": [
+        "workbench.action.closeGroup",
+        "workbench.action.closeSidebar"
+      ]
+    },
     "when": "openEditorsFocus && !inputFocus"
   },
   {
@@ -123,9 +165,20 @@
     "when": "openEditorsFocus && !inputFocus"
   },
   {
+    "key": "enter",
+    "command": "runCommands",
+    "args": {
+      "commands": [
+        "list.select",
+        "workbench.action.closeSidebar"
+      ]
+    },
+    "when": "openEditorsFocus && !inputFocus"
+  },
+  {
     "key": "escape",
     "command": "workbench.action.closeSidebar",
-    "when": "sideBarVisible && !explorerViewletVisible"
+    "when": "(sideBarVisible && !explorerViewletVisible && !view.workbench.explorer.openEditorsView.visible)"
   },
   {
     "key": "escape",
@@ -144,7 +197,7 @@
   },
   {
     "key": "q",
-    "command": "workbench.action.togglePanel",
+    "command": "workbench.action.toggleSidebarVisibility",
     "when": "openEditorsFocus && !inputFocus"
   },
   {
@@ -189,5 +242,5 @@
     "key": "ctrl+l",
     "command": "workbench.action.acceptSelectedQuickOpenItem",
     "when": "inQuickInput && !whichkeyVisible"
-  }
+  },
 ]
