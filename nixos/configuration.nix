@@ -185,6 +185,7 @@ in
     usbutils
     unstable.gemini-cli
     unstable.codex
+    unstable.github-copilot-cli
     ispell
     nixfmt
     lazygit
