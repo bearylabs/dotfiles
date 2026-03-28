@@ -29,6 +29,15 @@
     "when": "whichkeyVisible && activePanel == 'terminal'"
   },
   {
+    "key": "shift+t",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "T",
+      "when": "activePanel == 'terminal'"
+    },
+    "when": "whichkeyVisible && activePanel == 'terminal'"
+  },
+  {
     "key": "p",
     "command": "whichkey.triggerKey",
     "args": {

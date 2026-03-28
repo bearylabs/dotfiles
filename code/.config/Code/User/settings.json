@@ -36,7 +36,7 @@
       "bindings": [
         {
           "key": "t",
-          "name": "Open terminal",
+          "name": "Toggle terminal popup",
           "type": "conditional",
           "bindings": [
             {
@@ -52,6 +52,12 @@
               "command": "workbench.action.togglePanel"
             }
           ]
+        },
+        {
+          "key": "T",
+          "name": "Open terminal here",
+          "type": "command",
+          "command": "workbench.action.createTerminalEditor"
         },
         {
           "key": "p",
