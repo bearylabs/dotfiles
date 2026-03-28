@@ -6,6 +6,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 alias emacs "emacs --init-directory $HOME/.config/emacs"
 
+# git aliases
+alias gs "git status"
+alias gc "git commit -m"
+alias ga "git add"
+alias gd "git diff"
+
 if status is-interactive
     # Commands to run in interactive sessions can go here
 end
