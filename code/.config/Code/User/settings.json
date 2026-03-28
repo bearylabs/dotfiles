@@ -5,6 +5,7 @@
   "vim.hlsearch": true,
   "vim.incsearch": true,
   "vim.useCtrlKeys": true,
+  "vim.whichwrap": "",
   "vim.normalModeKeyBindingsNonRecursive": [
     {
       "before": [
