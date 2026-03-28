@@ -87,7 +87,8 @@ in
 
   # Enables Gnome Keyring to store secrets for applications.
   services.gnome.gnome-keyring.enable = true;
-
+  security.pam.services.login.enableGnomeKeyring = true;
+  security.pam.services.gdm-password.enableGnomeKeyring = true;
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -166,6 +167,10 @@ in
   programs.fish.enable = true;
 
   programs.nix-ld.enable = true;
+  programs.nix-ld.libraries = with pkgs; [
+    libsecret
+    glib
+  ];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -175,6 +180,10 @@ in
     unstable.vscode
     emacs
 
+    # misc
+    libsecret
+    gnome-keyring
+    seahorse
     # cli tools
     git
     wget
