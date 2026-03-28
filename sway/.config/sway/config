@@ -44,9 +44,9 @@ output * bg #24273a solid_color
 
 ### Startup applications
 #
-# Start Waybar once after Sway IPC is ready. Sway reloads will leave the
-# existing bar running instead of spawning a replacement.
-exec sh -c 'while ! swaymsg -t get_outputs >/dev/null 2>&1; do sleep 0.2; done; exec waybar'
+# Restart Waybar on every sway reload so config changes take effect immediately.
+# On NixOS the wrapped binary is named .waybar-wrapped, so we must use pkill -f.
+exec_always sh -c 'pkill -x .waybar-wrapped; sleep 0.3; exec waybar'
 # NetworkManager tray applet for clickable Wi-Fi and VPN management.
 exec_always sh -c 'pkill -x nm-applet; exec nm-applet --indicator'
 # Stop any old notification daemon before starting swaync.
