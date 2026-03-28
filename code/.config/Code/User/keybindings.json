@@ -61,6 +61,15 @@
     "when": "whichkeyVisible && editorHasSelection"
   },
   {
+    "key": "c",
+    "command": "whichkey.triggerKey",
+    "args": {
+      "key": "c",
+      "when": "view.workbench.panel.chat.view.copilot.visible"
+    },
+    "when": "whichkeyVisible && view.workbench.panel.chat.view.copilot.visible"
+  },
+  {
     "key": "x",
     "command": "whichkey.triggerKey",
     "args": {

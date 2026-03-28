@@ -109,9 +109,22 @@
             },
             {
               "key": "c",
-              "name": "Open Copilot Chat",
-              "type": "command",
-              "command": "workbench.action.chat.open"
+              "name": "Toggle Copilot Chat",
+              "type": "conditional",
+              "bindings": [
+                {
+                  "key": "",
+                  "name": "default",
+                  "type": "command",
+                  "command": "workbench.action.chat.open"
+                },
+                {
+                  "key": "when:view.workbench.panel.chat.view.copilot.visible",
+                  "name": "Close Copilot Chat",
+                  "type": "command",
+                  "command": "workbench.action.closeAuxiliaryBar"
+                }
+              ]
             },
             {
               "key": "g",
