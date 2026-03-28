@@ -1,6 +1,7 @@
 # Places
 set -gx TEERM xterm-256color
-set -gx DOOMDIR $HOME/.doom.d
+set -gx DOOMDIR $HOME/.config/doom
+set -gx EMACSDIR $HOME/.config/emacs
 set -gx PATH $HOME/.config/emacs/bin $PATH 
 set -gx PATH $HOME/.local/bin $PATH
 
