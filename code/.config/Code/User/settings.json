@@ -544,8 +544,9 @@
     "terminal.integrated.defaultProfile.linux": "fish",
     "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
     "update.mode": "none",
-    "window.menuBarVisibility": "compact",
     "window.newWindowProfile": "Default",
     "workbench.colorTheme": "Catppuccin Macchiato",
-    "workbench.iconTheme": "material-icon-theme"
+    "workbench.iconTheme": "material-icon-theme",
+    "window.menuBarVisibility": "compact",
+    "window.commandCenter": false
 }
