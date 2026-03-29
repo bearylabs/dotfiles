@@ -136,7 +136,7 @@
   {
     "key": "c d",
     "command": "explorer.newFolder",
-    "when": "explorerViewletFocus"
+    "when": "explorerViewletFocus && !inputFocus"
   },
   {
     "command": "deleteFile",
