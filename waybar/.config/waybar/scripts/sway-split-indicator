@@ -12,12 +12,14 @@ SUBSCRIPTIONS = json.dumps(["binding", "window", "workspace", "mode"])
 STATE_TEXT = {
     "horizontal": "H",
     "vertical": "V",
+    "resize": "R",
     "auto": "A",
     "unavailable": "?",
 }
 STATE_TOOLTIP = {
     "horizontal": "Next split: horizontal",
     "vertical": "Next split: vertical",
+    "resize": "Mode: resize",
     "auto": "Next split: automatic",
     "unavailable": "Split indicator unavailable: Sway IPC not ready",
 }
@@ -30,6 +32,23 @@ def swaymsg(*args):
         check=False,
         text=True,
     )
+
+
+def current_mode():
+    result = swaymsg("-t", "get_binding_state", "--raw")
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    mode_name = payload.get("name")
+    if isinstance(mode_name, str) and mode_name:
+        return mode_name
+
+    return None
 
 
 def emit(state, tooltip=None, extra_class=None):
@@ -61,6 +80,9 @@ def focused_trail(node, trail=None):
 
 
 def derive_state_from_tree():
+    if current_mode() == "resize":
+        return "resize", STATE_TOOLTIP["resize"]
+
     result = swaymsg("-t", "get_tree", "--raw")
     if result.returncode != 0 or not result.stdout.strip():
         return "unavailable", STATE_TOOLTIP["unavailable"]
@@ -91,6 +113,9 @@ def derive_state_from_tree():
 
 
 def binding_state(event):
+    if current_mode() == "resize":
+        return "resize", STATE_TOOLTIP["resize"]
+
     if event.get("change") != "run":
         return None
 

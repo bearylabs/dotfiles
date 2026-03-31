@@ -38,7 +38,7 @@ window#waybar {
   color: @text;
 }
 
-window#waybar > box {
+window#waybar>box {
   padding: 2px 6px;
 }
 
@@ -126,6 +126,12 @@ tooltip label {
   color: @teal;
 }
 
+#custom-split-indicator.resize {
+  background: alpha(@peach, 0.16);
+  border-color: alpha(@peach, 0.5);
+  color: @peach;
+}
+
 #custom-split-indicator.auto {
   background: alpha(@surface0, 0.9);
   border-color: @surface1;
@@ -165,11 +171,11 @@ tooltip label {
   padding: 0 10px;
 }
 
-#tray > .passive {
+#tray>.passive {
   -gtk-icon-effect: dim;
 }
 
-#tray > .needs-attention {
+#tray>.needs-attention {
   background: @peach;
   border-radius: 8px;
 }
