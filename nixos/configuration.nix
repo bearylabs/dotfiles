@@ -112,6 +112,15 @@ in
   # Enable CUPS to print documents.
   services.printing.enable = true;
 
+  services.logind = {
+    lidSwitch = "suspend";
+    lidSwitchExternalPower = "suspend";
+    settings.Login = {
+      IdleAction = "suspend";
+      IdleActionSec = "10min";
+    };
+  };
+
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
@@ -135,6 +144,24 @@ in
     # If you would like to use a preauthorized key
     #authKeyFile = "/run/secrets/tailscale_key";
   };
+
+  services.auto-cpufreq = {
+    enable = true;
+    settings = {
+      battery = {
+        governor = "powersave";
+        turbo = "never";
+      };
+      charger = {
+        governor = "performance";
+        turbo = "auto";
+      };
+    };
+  };
+
+  services.power-profiles-daemon.enable = false;
+
+  services.thermald.enable = true;
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
@@ -231,10 +258,13 @@ in
 
     # desktop
     flameshot
+    brightnessctl
     networkmanagerapplet
     pavucontrol
     wofi
     waybar
+    swayidle
+    swaylock
     wl-clipboard # Copy/Paste functionality.
     swaynotificationcenter # Notification center and daemon for Wayland.
     unstable.obsidian
