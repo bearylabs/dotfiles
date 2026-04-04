@@ -53,6 +53,8 @@ exec_always sh -c 'pkill -x nm-applet; exec nm-applet --indicator'
 exec_always pkill -x mako
 # Notification center daemon.
 exec_always sh -c 'pkill -x swaync; exec swaync'
+# LocalSend for local file sharing.
+exec --no-startup-id localsend_app --hidden
 
 ### Input configuration
 #

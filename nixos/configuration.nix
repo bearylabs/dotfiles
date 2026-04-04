@@ -43,6 +43,8 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.firewall.allowedTCPPorts = [ 53317 ];
+  networking.firewall.allowedUDPPorts = [ 53317 ];
 
   # Set your time zone.
   time.timeZone = "Europe/Berlin";
@@ -77,6 +79,15 @@ in
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
+  };
+
+  # Wayland portal setup for wlroots/Sway sessions.
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-wlr
+      xdg-desktop-portal-gtk
+    ];
   };
 
   # Make sure the greeter can see and prefer the Sway session explicitly.
@@ -147,6 +158,9 @@ in
   # Install firefox.
   programs.firefox.enable = true;
 
+  # Enable the local file sharing application.
+  programs.localsend.enable = true;
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
@@ -186,6 +200,7 @@ in
     seahorse
     # cli tools
     git
+    gh
     wget
     ripgrep
     fd

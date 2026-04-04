@@ -24,6 +24,10 @@
   "window.newWindowProfile": "Default",
   "workbench.colorTheme": "Catppuccin Macchiato",
   "workbench.iconTheme": "material-icon-theme",
+  "window.restoreWindows": "none",
+  "window.menuBarVisibility": "compact",
+  "vim.easymotion": true,
+  "vim.useSystemClipboard": true,
   "vim.normalModeKeyBindingsNonRecursive": [
     {
       "before": [
@@ -43,7 +47,5 @@
         "whichkey.show"
       ]
     }
-  ],
-  "window.restoreWindows": "none",
-  "window.menuBarVisibility": "compact"
+  ]
 }
