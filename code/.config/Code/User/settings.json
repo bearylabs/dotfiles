@@ -25,7 +25,6 @@
   "workbench.colorTheme": "Catppuccin Macchiato",
   "workbench.iconTheme": "material-icon-theme",
   "window.restoreWindows": "none",
-  "window.menuBarVisibility": "compact",
   "vim.easymotion": true,
   "vim.useSystemClipboard": true,
   "vim.normalModeKeyBindingsNonRecursive": [
@@ -46,6 +45,23 @@
       "commands": [
         "whichkey.show"
       ]
+    },
+    {
+      "before": [
+        ">"
+      ],
+      "commands": [
+        "editor.action.indentLines"
+      ]
+    },
+    {
+      "before": [
+        "<"
+      ],
+      "commands": [
+        "editor.action.outdentLines"
+      ]
     }
-  ]
+  ],
+  "window.menuBarVisibility": "compact"
 }

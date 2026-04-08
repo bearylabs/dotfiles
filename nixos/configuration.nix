@@ -267,8 +267,9 @@ in
     swaylock
     wl-clipboard # Copy/Paste functionality.
     swaynotificationcenter # Notification center and daemon for Wayland.
+    google-chrome
     unstable.obsidian
-    rpi-imager
+    unstable.rpi-imager
     mediawriter
     zen-browser.default
 
