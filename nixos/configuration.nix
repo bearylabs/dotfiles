@@ -98,23 +98,23 @@ in
 
   # Enables Gnome Keyring to store secrets for applications.
   services.gnome.gnome-keyring.enable = true;
-  
+
   # Required for rpi-imager: allows read/write access to storage devices
   services.udisks2.enable = true;
-  
+
   # Required for privilege escalation without password (via sudo rules below)
   security.polkit.enable = true;
-  
+
   # Allow wheel group members to use sudo without password
   # This is used by rpi-imager-root wrapper to escalate privileges
   security.sudo.wheelNeedsPassword = false;
-  
+
   # Preserve Wayland environment variables when escalating with sudo
   # Ensures rpi-imager GUI launches on Wayland instead of falling back to X11
   security.sudo.extraConfig = ''
     Defaults env_keep = "DISPLAY WAYLAND_DISPLAY XDG_SESSION_TYPE QT_QPA_PLATFORM"
   '';
-  
+
   security.pam.services.login.enableGnomeKeyring = true;
   security.pam.services.gdm-password.enableGnomeKeyring = true;
   # Configure keymap in X11
@@ -131,10 +131,12 @@ in
 
   services.logind = {
     lidSwitch = "suspend";
+    # Keep the machine from running in a bag when plugged in and lid is closed.
     lidSwitchExternalPower = "suspend";
     settings.Login = {
       IdleAction = "suspend";
-      IdleActionSec = "10min";
+      # More aggressive idle suspend for maximum battery life.
+      IdleActionSec = "5min";
     };
   };
 
@@ -170,13 +172,17 @@ in
         turbo = "never";
       };
       charger = {
-        governor = "performance";
-        turbo = "auto";
+        # Favor battery longevity and lower heat even while charging.
+        governor = "powersave";
+        turbo = "never";
       };
     };
   };
 
   services.power-profiles-daemon.enable = false;
+
+  # Apply PowerTOP tunables at boot for extra power savings.
+  powerManagement.powertop.enable = true;
 
   services.thermald.enable = true;
 
