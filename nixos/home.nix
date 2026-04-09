@@ -1,5 +1,24 @@
 { config, pkgs, ... }:
 
+let
+  # Wrapper script for launching rpi-imager with root privileges
+  # - Executes rpi-imager directly if already running as root
+  # - Otherwise escalates using sudo (no password required via sudoers config)
+  # - Sets QT_QPA_PLATFORM=wayland to ensure GUI uses Wayland, not X11
+  # - Preserves session environment (WAYLAND_DISPLAY, DISPLAY, etc.) through sudo
+  #
+  # Usage: rpi-imager-root [options]
+  # Requires: user in wheel group + security.sudo.wheelNeedsPassword = false
+  rpiImagerRoot = pkgs.writeShellScriptBin "rpi-imager-root" ''
+    if [ "$(id -u)" -eq 0 ]; then
+      exec /run/current-system/sw/bin/rpi-imager "$@"
+    fi
+    export QT_QPA_PLATFORM=wayland
+    export XDG_SESSION_TYPE=wayland
+    exec /run/wrappers/bin/sudo /run/current-system/sw/bin/rpi-imager "$@"
+  '';
+in
+
 {
   home.stateVersion = "24.11";
 
@@ -54,4 +73,8 @@
 
   home.file.".zshrc".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/zsh/.zshrc";
+
+  # Install rpi-imager-root wrapper command for easy terminal access
+  # Provides passwordless sudo access to rpi-imager with proper Wayland support
+  home.packages = [ rpiImagerRoot ];
 }

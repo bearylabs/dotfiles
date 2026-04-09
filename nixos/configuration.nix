@@ -98,6 +98,23 @@ in
 
   # Enables Gnome Keyring to store secrets for applications.
   services.gnome.gnome-keyring.enable = true;
+  
+  # Required for rpi-imager: allows read/write access to storage devices
+  services.udisks2.enable = true;
+  
+  # Required for privilege escalation without password (via sudo rules below)
+  security.polkit.enable = true;
+  
+  # Allow wheel group members to use sudo without password
+  # This is used by rpi-imager-root wrapper to escalate privileges
+  security.sudo.wheelNeedsPassword = false;
+  
+  # Preserve Wayland environment variables when escalating with sudo
+  # Ensures rpi-imager GUI launches on Wayland instead of falling back to X11
+  security.sudo.extraConfig = ''
+    Defaults env_keep = "DISPLAY WAYLAND_DISPLAY XDG_SESSION_TYPE QT_QPA_PLATFORM"
+  '';
+  
   security.pam.services.login.enableGnomeKeyring = true;
   security.pam.services.gdm-password.enableGnomeKeyring = true;
   # Configure keymap in X11
@@ -269,6 +286,8 @@ in
     swaynotificationcenter # Notification center and daemon for Wayland.
     google-chrome
     unstable.obsidian
+    # Raspberry Pi Imager - launched via rpi-imager-root wrapper for passwordless sudo access
+    # See home.nix for wrapper configuration and configuration.nix for sudo/polkit settings
     unstable.rpi-imager
     mediawriter
     zen-browser.default
