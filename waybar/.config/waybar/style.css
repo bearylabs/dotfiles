@@ -55,6 +55,7 @@ tooltip label {
 #workspaces,
 #custom-split-indicator,
 #clock,
+#custom-theme-indicator,
 #custom-notifications,
 #language,
 #pulseaudio,
@@ -153,6 +154,25 @@ tooltip label {
 
 #custom-notifications {
   color: @lavender;
+}
+
+#custom-theme-indicator {
+  min-width: 24px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#custom-theme-indicator.light {
+  background: alpha(@yellow, 0.16);
+  border-color: alpha(@yellow, 0.5);
+  color: @yellow;
+}
+
+#custom-theme-indicator.dark {
+  background: alpha(@blue, 0.16);
+  border-color: alpha(@blue, 0.5);
+  color: @blue;
 }
 
 #language {

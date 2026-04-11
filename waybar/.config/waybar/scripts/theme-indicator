@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu
+
+state_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme-mode"
+
+mode="light"
+if [ -f "$state_file" ]; then
+  saved_mode="$(tr -d '\n' < "$state_file")"
+  if [ "$saved_mode" = "dark" ]; then
+    mode="dark"
+  fi
+fi
+
+if [ "$mode" = "dark" ]; then
+  text="󰖔"
+  class="dark"
+  tooltip="Dark mode"
+else
+  text="󰖨"
+  class="light"
+  tooltip="Light mode"
+fi
+
+printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' "$text" "$class" "$tooltip"

@@ -15,6 +15,7 @@
   ],
   "modules-right": [
     "sway/language",
+    "custom/theme-indicator",
     "pulseaudio",
     "tray",
     "battery",
@@ -59,6 +60,14 @@
     "tooltip": false,
     "on-click": "swaync-client -t",
     "on-click-right": "swaync-client -d"
+  },
+  "custom/theme-indicator": {
+    "exec": "/home/hrudek/.config/waybar/scripts/theme-indicator",
+    "return-type": "json",
+    "interval": 2,
+    "format": "{}",
+    "tooltip": true,
+    "on-click": "theme-toggle toggle"
   },
   "sway/language": {
     "format": "  {}",
