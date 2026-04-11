@@ -70,8 +70,8 @@ in
   # Use GDM for session selection instead of the COSMIC greeter, which was
   # taking over the session handoff and starting cosmic-session.
   services.displayManager.gdm.enable = true;
-  # Keep COSMIC available in GDM as a fallback desktop session.
-  services.desktopManager.cosmic.enable = true;
+  # Keep a GUI desktop available in GDM as a fallback desktop session.
+  services.desktopManager.gnome.enable = true;
   # Enable hyprland window manager
   programs.hyprland.enable = true;
 

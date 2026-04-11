@@ -1,7 +1,0 @@
-(
-    rules: "",
-    model: "pc104",
-    layout: "us,de",
-    variant: ",",
-    options: Some("terminate:ctrl_alt_bksp,caps:ctrl_modifier"),
-)

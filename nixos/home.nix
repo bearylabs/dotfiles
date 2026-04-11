@@ -45,7 +45,7 @@ let
       "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita'
 
       if [ -n "''${SWAYSOCK:-}" ]; then
-        "$swaymsg_bin" 'output * bg #f2efe8 solid_color' >/dev/null
+        "$swaymsg_bin" 'output * bg #94d2da solid_color' >/dev/null
       fi
     }
 
@@ -113,8 +113,8 @@ in
   home.file.".config/Code/User/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/code/.config/Code/User/settings.json";
 
-  home.file.".config/cosmic".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/cosmic/.config/cosmic";
+  # home.file.".config/cosmic".source =
+  #   config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/cosmic/.config/cosmic";
 
   home.file.".config/doom".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/doom/.config/doom";
