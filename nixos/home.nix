@@ -17,6 +17,78 @@ let
     export XDG_SESSION_TYPE=wayland
     exec /run/wrappers/bin/sudo /run/current-system/sw/bin/rpi-imager "$@"
   '';
+
+  themeToggle = pkgs.writeShellScriptBin "theme-toggle" ''
+    set -eu
+
+    mode="''${1:-toggle}"
+    config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}"
+    state_file="$config_dir/theme-mode"
+    gsettings_bin="${pkgs.glib}/bin/gsettings"
+    swaymsg_bin="${pkgs.sway}/bin/swaymsg"
+
+    apply_dark() {
+      mkdir -p "$config_dir"
+      printf '%s\n' dark > "$state_file"
+      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'prefer-dark'
+      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+
+      if [ -n "''${SWAYSOCK:-}" ]; then
+        "$swaymsg_bin" 'output * bg #24273a solid_color' >/dev/null
+      fi
+    }
+
+    apply_light() {
+      mkdir -p "$config_dir"
+      printf '%s\n' light > "$state_file"
+      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'default'
+      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita'
+
+      if [ -n "''${SWAYSOCK:-}" ]; then
+        "$swaymsg_bin" 'output * bg #f2efe8 solid_color' >/dev/null
+      fi
+    }
+
+    current_mode() {
+      if [ -f "$state_file" ]; then
+        cat "$state_file"
+      else
+        current="$("$gsettings_bin" get org.gnome.desktop.interface color-scheme 2>/dev/null || true)"
+        if [ "$current" = "'prefer-dark'" ]; then
+          printf '%s\n' dark
+        else
+          printf '%s\n' light
+        fi
+      fi
+    }
+
+    case "$mode" in
+      dark)
+        apply_dark
+        ;;
+      light)
+        apply_light
+        ;;
+      toggle)
+        if [ "$(current_mode)" = "dark" ]; then
+          apply_light
+        else
+          apply_dark
+        fi
+        ;;
+      apply)
+        if [ "$(current_mode)" = "dark" ]; then
+          apply_dark
+        else
+          apply_light
+        fi
+        ;;
+      *)
+        printf '%s\n' "usage: theme-toggle [dark|light|toggle|apply]" >&2
+        exit 1
+        ;;
+    esac
+  '';
 in
 
 {
@@ -74,7 +146,9 @@ in
   home.file.".zshrc".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/zsh/.zshrc";
 
-  # Install rpi-imager-root wrapper command for easy terminal access
-  # Provides passwordless sudo access to rpi-imager with proper Wayland support
-  home.packages = [ rpiImagerRoot ];
+  # Install helper commands for desktop integration.
+  home.packages = [
+    rpiImagerRoot
+    themeToggle
+  ];
 }

@@ -61,6 +61,8 @@ exec_always pkill -x mako
 exec_always sh -c 'pkill -x swaync; exec swaync'
 # LocalSend for local file sharing.
 exec --no-startup-id localsend_app --hidden
+# Re-apply saved desktop theme on sway start/reload.
+exec_always --no-startup-id theme-toggle apply
 
 ### Input configuration
 #
@@ -106,6 +108,10 @@ input type:keyboard {
 
     # Reload the configuration file
     bindsym $mod+Shift+c reload
+    # Toggle light/dark desktop theme
+    bindsym $mod+Shift+t exec theme-toggle toggle
+    bindsym $mod+Ctrl+d exec theme-toggle dark
+    bindsym $mod+Ctrl+l exec theme-toggle light
 
     # Exit sway (logs you out of your Wayland session)
     bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
