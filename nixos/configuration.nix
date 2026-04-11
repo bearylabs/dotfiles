@@ -248,6 +248,7 @@ in
     libsecret
     gnome-keyring
     seahorse
+    nodejs
     # cli tools
     git
     gh
