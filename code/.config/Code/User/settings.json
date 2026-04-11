@@ -1,31 +1,28 @@
 {
-  "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
-  },
-  "chat.unifiedAgentsBar.enabled": true,
-  "chat.viewSessions.orientation": "stacked",
-  "claudeCode.preferredLocation": "panel",
+  "window.autoDetectColorScheme": false,
+  "window.menuBarVisibility": "compact",
+  "window.newWindowProfile": "Default",
+  "window.restoreWindows": "none",
+  "workbench.colorTheme": "Catppuccin Macchiato",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.preferredDarkColorTheme": "Catppuccin Macchiato",
+  "workbench.preferredLightColorTheme": "Catppuccin Latte",
   "editor.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
+  "terminal.integrated.defaultProfile.linux": "fish",
+  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
   "git.confirmSync": false,
   "git.enableSmartCommit": true,
   "http.systemCertificatesNode": true,
+  "update.mode": "none",
+  "chat.unifiedAgentsBar.enabled": true,
+  "chat.viewSessions.orientation": "stacked",
+  "claudeCode.preferredLocation": "panel",
   "material-icon-theme.folders.color": "#42a5f5",
   "material-icon-theme.folders.theme": "classic",
   "projectManager.git.baseFolders": [
     "~/"
   ],
   "sqldeveloper.datagrid.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
-  "terminal.integrated.defaultProfile.linux": "fish",
-  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
-  "update.mode": "none",
-  "window.newWindowProfile": "Default",
-  "workbench.colorTheme": "Catppuccin Macchiato",
-  "workbench.iconTheme": "material-icon-theme",
-  "window.restoreWindows": "none",
-  "vim.easymotion": true,
   "vim.useSystemClipboard": true,
   "vim.normalModeKeyBindingsNonRecursive": [
     {
@@ -46,22 +43,11 @@
         "whichkey.show"
       ]
     },
-    {
-      "before": [
-        ">"
-      ],
-      "commands": [
-        "editor.action.indentLines"
-      ]
-    },
-    {
-      "before": [
-        "<"
-      ],
-      "commands": [
-        "editor.action.outdentLines"
-      ]
-    }
   ],
-  "window.menuBarVisibility": "compact"
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
 }
