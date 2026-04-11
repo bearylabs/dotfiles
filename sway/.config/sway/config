@@ -20,8 +20,8 @@ set $menu wofi --show drun
 
 ### Output configuration
 #
-# Default wallpaper (more resolutions are available in /run/current-system/sw/share/backgrounds/sway/)
-output * bg #24273a solid_color
+# Default wallpaper.
+output * bg ~/.config/sway/wallpaper.jpg fill
 #
 # Example configuration:
 #

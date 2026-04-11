@@ -25,17 +25,12 @@ let
     config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}"
     state_file="$config_dir/theme-mode"
     gsettings_bin="${pkgs.glib}/bin/gsettings"
-    swaymsg_bin="${pkgs.sway}/bin/swaymsg"
 
     apply_dark() {
       mkdir -p "$config_dir"
       printf '%s\n' dark > "$state_file"
       "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'prefer-dark'
       "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-
-      if [ -n "''${SWAYSOCK:-}" ]; then
-        "$swaymsg_bin" 'output * bg #24273a solid_color' >/dev/null
-      fi
     }
 
     apply_light() {
@@ -43,10 +38,6 @@ let
       printf '%s\n' light > "$state_file"
       "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'default'
       "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita'
-
-      if [ -n "''${SWAYSOCK:-}" ]; then
-        "$swaymsg_bin" 'output * bg #94d2da solid_color' >/dev/null
-      fi
     }
 
     current_mode() {
