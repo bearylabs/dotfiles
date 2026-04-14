@@ -80,6 +80,42 @@ let
         ;;
     esac
   '';
+
+  powerSource = pkgs.writeShellScriptBin "power-source" ''
+    set -eu
+
+    mode="''${1:-status}"
+
+    on_ac() {
+      for online in /sys/class/power_supply/*/online; do
+        [ -e "$online" ] || continue
+        if [ "$(<"$online")" = "1" ]; then
+          return 0
+        fi
+      done
+      return 1
+    }
+
+    case "$mode" in
+      ac)
+        on_ac
+        ;;
+      battery)
+        ! on_ac
+        ;;
+      status)
+        if on_ac; then
+          printf '%s\n' ac
+        else
+          printf '%s\n' battery
+        fi
+        ;;
+      *)
+        printf '%s\n' "usage: power-source [ac|battery|status]" >&2
+        exit 1
+        ;;
+    esac
+  '';
 in
 
 {
@@ -139,6 +175,7 @@ in
 
   # Install helper commands for desktop integration.
   home.packages = [
+    powerSource
     rpiImagerRoot
     themeToggle
   ];

@@ -135,8 +135,9 @@ in
     lidSwitchExternalPower = "suspend";
     settings.Login = {
       IdleAction = "suspend";
-      # More aggressive idle suspend for maximum battery life.
-      IdleActionSec = "5min";
+      # Keep suspend after the sway display timeout so AC power can blank the
+      # display at 10 minutes before the system sleeps.
+      IdleActionSec = "15min";
     };
   };
 
