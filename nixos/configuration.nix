@@ -67,13 +67,10 @@ in
   # GDM still relies on the X server stack even when launching Wayland sessions.
   services.xserver.enable = true;
 
-  # Use GDM for session selection instead of the COSMIC greeter, which was
-  # taking over the session handoff and starting cosmic-session.
+  # Use GDM for session selection and prefer Sway as the default session.
   services.displayManager.gdm.enable = true;
   # Keep a GUI desktop available in GDM as a fallback desktop session.
   services.desktopManager.gnome.enable = true;
-  # Enable hyprland window manager
-  programs.hyprland.enable = true;
 
   # Enable Sway.
   programs.sway = {
@@ -102,15 +99,10 @@ in
   # Required for rpi-imager: allows read/write access to storage devices
   services.udisks2.enable = true;
 
-  # Required for privilege escalation without password (via sudo rules below)
+  # Required for privilege escalation prompts in graphical applications.
   security.polkit.enable = true;
 
-  # Allow wheel group members to use sudo without password
-  # This is used by rpi-imager-root wrapper to escalate privileges
-  security.sudo.wheelNeedsPassword = false;
-
-  # Preserve Wayland environment variables when escalating with sudo
-  # Ensures rpi-imager GUI launches on Wayland instead of falling back to X11
+  # Preserve Wayland environment variables when escalating with sudo.
   security.sudo.extraConfig = ''
     Defaults env_keep = "DISPLAY WAYLAND_DISPLAY XDG_SESSION_TYPE QT_QPA_PLATFORM"
   '';
@@ -165,26 +157,33 @@ in
     #authKeyFile = "/run/secrets/tailscale_key";
   };
 
+  # Tune CPU behavior based on power source.
   services.auto-cpufreq = {
     enable = true;
     settings = {
+      # Keep battery mode cool and conservative.
       battery = {
         governor = "powersave";
         turbo = "never";
       };
+      # Use full CPU performance when plugged in.
       charger = {
-        # Favor battery longevity and lower heat even while charging.
-        governor = "powersave";
-        turbo = "never";
+        governor = "performance";
+        turbo = "auto";
       };
     };
   };
 
+  # Avoid competing CPU power-policy managers; auto-cpufreq handles this.
   services.power-profiles-daemon.enable = false;
+
+  # Enable the kernel power-management hooks used by NixOS power options.
+  powerManagement.enable = true;
 
   # Apply PowerTOP tunables at boot for extra power savings.
   powerManagement.powertop.enable = true;
 
+  # Let the firmware/OS react to thermal pressure and prevent overheating.
   services.thermald.enable = true;
 
   # Enable touchpad support (enabled default in most desktopManager).
@@ -295,8 +294,7 @@ in
     swaynotificationcenter # Notification center and daemon for Wayland.
     google-chrome
     unstable.obsidian
-    # Raspberry Pi Imager - launched via rpi-imager-root wrapper for passwordless sudo access
-    # See home.nix for wrapper configuration and configuration.nix for sudo/polkit settings
+    # Raspberry Pi Imager
     unstable.rpi-imager
     mediawriter
     zen-browser.default
@@ -324,10 +322,14 @@ in
     ];
   };
 
+  # Remap the physical left Alt and left Super keys before desktop sessions see
+  # them. This makes the keyboard behave as if those two keys were swapped.
   services.interception-tools = {
     enable = true;
     plugins = [ pkgs.interception-tools-plugins.dual-function-keys ];
 
+    # Listen only for the two keys involved in the swap and emit remapped events
+    # through uinput.
     udevmonConfig = ''
       - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${pkgs.interception-tools-plugins.dual-function-keys}/bin/dual-function-keys -c /etc/dual-function-keys.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
         DEVICE:
@@ -336,10 +338,10 @@ in
     '';
   };
 
+  # Swap physical left Alt and left Super.
   environment.etc."dual-function-keys.yaml".text = ''
     ---
     MAPPINGS:
-      # swap left alt and super
       - KEY: KEY_LEFTALT
         TAP: KEY_LEFTMETA
         HOLD: KEY_LEFTMETA

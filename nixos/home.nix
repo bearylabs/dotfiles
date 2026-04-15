@@ -1,14 +1,8 @@
 { config, pkgs, ... }:
 
 let
-  # Wrapper script for launching rpi-imager with root privileges
-  # - Executes rpi-imager directly if already running as root
-  # - Otherwise escalates using sudo (no password required via sudoers config)
-  # - Sets QT_QPA_PLATFORM=wayland to ensure GUI uses Wayland, not X11
-  # - Preserves session environment (WAYLAND_DISPLAY, DISPLAY, etc.) through sudo
-  #
-  # Usage: rpi-imager-root [options]
-  # Requires: user in wheel group + security.sudo.wheelNeedsPassword = false
+  # Wrapper script for launching rpi-imager with root privileges.
+  # Requires normal sudo authentication for users in wheel.
   rpiImagerRoot = pkgs.writeShellScriptBin "rpi-imager-root" ''
     if [ "$(id -u)" -eq 0 ]; then
       exec /run/current-system/sw/bin/rpi-imager "$@"
@@ -140,9 +134,6 @@ in
   home.file.".config/Code/User/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/code/.config/Code/User/settings.json";
 
-  # home.file.".config/cosmic".source =
-  #   config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/cosmic/.config/cosmic";
-
   home.file.".config/doom".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/doom/.config/doom";
 
@@ -154,9 +145,6 @@ in
 
   home.file.".gitconfig".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/gitconfig/.gitconfig";
-
-  home.file.".config/hypr".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/hypr/.config/hypr";
 
   home.file.".config/sway".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/sway/.config/sway";
