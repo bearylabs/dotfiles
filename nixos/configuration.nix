@@ -291,6 +291,7 @@ in
     swayidle
     swaylock
     wl-clipboard # Copy/Paste functionality.
+    unstable.kooha
     swaynotificationcenter # Notification center and daemon for Wayland.
     google-chrome
     unstable.obsidian
