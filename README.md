@@ -17,17 +17,6 @@ sudo nix-channel --add https://github.com/nix-community/home-manager/archive/mas
 sudo nix-channel --update && \
 sudo nixos-rebuild switch
 ```
-
-## GNU Stow
-
-On NixOS the dotfiles are linked via the `nixos/` config; on other distros use GNU Stow.
-
-```
-git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-stow . # Stows all dotfiles; use stow <package> to install a single package
-```
-
 ### WSL NixOS
 
 Change Username to desired username first!
@@ -44,4 +33,14 @@ sudo ln -s ~/dotfiles/nixos/home.nix /etc/nixos/home.nix
 sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager && \
 sudo nix-channel --update && \
 sudo nixos-rebuild switch
+```
+
+## GNU Stow
+
+On NixOS the dotfiles are linked via the `nixos/` config; on other distros use GNU Stow.
+
+```
+git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+stow . # Stows all dotfiles; use stow <package> to install a single package
 ```
