@@ -262,6 +262,7 @@ in
     unstable.gemini-cli
     unstable.codex
     unstable.github-copilot-cli
+    unstable.claude-code
     ispell
     nixfmt
     lazygit
