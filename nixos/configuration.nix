@@ -177,10 +177,6 @@ in
   # Avoid competing CPU power-policy managers; auto-cpufreq handles this.
   services.power-profiles-daemon.enable = false;
 
-  # Limit charge to 80% to extend battery lifespan.
-  services.udev.extraRules = ''
-    SUBSYSTEM=="power_supply", KERNEL=="BAT0", ATTR{charge_control_end_threshold}="80"
-  '';
 
   # Enable the kernel power-management hooks used by NixOS power options.
   powerManagement.enable = true;
