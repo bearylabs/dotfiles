@@ -46,9 +46,10 @@ exec swayidle -w \
     resume 'brightnessctl -r' \
     timeout 300 'power-source battery && swaylock -f -c 1e2030' \
     timeout 600 'power-source ac && swaylock -f -c 1e2030' \
-    timeout 480 'power-source battery && swaymsg "output * power off"' \
+    timeout 480 'power-source battery && swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
     timeout 600 'power-source ac && swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-    before-sleep 'swaylock -f -c 1e2030'
+    before-sleep 'swaylock -f -c 1e2030' \
+    after-resume 'swaymsg "output * power on"'
 
 ### Startup applications
 #

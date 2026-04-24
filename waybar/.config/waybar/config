@@ -97,7 +97,8 @@
     "format": "{icon}  {capacity}%",
     "format-charging": "󰂄  {capacity}%",
     "format-plugged": "󰚥  {capacity}%",
-    "format-full": "󰁹  100%",
+    "format-not-charging": "󰚥  {capacity}%",
+    "format-full": "󰁹  {capacity}%",
     "format-icons": [
       "󰂎",
       "󰁺",

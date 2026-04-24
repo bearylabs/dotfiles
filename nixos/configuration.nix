@@ -34,6 +34,12 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # HP EliteBook 645 G9: BIOS ships ACPI tables tuned for Windows. Declaring
+  # Windows 2020 compatibility makes the firmware expose correct power-delivery
+  # and AC-adapter state that Linux would otherwise miss (charger not detected
+  # after resume, UCSI not binding).
+  boot.kernelParams = [ ''acpi_osi="Windows 2020"'' ];
+
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -183,6 +189,12 @@ in
 
   # Apply PowerTOP tunables at boot for extra power savings.
   powerManagement.powertop.enable = true;
+
+  # Re-scan power supply state after resume in case ACPI didn't fire the event.
+  powerManagement.resumeCommands = ''
+    sleep 2
+    ${pkgs.udev}/bin/udevadm trigger --subsystem-match=power_supply
+  '';
 
   # Let the firmware/OS react to thermal pressure and prevent overheating.
   services.thermald.enable = true;
