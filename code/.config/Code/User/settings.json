@@ -8,6 +8,7 @@
   "editor.fontFamily": "'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace",
   "terminal.integrated.defaultProfile.linux": "fish",
   "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
+  "terminal.integrated.stickyScroll.enabled": false,
   "git.confirmSync": false,
   "git.enableSmartCommit": true,
   "http.systemCertificatesNode": true,
@@ -47,7 +48,6 @@
     "https://schemastore.azurewebsites.net/": true,
     "https://www.schemastore.org/": true
   },
-  "vim.leader": "<space>",
   "todohighlight.defaultStyle": {
     "backgroundColor": "transparent",
     "fontWeight": "bold"
@@ -106,4 +106,7 @@
   "debug.toolBarLocation": "docked",
   "window.menuBarVisibility": "compact",
   "scm.diffDecorations": "all",
+  "window.openFoldersInNewWindow": "on",
+  "explorer.confirmPasteNative": false,
+  "vim.leader": "<space>",
 }

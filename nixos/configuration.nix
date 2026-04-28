@@ -5,11 +5,6 @@
 { config, pkgs, ... }:
 
 let
-  unstable =
-    import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/nixos-unstable.tar.gz")
-      {
-        config = config.nixpkgs.config;
-      };
   zen-browser =
     import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz")
       {
@@ -126,17 +121,22 @@ in
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
+  services.printing.drivers = [ pkgs.hplipWithPlugin ];
 
-  services.logind = {
-    lidSwitch = "suspend";
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
     # Keep the machine from running in a bag when plugged in and lid is closed.
-    lidSwitchExternalPower = "suspend";
-    settings.Login = {
-      IdleAction = "suspend";
-      # Keep suspend after the sway display timeout so AC power can blank the
-      # display at 10 minutes before the system sleeps.
-      IdleActionSec = "15min";
-    };
+    HandleLidSwitchExternalPower = "suspend";
+    IdleAction = "suspend";
+    # Keep suspend after the sway display timeout so AC power can blank the
+    # display at 10 minutes before the system sleeps.
+    IdleActionSec = "15min";
   };
 
   # Enable sound with pipewire.
@@ -255,7 +255,7 @@ in
   environment.systemPackages = with pkgs; [
     # editors
     vim
-    unstable.vscode
+    vscode
     emacs
 
     # misc
@@ -272,10 +272,10 @@ in
     bind # nslookup
     nmap
     usbutils
-    unstable.gemini-cli
-    unstable.codex
-    unstable.github-copilot-cli
-    unstable.claude-code
+    gemini-cli
+    codex
+    github-copilot-cli
+    claude-code
     ispell
     nixfmt
     lazygit
@@ -305,12 +305,12 @@ in
     swayidle
     swaylock
     wl-clipboard # Copy/Paste functionality.
-    unstable.kooha
+    kooha
     swaynotificationcenter # Notification center and daemon for Wayland.
     google-chrome
-    unstable.obsidian
+    obsidian
     # Raspberry Pi Imager
-    unstable.rpi-imager
+    rpi-imager
     mediawriter
     zen-browser.default
 

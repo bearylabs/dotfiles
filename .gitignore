@@ -9,3 +9,5 @@ cosmic/**/pinned_workspaces
 
 # Python
 __pycache__/
+
+.codex
