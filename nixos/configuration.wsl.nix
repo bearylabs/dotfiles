@@ -8,12 +8,6 @@
 { config, pkgs, ... }:
 
 let
-  unstable =
-    import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/nixos-unstable.tar.gz")
-      {
-        config = config.nixpkgs.config;
-      };
-
   emacs-overlay = import (
     builtins.fetchTarball {
       url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
@@ -53,7 +47,7 @@ in
   users.users.hrudek = {
     isNormalUser = true;
     description = "Hendrik Rudek";
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" "docker" ];
     shell = pkgs.fish;
   };
 
@@ -76,65 +70,56 @@ in
 
   services.openssh.enable = true;
 
+  virtualisation.docker.enable = true;
+
   environment.systemPackages = with pkgs; [
     # editors
     vim
-    unstable.vscode
     emacs
 
-    # shells and terminal tools
-    fish
-    tmux
-
-    # core CLI tools
+    # misc
+    libsecret
+    nodejs
+    # cli tools
     git
     gh
     wget
-    curl
     ripgrep
     fd
-    unzip
-    zip
-    gnutar
-    gzip
-    xz
-    gnupg
-    rsync
-    just
-
-    # networking and diagnostics
-    bind
+    bind # nslookup
     nmap
-    openssh
-
-    # coding/runtime tools
-    nodejs
-    python3
-    gcc
-    gdb
-    cmake
-    gnumake
-    nil
+    azure-cli
+    gemini-cli
+    codex
+    github-copilot-cli
+    claude-code
+    ispell
     nixfmt
+    lazygit
+    psmisc
 
     # monitoring
     htop
     btop
-    psmisc
 
-    # AI / developer CLIs
-    unstable.gemini-cli
-    unstable.codex
-    unstable.github-copilot-cli
+    # terminal
+    fish
+    tmux
+
+    # Language
+    python3
 
     # Emacs dependencies
-    ispell
     emacsPackages.pbcopy
     emacsPackages.vterm
     libvterm
     libtool
+    gcc
     glibc
     libcxx
+    gdb
+    cmake
+    gnumake
     libgcc
   ];
 
