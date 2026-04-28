@@ -51,7 +51,19 @@ in
     shell = pkgs.fish;
   };
 
-  home-manager.users.hrudek = import ./home.nix;
+  home-manager.users.hrudek = {
+    imports = [ ./home.nix ];
+    home.file.".gitconfig.local".text = ''
+      [user]
+        name = hrudek
+        email = hendrik.rudek@siempelkamp.com
+      [credential]
+        helper = store
+        helper = /run/current-system/sw/bin/git-credential-manager
+      [credential "https://dev.azure.com"]
+        useHttpPath = true
+    '';
+  };
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
@@ -82,6 +94,7 @@ in
     nodejs
     # cli tools
     git
+    git-credential-manager
     gh
     wget
     ripgrep

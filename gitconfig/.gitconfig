@@ -3,3 +3,5 @@
 	email = info@beary.cloud	
 [init]
 	defaultBranch = main
+[include]
+	path = ~/.gitconfig.local
