@@ -47,7 +47,10 @@ in
   users.users.hrudek = {
     isNormalUser = true;
     description = "Hendrik Rudek";
-    extraGroups = [ "wheel" "docker" ];
+    extraGroups = [
+      "wheel"
+      "docker"
+    ];
     shell = pkgs.fish;
   };
 
@@ -110,6 +113,7 @@ in
     nixfmt
     lazygit
     psmisc
+    powershell
 
     # monitoring
     htop

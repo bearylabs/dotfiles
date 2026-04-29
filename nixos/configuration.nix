@@ -263,6 +263,8 @@ in
     gnome-keyring
     seahorse
     nodejs
+    powershell
+
     # cli tools
     git
     gh
