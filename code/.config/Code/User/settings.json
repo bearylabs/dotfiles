@@ -97,6 +97,25 @@
       "commands": [
         "doom.whichKeyShow"
       ]
+    },
+    {
+      "before": [
+        "<C-j>"
+      ],
+      "after": [
+        "i",
+        "<CR>",
+        "<Esc>",
+        "^"
+      ]
+    },
+    {
+      "before": [
+        "<C-k>"
+      ],
+      "commands": [
+        "editor.action.deleteLines"
+      ]
     }
   ],
   "claudeCode.preferredLocation": "panel",
@@ -104,9 +123,10 @@
   "debug.internalConsoleOptions": "neverOpen",
   "debug.console.closeOnEnd": true,
   "debug.toolBarLocation": "docked",
-  "window.menuBarVisibility": "compact",
   "scm.diffDecorations": "all",
   "window.openFoldersInNewWindow": "on",
   "explorer.confirmPasteNative": false,
   "vim.leader": "<space>",
+  "workbench.browser.showInTitleBar": true,
+  "window.menuBarVisibility": "compact",
 }
