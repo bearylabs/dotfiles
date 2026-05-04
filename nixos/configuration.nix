@@ -131,8 +131,10 @@ in
 
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";
-    # Keep the machine from running in a bag when plugged in and lid is closed.
-    HandleLidSwitchExternalPower = "suspend";
+    # Clamshell mode: don't suspend when external monitor is connected via USB-C.
+    # Sway's bindswitch disables the internal display instead.
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
     IdleAction = "suspend";
     # Keep suspend after the sway display timeout so AC power can blank the
     # display at 10 minutes before the system sleeps.
@@ -296,8 +298,11 @@ in
 
     # Language
     python3
+    python3Packages.pip
+    pipx
 
     # desktop
+    solaar
     flameshot
     brightnessctl
     networkmanagerapplet
@@ -314,6 +319,7 @@ in
     # Raspberry Pi Imager
     rpi-imager
     mediawriter
+    prusa-slicer
     zen-browser.default
 
     # Emacs dependencies

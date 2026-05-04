@@ -22,6 +22,10 @@ set $menu wofi --show drun
 #
 # Default wallpaper.
 output * bg ~/.config/sway/wallpaper.jpg fill
+
+# Clamshell mode: disable internal display when lid closes, re-enable on open.
+bindswitch --reload --locked lid:on output eDP-1 disable
+bindswitch --reload --locked lid:off output eDP-1 enable
 #
 # Example configuration:
 #
