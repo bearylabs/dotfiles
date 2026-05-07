@@ -185,12 +185,13 @@ in
   # Avoid competing CPU power-policy managers; auto-cpufreq handles this.
   services.power-profiles-daemon.enable = false;
 
-
   # Enable the kernel power-management hooks used by NixOS power options.
   powerManagement.enable = true;
 
-  # Apply PowerTOP tunables at boot for extra power savings.
-  powerManagement.powertop.enable = true;
+  # PowerTOP autotune disabled: it sets USB autosuspend on all devices, which
+  # causes input freezes on external HID peripherals (keyboard/mouse dongle).
+  # auto-cpufreq handles CPU scaling; thermald handles thermal management.
+  powerManagement.powertop.enable = false;
 
   # Re-scan power supply state after resume in case ACPI didn't fire the event.
   powerManagement.resumeCommands = ''
@@ -334,6 +335,23 @@ in
     cmake
     gnumake
     libgcc
+    # OCI + provisioning
+    oci-cli
+    terraform
+
+    # Ansible
+    ansible
+    python3
+
+    # Cluster
+    kubectl
+    kubeseal
+    kubernetes-helm
+    argocd
+
+    # QoL
+    kubectx # includes kubens
+    k9s
   ];
 
   fonts = {
@@ -374,6 +392,13 @@ in
         TAP: KEY_LEFTALT
         HOLD: KEY_LEFTALT
         HOLD_START: BEFORE_CONSUME
+  '';
+
+  # Explicitly keep USB HID devices (keyboard, mouse dongle) out of autosuspend.
+  # Belt-and-suspenders: powertop is disabled, but guard against any future
+  # power manager re-enabling it.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usbhid", TEST=="power/control", ATTR{power/control}="on"
   '';
 
   # Some programs need SUID wrappers, can be configured further or are

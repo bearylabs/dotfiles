@@ -138,6 +138,24 @@ in
     cmake
     gnumake
     libgcc
+
+    # OCI + provisioning
+    oci-cli
+    terraform
+
+    # Ansible
+    ansible
+    python3
+
+    # Cluster
+    kubectl
+    kubeseal
+    kubernetes-helm
+    argocd
+
+    # QoL
+    kubectx # includes kubens
+    k9s
   ];
 
   # This value determines the NixOS release from which the default
