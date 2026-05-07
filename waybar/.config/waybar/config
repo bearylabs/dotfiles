@@ -87,7 +87,7 @@
       ]
     },
     "scroll-step": 1,
-    "on-click": "pavucontrol"
+    "on-click": "/home/hrudek/.config/waybar/scripts/pavucontrol-popup"
   },
   "battery": {
     "states": {

@@ -260,6 +260,9 @@ input type:pointer {
     natural_scroll enabled
 }
 
+# floating window rules
+for_window [app_id="org.pulseaudio.pavucontrol"] floating enable, resize set 600 500, move position cursor, move down 36 px
+
 # design
 smart_borders no_gaps
 smart_gaps on
