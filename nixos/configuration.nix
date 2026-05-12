@@ -286,6 +286,7 @@ in
     lazygit
     parted
     psmisc
+    unzip
 
     # monitoring
     htop
