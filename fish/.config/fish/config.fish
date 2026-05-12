@@ -29,3 +29,11 @@ end
 function fish_prompt
     echo (set_color 87d7af)(date +%H:%M:%S) (set_color 87d7ff)(prompt_pwd) (set_color ffafff)(fish_git_prompt) (set_color ffafff)'→ '
 end
+
+
+# Mimics bash's `export VAR=value` syntax
+function export
+    for arg in $argv
+        set -gx (string split -m 1 '=' $arg)
+    end
+end
