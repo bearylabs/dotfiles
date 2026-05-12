@@ -287,6 +287,7 @@ in
     parted
     psmisc
     unzip
+    awscli2
 
     # monitoring
     htop
