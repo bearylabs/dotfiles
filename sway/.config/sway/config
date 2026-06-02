@@ -89,6 +89,7 @@ exec_always --no-startup-id theme-toggle apply
 
 input type:keyboard {
     xkb_layout us,de
+    xkb_options ctrl:nocaps
 }
 
 ### Key bindings
