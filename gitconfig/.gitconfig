@@ -5,3 +5,9 @@
 	defaultBranch = main
 [include]
 	path = ~/.gitconfig.local
+[credential "https://siempelkamp.ghe.com"]
+	provider = github
+[credential]
+	credentialStore = plaintext
+[core]
+	excludesfile = /home/hrudek/.gitignore_global
