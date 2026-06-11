@@ -274,15 +274,22 @@ in
     vscode
     emacs
 
-    # misc
+    # core runtime/deps
     libsecret
     gnome-keyring
     seahorse
     nodejs
     powershell
 
+    # cloud / provisioning
+    awscli2
+    azure-cli
+    oci-cli
+    terraform
+
     # cli tools
     git
+    git-credential-manager
     gh
     wget
     ripgrep
@@ -290,18 +297,12 @@ in
     bind # nslookup
     nmap
     usbutils
-    # gemini-cli
-    # codex
-    # github-copilot-cli
-    # claude-code
     ispell
     nixfmt
     lazygit
     parted
     psmisc
     unzip
-    awscli2
-
     # monitoring
     htop
     btop
@@ -312,7 +313,7 @@ in
     ghostty
     tmux
 
-    # Language
+    # language
     python3
     python3Packages.pip
     pipx
@@ -337,7 +338,7 @@ in
     prusa-slicer
     zen-browser.default
 
-    # Emacs dependencies
+    # emacs dependencies
     emacsPackages.pbcopy
     emacsPackages.vterm
     libvterm
@@ -349,21 +350,17 @@ in
     cmake
     gnumake
     libgcc
-    # OCI + provisioning
-    oci-cli
-    terraform
 
-    # Ansible
+    # ansible
     ansible
-    python3
 
-    # Cluster
+    # cluster
     kubectl
     kubeseal
     kubernetes-helm
     argocd
 
-    # QoL
+    # qol
     kubectx # includes kubens
     k9s
   ];

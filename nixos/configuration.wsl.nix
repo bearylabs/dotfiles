@@ -92,9 +92,16 @@ in
     vim
     emacs
 
-    # misc
+    # core runtime/deps
     libsecret
     nodejs
+
+    # cloud / provisioning
+    awscli2
+    azure-cli
+    oci-cli
+    terraform
+
     # cli tools
     git
     git-credential-manager
@@ -104,11 +111,9 @@ in
     fd
     bind # nslookup
     nmap
-    azure-cli
-    gemini-cli
-    codex
-    github-copilot-cli
-    claude-code
+    usbutils
+    parted
+    unzip
     ispell
     nixfmt
     lazygit
@@ -123,10 +128,12 @@ in
     fish
     tmux
 
-    # Language
+    # language
     python3
+    python3Packages.pip
+    pipx
 
-    # Emacs dependencies
+    # emacs dependencies
     emacsPackages.pbcopy
     emacsPackages.vterm
     libvterm
@@ -139,21 +146,16 @@ in
     gnumake
     libgcc
 
-    # OCI + provisioning
-    oci-cli
-    terraform
-
-    # Ansible
+    # ansible
     ansible
-    python3
 
-    # Cluster
+    # cluster
     kubectl
     kubeseal
     kubernetes-helm
     argocd
 
-    # QoL
+    # qol
     kubectx # includes kubens
     k9s
   ];
