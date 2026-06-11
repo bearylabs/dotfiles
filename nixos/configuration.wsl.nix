@@ -71,6 +71,19 @@ in
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
     emacs-overlay
+    (final: prev: {
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (pyFinal: pyPrev: {
+          # test expectations use "pkg@ url" but pipx now emits "pkg @ url"
+          pipx = pyPrev.pipx.overrideAttrs (old: {
+            disabledTests = (old.disabledTests or [ ]) ++ [
+              "test_parse_specifier_for_metadata"
+              "test_fix_package_name"
+            ];
+          });
+        })
+      ];
+    })
   ];
 
   nix.settings.experimental-features = [
@@ -82,6 +95,8 @@ in
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false;
   programs.nix-ld.enable = true;
+  # NixOS-WSL manages /etc/resolv.conf via the WSL integration.
+  networking.resolvconf.enable = false;
 
   services.openssh.enable = true;
 
