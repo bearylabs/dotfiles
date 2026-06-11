@@ -231,6 +231,19 @@ in
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
     emacs-overlay
+    (final: prev: {
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (pyFinal: pyPrev: {
+          # test expectations use "pkg@ url" but pipx now emits "pkg @ url"
+          pipx = pyPrev.pipx.overrideAttrs (old: {
+            disabledTests = (old.disabledTests or [ ]) ++ [
+              "test_parse_specifier_for_metadata"
+              "test_fix_package_name"
+            ];
+          });
+        })
+      ];
+    })
   ];
 
   # Enable modern nix CLI + flakes
@@ -277,10 +290,10 @@ in
     bind # nslookup
     nmap
     usbutils
-    gemini-cli
-    codex
-    github-copilot-cli
-    claude-code
+    # gemini-cli
+    # codex
+    # github-copilot-cli
+    # claude-code
     ispell
     nixfmt
     lazygit
@@ -319,7 +332,6 @@ in
     swaynotificationcenter # Notification center and daemon for Wayland.
     google-chrome
     obsidian
-    # Raspberry Pi Imager
     rpi-imager
     mediawriter
     prusa-slicer
