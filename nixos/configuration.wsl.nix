@@ -130,6 +130,7 @@ in
     parted
     unzip
     ispell
+    shellcheck
     nixfmt
     lazygit
     psmisc

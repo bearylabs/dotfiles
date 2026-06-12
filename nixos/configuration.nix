@@ -298,6 +298,7 @@ in
     nmap
     usbutils
     ispell
+    shellcheck
     nixfmt
     lazygit
     parted
