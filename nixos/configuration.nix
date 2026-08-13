@@ -283,7 +283,7 @@ in
 
     # cloud / provisioning
     awscli2
-    azure-cli
+    (azure-cli.withExtensions (with azure-cli.extensions; [ virtual-network-manager ]))
     oci-cli
     terraform
 
