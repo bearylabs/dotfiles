@@ -95,6 +95,17 @@ in
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false;
   programs.nix-ld.enable = true;
+
+  # WSLg's compositor supports neither ext-data-control nor wlr-data-control,
+  # so Wayland clipboard clients fail. Push them onto XWayland, which WSLg
+  # bridges to the Windows clipboard.
+  environment.loginShellInit = "unset WAYLAND_DISPLAY";
+  environment.interactiveShellInit = "unset WAYLAND_DISPLAY";
+  # fish gets these via fenv, which propagates sets but not unsets, so it
+  # needs the native equivalent.
+  programs.fish.loginShellInit = "set -e WAYLAND_DISPLAY";
+  programs.fish.interactiveShellInit = "set -e WAYLAND_DISPLAY";
+
   # NixOS-WSL manages /etc/resolv.conf via the WSL integration.
   networking.resolvconf.enable = false;
 
