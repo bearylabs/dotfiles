@@ -107,6 +107,10 @@ in
   programs.fish.loginShellInit = "set -e WAYLAND_DISPLAY";
   programs.fish.interactiveShellInit = "set -e WAYLAND_DISPLAY";
 
+  # Work machine: gh (and gh dash) target the corporate GHE instance when no
+  # repo context implies a host.
+  environment.sessionVariables.GH_HOST = "siempelkamp.ghe.com";
+
   # NixOS-WSL manages /etc/resolv.conf via the WSL integration.
   networking.resolvconf.enable = false;
 
