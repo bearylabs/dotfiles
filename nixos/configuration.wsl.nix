@@ -95,6 +95,7 @@ in
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false;
   programs.nix-ld.enable = true;
+  programs.openvpn3.enable = true;
 
   # WSLg's compositor supports neither ext-data-control nor wlr-data-control,
   # so Wayland clipboard clients fail. Push them onto XWayland, which WSLg
