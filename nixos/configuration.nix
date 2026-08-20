@@ -129,6 +129,17 @@ in
     openFirewall = true;
   };
 
+  # KVM/QEMU virtualization for VMs (e.g. Windows guest via virt-manager).
+  # OVMF gives UEFI + Secure Boot; swtpm emulates TPM 2.0, required by Win11.
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      package = pkgs.qemu_kvm;
+      swtpm.enable = true;
+    };
+  };
+  programs.virt-manager.enable = true;
+
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";
     # Clamshell mode: don't suspend when external monitor is connected via USB-C.
@@ -194,9 +205,12 @@ in
   powerManagement.powertop.enable = false;
 
   # Re-scan power supply state after resume in case ACPI didn't fire the event.
+  # Reload ath11k_pci: driver doesn't reinitialize cleanly after wakeup.
   powerManagement.resumeCommands = ''
     sleep 2
     ${pkgs.udev}/bin/udevadm trigger --subsystem-match=power_supply
+    ${pkgs.kmod}/bin/modprobe -r ath11k_pci
+    ${pkgs.kmod}/bin/modprobe ath11k_pci
   '';
 
   # Let the firmware/OS react to thermal pressure and prevent overheating.
@@ -212,6 +226,7 @@ in
     extraGroups = [
       "networkmanager"
       "wheel"
+      "libvirtd"
     ];
     packages = with pkgs; [
       thunderbird
@@ -307,6 +322,9 @@ in
     # monitoring
     htop
     btop
+
+    # virtualization
+    virtio-win # Windows guest drivers ISO (disk/net perf)
 
     # terminal
     fish
