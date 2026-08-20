@@ -11,6 +11,7 @@ set -u
 
 lavender='#b4befe'
 overlay1='#7f849c'
+subtext0='#a6adc8'
 peach='#fab387'
 red='#f38ba8'
 
@@ -64,8 +65,10 @@ fi
 if [[ -d /sys/class/net/$iface/wireless ]]; then
   quality=$(signal "$iface")
 
-  # Signal reads the same way round as battery: low is the problem.
-  colour=$lavender
+  # Signal reads the same way round as battery: low is the problem. Only the
+  # number reacts, as in the load readouts -- the glyph keeps its hue, and the
+  # unremarkable case is the same subtext0 the CPU and memory numbers use.
+  colour=$subtext0
   if [[ -n $quality ]]; then
     if ((quality <= 25)); then
       colour=$red
@@ -74,7 +77,7 @@ if [[ -d /sys/class/net/$iface/wireless ]]; then
     fi
   fi
 
-  emit "$WIFI" "$colour" "${quality:+$(printf '%3d%%' "$quality")}" \
+  emit "$WIFI" "$lavender" "${quality:+$(printf '%3d%%' "$quality")}" \
     "$colour" "$(address "$iface")" "$overlay1"
 else
   # A link rate is not a quality reading, so it never takes a warning band.
