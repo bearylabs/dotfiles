@@ -337,6 +337,7 @@ in
     wget
     ripgrep
     fd
+    jq # Also drives the polybar split-direction module.
     bind # nslookup
     nmap
     usbutils
@@ -372,6 +373,12 @@ in
     networkmanagerapplet
     pavucontrol
     rofi # Application launcher.
+    # Status bar. The default build has neither the i3 nor the PulseAudio
+    # module compiled in, and the bar needs both.
+    (polybar.override {
+      i3Support = true;
+      pulseSupport = true;
+    })
     feh # Sets the desktop wallpaper; X11 has no compositor to do it.
     xss-lock # Bridges logind lock/sleep signals to i3lock.
     xidlehook # Staged idle timeouts (dim, lock, display off).

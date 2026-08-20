@@ -217,11 +217,11 @@ default_border pixel 1
 default_floating_border pixel 1
 
 # Status bar
-bar {
-    status_command i3status
-    position top
-    tray_output primary
-}
+#
+# polybar replaces i3bar; launch.sh tears down any previous instance, so this
+# is safe on reload. The i3status config is kept around as a fallback for the
+# plain `bar {}` block.
+exec_always --no-startup-id ~/.config/polybar/launch.sh
 
 # Launch IDEs
 bindsym $mod+Shift+m exec emacs --init-directory $HOME/.config/emacs

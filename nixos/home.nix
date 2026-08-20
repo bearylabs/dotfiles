@@ -135,6 +135,9 @@ in
   home.file.".config/i3status".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/i3status/.config/i3status";
 
+  home.file.".config/polybar".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/polybar/.config/polybar";
+
   home.file.".tmux.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/tmux/.tmux.conf";
 
