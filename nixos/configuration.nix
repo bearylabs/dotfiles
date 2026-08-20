@@ -33,7 +33,11 @@ in
   # Windows 2020 compatibility makes the firmware expose correct power-delivery
   # and AC-adapter state that Linux would otherwise miss (charger not detected
   # after resume, UCSI not binding).
-  boot.kernelParams = [ ''acpi_osi="Windows 2020"'' ];
+  boot.kernelParams = [
+    ''acpi_osi="Windows 2020"''
+    "resume=/dev/mapper/luks-aed0c447-af30-4cc5-b955-cb4e269909dc"
+    "resume_offset=35557376"
+  ];
 
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -155,12 +159,26 @@ in
   programs.virt-manager.enable = true;
 
   services.logind.settings.Login = {
-    HandleLidSwitch = "suspend";
-    IdleAction = "suspend";
+    HandleLidSwitch = "suspend-then-hibernate";
+    IdleAction = "suspend-then-hibernate";
     # Keep suspend after the xidlehook display timeout so the screen blanks at
     # 8 minutes before the system sleeps.
     IdleActionSec = "15min";
   };
+
+  # After suspending, hibernate to disk if still asleep this long (safety net
+  # for battery drain / long lid-closed periods). Requires swapDevices below.
+  systemd.sleep.settings.Sleep = {
+    HibernateDelaySec = "45min";
+  };
+
+  # Swapfile for hibernation (suspend-then-hibernate above). Size >= RAM.
+  # NOTE: resume_offset in boot.kernelParams must be filled in AFTER first
+  # rebuild creates this file — see comment near kernelParams below.
+  swapDevices = [
+    { device = "/swapfile"; size = 20 * 1024; }
+  ];
+  boot.resumeDevice = "/dev/mapper/luks-aed0c447-af30-4cc5-b955-cb4e269909dc";
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
