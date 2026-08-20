@@ -226,6 +226,20 @@ default_floating_border pixel 1
 # plain `bar {}` block.
 exec_always --no-startup-id ~/.config/polybar/launch.sh
 
+#####################
+# Personal config
+#####################
+#
+# Everything below is my own addition, layered on top of the ported sway
+# config above.
+
 # Launch IDEs
 bindsym $mod+Shift+m exec emacs --init-directory $HOME/.config/emacs
 bindsym $mod+m exec code
+
+# Application assignments
+#
+# Open certain apps on a fixed workspace, wherever they're launched from.
+assign [class="(?i)(zen|firefox|chrome|chromium)"] number 1
+assign [class="(?i)thunderbird"] number 2
+assign [class="(?i)code"] number 3
