@@ -25,7 +25,7 @@ exec_always --no-startup-id feh --bg-fill ~/.config/i3/wallpaper.jpg
 #
 # xss-lock ties the screensaver and logind's sleep/lock signals to i3lock.
 # --transfer-sleep-lock makes the lock appear before the system actually sleeps.
-exec_always --no-startup-id sh -c 'pkill -x xss-lock; exec xss-lock --transfer-sleep-lock -- i3lock -n -c 1e2030'
+exec_always --no-startup-id sh -c 'pkill -x xss-lock; exec xss-lock --transfer-sleep-lock -- i3lock -n -c 1e2030 --clock --indicator --time-str="%H:%M" --date-str="%A, %d %B" --time-color=c8d3f5ff --date-color=c8d3f5ff --insidecolor=00000000 --insidevercolor=00000000 --insidewrongcolor=00000000 --ringcolor=c8d3f5ff --ringvercolor=9ece6aff --ringwrongcolor=f7768eff --linecolor=00000000 --separatorcolor=00000000 --verifcolor=c8d3f5ff --wrongcolor=f7768eff --layoutcolor=c8d3f5ff --keyhlcolor=9ece6aff --bshlcolor=f7768eff --radius=140 --ring-width=8'
 # xidlehook drives the staged timeouts. Its timers are cumulative: the screen
 # dims at 2 min, locks at 5 min, and the display powers off at 8 min.
 # Keep this on one line: the i3 config parser has no line continuations.
