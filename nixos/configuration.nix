@@ -160,6 +160,10 @@ in
 
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend-then-hibernate";
+    # logind counts the session as docked while a second display is connected,
+    # and the external monitor is the only enabled output anyway, so closing the
+    # lid there should keep the machine running rather than put it to sleep.
+    HandleLidSwitchDocked = "ignore";
     IdleAction = "suspend-then-hibernate";
     # Keep suspend after the xidlehook display timeout so the screen blanks at
     # 8 minutes before the system sleeps.

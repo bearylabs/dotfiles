@@ -18,8 +18,18 @@ set $menu rofi -show drun
 
 ### Output configuration
 #
-# Default wallpaper. X11 has no compositor-managed background, so feh paints it.
-exec_always --no-startup-id feh --bg-fill ~/.config/i3/wallpaper.jpg
+# Pick the active output. X detects a hot-plugged DP/USB-C monitor but never
+# enables it, so this has to run before anything that reads the output list
+# (polybar, feh). An external monitor takes over as the only screen and the
+# laptop panel is switched off.
+exec_always --no-startup-id ~/.config/i3/displays.sh
+# Re-run the same script whenever an output is plugged or unplugged. The script
+# takes a lock itself, so a reload does not stack up watchers.
+exec_always --no-startup-id ~/.config/i3/hotplug.sh
+#
+# The wallpaper is painted by displays.sh rather than here: X11 has no
+# compositor-managed background, so feh has to run after the resolution is
+# settled or it paints for the old framebuffer size.
 
 ### Idle configuration
 #
