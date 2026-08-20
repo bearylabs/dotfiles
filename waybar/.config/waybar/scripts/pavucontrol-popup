@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-if pgrep pavucontrol > /dev/null; then
-    pkill pavucontrol
-else
-    setsid pavucontrol &>/dev/null &
-fi

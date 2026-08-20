@@ -1,8 +1,6 @@
-# Default config for sway
+# i3 config
 #
-# Copy this to ~/.config/sway/config and edit it to your liking.
-#
-# Read `man 5 sway` for a complete reference.
+# Ported from the previous sway config. Read `man 5 i3` for a complete reference.
 
 ### Variables
 #
@@ -16,81 +14,38 @@ set $right l
 # Your preferred terminal emulator
 set $term ghostty
 # Your preferred application launcher
-set $menu wofi --show drun
+set $menu rofi -show drun
 
 ### Output configuration
 #
-# Default wallpaper.
-output * bg ~/.config/sway/wallpaper.jpg fill
-
-# Clamshell mode: disable internal display when lid closes, re-enable on open.
-bindswitch --reload --locked lid:on output eDP-1 disable
-bindswitch --reload --locked lid:off output eDP-1 enable
-#
-# Example configuration:
-#
-#   output HDMI-A-1 resolution 1920x1080 position 1920,0
-#
-# You can get the names of your outputs by running: swaymsg -t get_outputs
+# Default wallpaper. X11 has no compositor-managed background, so feh paints it.
+exec_always --no-startup-id feh --bg-fill ~/.config/i3/wallpaper.jpg
 
 ### Idle configuration
 #
-# Example configuration:
-#
-# exec swayidle -w \
-#          timeout 300 'swaylock -f -c 000000' \
-#          timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-#          before-sleep 'swaylock -f -c 000000'
-#
-# This will lock your screen after 300 seconds of inactivity, then turn off
-# your displays after another 300 seconds, and turn your screens back on when
-# resumed. It will also lock your screen before your computer goes to sleep.
-exec swayidle -w \
-    timeout 120 'brightnessctl -s set 20%' \
-    resume 'brightnessctl -r' \
-    timeout 300 'power-source battery && swaylock -f -c 1e2030' \
-    timeout 600 'power-source ac && swaylock -f -c 1e2030' \
-    timeout 480 'power-source battery && swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-    timeout 600 'power-source ac && swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-    before-sleep 'swaylock -f -c 1e2030' \
-    after-resume 'swaymsg "output * power on"'
+# xss-lock ties the screensaver and logind's sleep/lock signals to i3lock.
+# --transfer-sleep-lock makes the lock appear before the system actually sleeps.
+exec_always --no-startup-id sh -c 'pkill -x xss-lock; exec xss-lock --transfer-sleep-lock -- i3lock -n -c 1e2030'
+# xidlehook drives the staged timeouts. Its timers are cumulative: the screen
+# dims at 2 min, locks at 5 min, and the display powers off at 8 min.
+# Keep this on one line: the i3 config parser has no line continuations.
+exec_always --no-startup-id sh -c 'pkill -x xidlehook; exec xidlehook --timer 120 "brightnessctl -s set 20%" "brightnessctl -r" --timer 180 "loginctl lock-session" "" --timer 180 "xset dpms force off" ""'
 
 ### Startup applications
 #
-# Restart Waybar on every sway reload so config changes take effect immediately.
-# On NixOS the wrapped binary is named .waybar-wrapped, so we must use pkill -f.
-exec_always sh -c 'pkill -x .waybar-wrapped; sleep 0.3; exec waybar'
 # NetworkManager tray applet for clickable Wi-Fi and VPN management.
-exec_always sh -c 'pkill -x nm-applet; exec nm-applet --indicator'
-# Notification center daemon.
-exec_always sh -c 'pkill -x swaync; exec swaync'
+exec_always --no-startup-id sh -c 'pkill -x nm-applet; exec nm-applet --indicator'
+# Notification daemon.
+exec_always --no-startup-id sh -c 'pkill -x dunst; exec dunst'
 # LocalSend for local file sharing.
 exec --no-startup-id localsend_app --hidden
-# Re-apply saved desktop theme on sway start/reload.
+# Re-apply saved desktop theme on i3 start/reload.
 exec_always --no-startup-id theme-toggle apply
 
 ### Input configuration
 #
-# Example configuration:
-#
-#   input type:touchpad {
-#       dwt enabled
-#       tap enabled
-#       natural_scroll enabled
-#       middle_emulation enabled
-#   }
-#
-#   input type:keyboard {
-#       xkb_layout "eu"
-#   }
-#
-# You can also configure each device individually.
-# Read `man 5 sway-input` for more information about this section.
-
-input type:keyboard {
-    xkb_layout us,de
-    xkb_options ctrl:nocaps
-}
+# Keyboard layout and touchpad/pointer behaviour live in configuration.nix
+# (services.xserver.xkb and services.libinput), since X owns input devices.
 
 ### Key bindings
 #
@@ -108,19 +63,19 @@ input type:keyboard {
     # Drag floating windows by holding down $mod and left mouse button.
     # Resize them with right mouse button + $mod.
     # Despite the name, also works for non-floating windows.
-    # Change normal to inverse to use left mouse button for resizing and right
-    # mouse button for dragging.
-    floating_modifier $mod normal
+    floating_modifier $mod
 
     # Reload the configuration file
     bindsym $mod+Shift+c reload
+    # Restart i3 in place, preserving the layout
+    bindsym $mod+Shift+r restart
     # Toggle light/dark desktop theme
     bindsym $mod+Shift+t exec theme-toggle toggle
     bindsym $mod+Ctrl+d exec theme-toggle dark
     bindsym $mod+Ctrl+l exec theme-toggle light
 
-    # Exit sway (logs you out of your Wayland session)
-    bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
+    # Exit i3 (logs you out of your X session)
+    bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
 #
 # Moving around:
 #
@@ -178,8 +133,8 @@ input type:keyboard {
     # You can "split" the current object of your focus with
     # $mod+b or $mod+v, for horizontal and vertical splits
     # respectively.
-    bindsym $mod+b splith
-    bindsym $mod+v splitv
+    bindsym $mod+b split h
+    bindsym $mod+v split v
 
     # Switch the current container between different layout styles
     bindsym $mod+s layout stacking
@@ -187,7 +142,7 @@ input type:keyboard {
     bindsym $mod+e layout toggle split
 
     # Make the current focus fullscreen
-    bindsym $mod+f fullscreen
+    bindsym $mod+f fullscreen toggle
 
     # Toggle the current focus between tiling and floating mode
     bindsym $mod+Shift+space floating toggle
@@ -200,7 +155,7 @@ input type:keyboard {
 #
 # Scratchpad:
 #
-    # Sway has a "scratchpad", which is a bag of holding for windows.
+    # i3 has a "scratchpad", which is a bag of holding for windows.
     # You can send windows there and get them back later.
 
     # Move the currently focused window to the scratchpad
@@ -237,32 +192,21 @@ bindsym $mod+r mode "resize"
 # Utilities:
 #
     # Special keys to adjust volume via PipeWire's PulseAudio compatibility
-    bindsym --locked XF86AudioMute exec pactl set-sink-mute \@DEFAULT_SINK@ toggle
-    bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume \@DEFAULT_SINK@ -5%
-    bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume \@DEFAULT_SINK@ +5%
-    bindsym --locked XF86AudioMicMute exec pactl set-source-mute \@DEFAULT_SOURCE@ toggle
+    bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+    bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+    bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+    bindsym XF86AudioMicMute exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
     # Special keys to adjust brightness via brightnessctl
-    bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
-    bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
+    bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+    bindsym XF86MonBrightnessUp exec brightnessctl set 5%+
     # Special key to take a screenshot with flameshot
     bindsym Print exec flameshot gui
     bindsym $mod+Print exec flameshot screen
-
-include /etc/sway/config.d/*
-
-input type:touchpad {
-    natural_scroll enabled
-    tap enabled
-    tap_button_map lrm
-    dwt enabled
-    drag disabled
-}
-input type:pointer {
-    natural_scroll enabled
-}
+    # Lock the screen on demand
+    bindsym $mod+Shift+x exec loginctl lock-session
 
 # floating window rules
-for_window [app_id="org.pulseaudio.pavucontrol"] floating enable, resize set 600 500, move position cursor, move down 36 px
+for_window [class="Pavucontrol"] floating enable, resize set 600 500, move position mouse, move down 36 px
 
 # design
 smart_borders no_gaps
@@ -272,6 +216,13 @@ gaps outer 0
 default_border pixel 1
 default_floating_border pixel 1
 
+# Status bar
+bar {
+    status_command i3status
+    position top
+    tray_output primary
+}
+
 # Launch IDEs
-bindsym $mod+shift+m exec emacs --init-directory $HOME/.config/emacs
+bindsym $mod+Shift+m exec emacs --init-directory $HOME/.config/emacs
 bindsym $mod+m exec code

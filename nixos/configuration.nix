@@ -65,34 +65,34 @@ in
     LC_TIME = "de_DE.UTF-8";
   };
 
-  # GDM still relies on the X server stack even when launching Wayland sessions.
+  # X server hosts the i3 session.
   services.xserver.enable = true;
 
-  # Use GDM for session selection and prefer Sway as the default session.
+  # Use GDM for session selection and prefer i3 as the default session.
   services.displayManager.gdm.enable = true;
   # Keep a GUI desktop available in GDM as a fallback desktop session.
   services.desktopManager.gnome.enable = true;
 
-  # Enable Sway.
-  programs.sway = {
+  # Enable i3. i3lock-color provides the `i3lock` binary used by xss-lock.
+  services.xserver.windowManager.i3 = {
     enable = true;
-    wrapperFeatures.gtk = true;
+    extraPackages = with pkgs; [
+      i3status
+      i3lock-color
+    ];
   };
 
-  # Wayland portal setup for wlroots/Sway sessions.
+  # Portal setup. On X11 only the GTK backend is needed; screen sharing works
+  # through plain X capture rather than a compositor portal.
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [
-      xdg-desktop-portal-wlr
       xdg-desktop-portal-gtk
     ];
   };
 
-  # Make sure the greeter can see and prefer the Sway session explicitly.
-  services.displayManager = {
-    defaultSession = "sway";
-    sessionPackages = [ config.programs.sway.package ];
-  };
+  # The i3 module registers the "none+i3" session with the greeter itself.
+  services.displayManager.defaultSession = "none+i3";
 
   # Enables Gnome Keyring to store secrets for applications.
   services.gnome.gnome-keyring.enable = true;
@@ -103,21 +103,35 @@ in
   # Required for privilege escalation prompts in graphical applications.
   security.polkit.enable = true;
 
-  # Preserve Wayland environment variables when escalating with sudo.
+  # Preserve X environment variables when escalating with sudo.
   security.sudo.extraConfig = ''
-    Defaults env_keep = "DISPLAY WAYLAND_DISPLAY XDG_SESSION_TYPE QT_QPA_PLATFORM"
+    Defaults env_keep = "DISPLAY XAUTHORITY"
   '';
 
   security.pam.services.login.enableGnomeKeyring = true;
   security.pam.services.gdm-password.enableGnomeKeyring = true;
-  # Configure keymap in X11
+  # Configure keymap in X11. X owns keyboard config now that i3 (unlike sway)
+  # has no input configuration of its own.
   services.xserver.xkb = {
     layout = "us";
     variant = "";
+    options = "ctrl:nocaps";
+  };
+
+  # Touchpad and pointer behaviour, previously set in the sway config.
+  services.libinput = {
+    enable = true;
+    touchpad = {
+      naturalScrolling = true;
+      tapping = true;
+      tappingButtonMap = "lrm";
+      disableWhileTyping = true;
+    };
+    mouse.naturalScrolling = true;
   };
 
   # Configure console keymap
-  console.keyMap = "de";
+  console.keyMap = "us";
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -142,13 +156,9 @@ in
 
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";
-    # Clamshell mode: don't suspend when external monitor is connected via USB-C.
-    # Sway's bindswitch disables the internal display instead.
-    HandleLidSwitchExternalPower = "ignore";
-    HandleLidSwitchDocked = "ignore";
     IdleAction = "suspend";
-    # Keep suspend after the sway display timeout so AC power can blank the
-    # display at 10 minutes before the system sleeps.
+    # Keep suspend after the xidlehook display timeout so the screen blanks at
+    # 8 minutes before the system sleeps.
     IdleActionSec = "15min";
   };
 
@@ -343,13 +353,14 @@ in
     brightnessctl
     networkmanagerapplet
     pavucontrol
-    wofi
-    waybar
-    swayidle
-    swaylock
-    wl-clipboard # Copy/Paste functionality.
-    kooha
-    swaynotificationcenter # Notification center and daemon for Wayland.
+    rofi # Application launcher.
+    feh # Sets the desktop wallpaper; X11 has no compositor to do it.
+    xss-lock # Bridges logind lock/sleep signals to i3lock.
+    xidlehook # Staged idle timeouts (dim, lock, display off).
+    xset # DPMS control, used by the idle timeout above.
+    xclip # Copy/Paste functionality.
+    dunst # Notification daemon.
+    libnotify # notify-send, for scripts that raise notifications.
     google-chrome
     obsidian
     rpi-imager

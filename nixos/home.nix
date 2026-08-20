@@ -1,17 +1,6 @@
 { config, pkgs, ... }:
 
 let
-  # Wrapper script for launching rpi-imager with root privileges.
-  # Requires normal sudo authentication for users in wheel.
-  rpiImagerRoot = pkgs.writeShellScriptBin "rpi-imager-root" ''
-    if [ "$(id -u)" -eq 0 ]; then
-      exec /run/current-system/sw/bin/rpi-imager "$@"
-    fi
-    export QT_QPA_PLATFORM=wayland
-    export XDG_SESSION_TYPE=wayland
-    exec /run/wrappers/bin/sudo /run/current-system/sw/bin/rpi-imager "$@"
-  '';
-
   themeToggle = pkgs.writeShellScriptBin "theme-toggle" ''
     set -eu
 
@@ -140,17 +129,17 @@ in
   home.file.".gitconfig".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/gitconfig/.gitconfig";
 
-  home.file.".config/sway".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/sway/.config/sway";
+  home.file.".config/i3".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/i3/.config/i3";
+
+  home.file.".config/i3status".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/i3status/.config/i3status";
 
   home.file.".tmux.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/tmux/.tmux.conf";
 
-  home.file.".config/waybar".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/waybar/.config/waybar";
-
-  home.file.".config/wofi".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/wofi/.config/wofi";
+  home.file.".config/rofi".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/rofi/.config/rofi";
 
   home.file.".zshrc".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/zsh/.zshrc";
@@ -163,7 +152,6 @@ in
   # Install helper commands for desktop integration.
   home.packages = [
     powerSource
-    rpiImagerRoot
     themeToggle
   ];
 }

@@ -1,0 +1,40 @@
+# i3status configuration
+#
+# Read `man i3status` for a complete reference.
+
+general {
+        colors = true
+        interval = 5
+}
+
+order += "wireless _first_"
+order += "ethernet _first_"
+order += "volume master"
+order += "battery all"
+order += "tztime local"
+
+wireless _first_ {
+        format_up = "W: (%quality at %essid) %ip"
+        format_down = "W: down"
+}
+
+ethernet _first_ {
+        format_up = "E: %ip (%speed)"
+        format_down = "E: down"
+}
+
+volume master {
+        format = "V: %volume"
+        format_muted = "V: muted (%volume)"
+        device = "pulse"
+}
+
+battery all {
+        format = "%status %percentage %remaining"
+        low_threshold = 15
+        threshold_type = percentage
+}
+
+tztime local {
+        format = "%H:%M  |  %a %d %b"
+}

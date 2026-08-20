@@ -1,0 +1,21 @@
+// rofi configuration
+//
+// Replaces the previous wofi setup. Read `man rofi` and `man rofi-theme`.
+
+configuration {
+    modes: "drun,run,window";
+    show-icons: true;
+    drun-display-format: "{name}";
+    display-drun: "Search";
+    display-run: "Run";
+    display-window: "Window";
+    // Match wofi's insensitive=true.
+    case-sensitive: false;
+}
+
+@theme "default"
+
+// Match wofi's width=20%.
+window {
+    width: 20%;
+}
