@@ -243,6 +243,10 @@ exec_always --no-startup-id ~/.config/polybar/launch.sh
 # Everything below is my own addition, layered on top of the ported sway
 # config above.
 
+# Focus only follows the keyboard. Without this, moving the pointer across a
+# window steals focus, which fights with keyboard-driven window switching.
+focus_follows_mouse no
+
 # Launch IDEs
 bindsym $mod+Shift+m exec emacs --init-directory $HOME/.config/emacs
 bindsym $mod+m exec code
