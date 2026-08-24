@@ -174,6 +174,16 @@ in
   # for battery drain / long lid-closed periods). Requires swapDevices below.
   systemd.sleep.settings.Sleep = {
     HibernateDelaySec = "45min";
+    # systemd only evaluates HibernateDelaySec when it wakes from the s2idle
+    # phase, and the RTC alarm for that wakeup comes from its battery-discharge
+    # estimate, not from HibernateDelaySec. Left at the 60min default the
+    # estimate drifted to multi-hour alarms, so hibernation actually fired
+    # after 4-14h instead of 45min. Capping the estimation interval bounds the
+    # wakeup so the delay above is honoured.
+    SuspendEstimationSec = "45min";
+    # Hibernate on the same schedule when docked; the delay is about not
+    # losing the session, and AC can be unplugged while the lid is closed.
+    HibernateOnACPower = "yes";
   };
 
   # Swapfile for hibernation (suspend-then-hibernate above). Size >= RAM.
