@@ -160,6 +160,12 @@
 ;; workspace and losing its buffers on the next switch.
 ;; (setq +workspaces-on-switch-project-behavior t)
 
+;; Doom turns on the `overlong-summary-line' check, which makes `C-c C-c'
+;; stop and ask "Summary line is too long.  Commit anyway?" past 50 chars.
+;; Keep the overlong tail highlighted, drop the blocking prompt.
+(after! magit
+  (setq git-commit-style-convention-checks '(non-empty-second-line)))
+
 ;; Load WSLg specific config
 (when (file-exists-p "/mnt/wslg")
   (load! "wsl.el"))
