@@ -110,8 +110,51 @@
 (require 'pbcopy)
 (turn-on-pbcopy)
 
-;; use fish shell by default
-(setq explicit-shell-file-name "/run/current-system/sw/bin/fish")
+;; Emacs spawns child processes through `shell-file-name'. Fish is not POSIX
+;; compliant, so anything that shells out (diff-hl, TRAMP, magit) breaks with
+;; it; keep that on bash and give the interactive terminals fish.
+(setq shell-file-name (executable-find "bash"))
+(setq-default vterm-shell "/run/current-system/sw/bin/fish")
+(setq-default explicit-shell-file-name "/run/current-system/sw/bin/fish")
+
+;; Let the cursor shape report the evil state inside vterm. vterm reassigns
+;; `cursor-type' from the child process' DECSCUSR escape on every redraw, which
+;; overwrites whatever evil set on the last state change; rebinding the variable
+;; around the redraw throws that away and leaves evil in charge.
+(setq evil-normal-state-cursor 'box
+      evil-insert-state-cursor 'bar
+      evil-visual-state-cursor 'hollow
+      evil-replace-state-cursor 'hbar)
+
+(defun +vterm-keep-evil-cursor-a (fn &rest args)
+  "Run FN with ARGS without letting it clobber `cursor-type'."
+  (let ((cursor-type cursor-type))
+    (apply fn args)))
+
+(after! vterm
+  (advice-add #'vterm--redraw :around #'+vterm-keep-evil-cursor-a))
+
+;; C-c/C-v act as copy/paste in vterm insert state, mirroring normal terminal
+;; emulators. C-c only copies when a region is active (e.g. mouse-selected
+;; text); otherwise it falls through to the terminal as SIGINT, since that's
+;; the behavior you actually want most of the time in a shell.
+(defun +vterm/ctrl-c-copy-or-interrupt ()
+  "Copy the active region, or send C-c to the terminal if none is active."
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (kill-ring-save (region-beginning) (region-end))
+        (deactivate-mark))
+    (vterm-send-key "c" nil nil t)))
+
+(defun +vterm/ctrl-v-paste ()
+  "Paste the kill-ring/clipboard into the terminal."
+  (interactive)
+  (vterm-yank))
+
+(map! :map vterm-mode-map
+      :i "C-c" #'+vterm/ctrl-c-copy-or-interrupt
+      :i "C-v" #'+vterm/ctrl-v-paste)
 
 ;; remove LSP delays
 (after! flycheck (setq flycheck-idle-change-delay 0.1))
@@ -120,13 +163,13 @@
   :custom
   (setq lsp-completion-enable-additional-text-edit t)
   (setq lsp-modeline-code-actions-enable t)
-  )   
+  )
 
 ;; load go-specific dap package
 ;; (after! dap-mode
 ;;   (require 'dap-dlv-go)
 ;;   (dap-ui-mode 1)
-;;   (dap-tooltip-mode 1))   
+;;   (dap-tooltip-mode 1))
 
 ;; Better debugging
-(use-package! dape)   
+(use-package! dape)
