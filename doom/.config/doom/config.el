@@ -22,7 +22,7 @@
 ;; accept. For example:
 
 (setq doom-font (font-spec :family "JetBrains Mono Nerd Font" :size 13 :weight 'medium)
-  doom-variable-pitch-font (font-spec :family "JetBrains Mono Nerd Font" :size 13))
+      doom-variable-pitch-font (font-spec :family "JetBrains Mono Nerd Font" :size 13))
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
@@ -35,9 +35,6 @@
 (setq doom-theme 'catppuccin)
 (setq catppuccin-flavor 'macchiato) ; or 'frappe 'latte, 'macchiato, or 'mocha
 (load-theme 'catppuccin t)
-;; set transparency... I don't think this works so TODO
-(set-frame-parameter (selected-frame) 'alpha '(85 85))
-(add-to-list 'default-frame-alist '(alpha 85 85))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -83,29 +80,6 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
-;; source: https://nayak.io/posts/golang-development-doom-emacs/
-;; golang formatting set up
-;; use gofumpt
-(after! lsp-mode
-  (setq  lsp-go-use-gofumpt t)
-  )
-;; automatically organize imports
-(add-hook 'go-mode-hook #'lsp-deferred)
-;; Make sure you don't have other goimports hooks enabled.
-(defun lsp-go-install-save-hooks ()
-  (add-hook 'before-save-hook #'lsp-organize-imports t t))
-(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
-
-;; enable all analyzers; not done by default
-(after! lsp-mode
-  (setq  lsp-go-analyses '((fieldalignment . t)
-                           (nilness . t)
-                           (shadow . t)
-                           (unusedparams . t)
-                           (unusedwrite . t)
-                           (useany . t)
-                           (unusedvariable . t)))
-  )
 ;; use system clipboard
 (require 'pbcopy)
 (turn-on-pbcopy)
@@ -160,10 +134,8 @@
 (after! flycheck (setq flycheck-idle-change-delay 0.1))
 (after! lsp-mode
   (setq lsp-idle-delay 0.1)
-  :custom
   (setq lsp-completion-enable-additional-text-edit t)
-  (setq lsp-modeline-code-actions-enable t)
-  )
+  (setq lsp-modeline-code-actions-enable t))
 
 ;; load go-specific dap package
 ;; (after! dap-mode
@@ -173,3 +145,14 @@
 
 ;; Better debugging
 (use-package! dape)
+
+;; Always give a switched-to project its own workspace. The default,
+;; `non-empty', only creates one when the current workspace already has
+;; buffers; an empty workspace gets renamed instead, so escaping the
+;; find-file prompt after `SPC p p' leaves every project sharing a single
+;; workspace and losing its buffers on the next switch.
+;; (setq +workspaces-on-switch-project-behavior t)
+
+;; Load WSLg specific config
+(when (file-exists-p "/mnt/wslg")
+  (load! "wsl.el"))
