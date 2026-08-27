@@ -80,9 +80,11 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
-;; use system clipboard
-(require 'pbcopy)
-(turn-on-pbcopy)
+;; System clipboard needs no help here: this Emacs is an X11 build, so
+;; `gui-get-selection' talks to XWayland, which WSLg bridges to the Windows
+;; clipboard. `pbcopy' used to be loaded here, but it shells out to macOS'
+;; pbpaste/pbcopy; with those missing it set `interprogram-paste-function' to
+;; a function that always returns nil, which killed yanking from outside.
 
 ;; Emacs spawns child processes through `shell-file-name'. Fish is not POSIX
 ;; compliant, so anything that shells out (diff-hl, TRAMP, magit) breaks with
@@ -128,7 +130,12 @@
 
 (map! :map vterm-mode-map
       :i "C-c" #'+vterm/ctrl-c-copy-or-interrupt
-      :i "C-v" #'+vterm/ctrl-v-paste)
+      :i "C-v" #'+vterm/ctrl-v-paste
+      ;; ESC belongs to the program in the terminal (vim, less, readline's
+      ;; meta prefix), not to evil. evil-collection offers this as a runtime
+      ;; toggle on `C-c C-z', which `C-c' above shadows anyway; make it the
+      ;; permanent state instead. Leave insert state with `C-g'.
+      :i "<escape>" #'vterm--self-insert)
 
 ;; remove LSP delays
 (after! flycheck (setq flycheck-idle-change-delay 0.1))

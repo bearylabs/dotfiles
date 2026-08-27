@@ -14,4 +14,33 @@
   (add-to-list 'default-frame-alist '(fullscreen . fullboth))
   (add-to-list 'initial-frame-alist '(fullscreen . fullboth)))
 
+;; WSLg only: `C-x' does what `M-x' does everywhere else. The Windows host
+;; swallows Alt-x before WSLg forwards it, so the extended-command prompt is
+;; unreachable there; on bare-metal Linux `M-x' works and `C-x' stays the
+;; stock `ctl-x-map' prefix. Bound in every evil state, since a plain
+;; `global-set-key' is shadowed by the evil state maps. `C-x' is a prefix in
+;; stock Emacs, so `ctl-x-map' moves to `C-c x' (C-c x C-s to save, ...).
+(when (file-exists-p "/mnt/wslg")
+  (map! :gnvime "C-c x" ctl-x-map
+        :gnvime "C-x" #'execute-extended-command))
 
+;; WSLg only: `C-SPC' as the alternate leader, for the same reason -- the
+;; Windows host eats Alt-SPC (its window menu) before WSLg sees it, so the
+;; leader is unreachable from insert and emacs states, i.e. in vterm and
+;; anywhere else `SPC' has to stay a literal space. Costs `set-mark-command'
+;; in those states; `v' in normal state still starts a selection.
+(when (file-exists-p "/mnt/wslg")
+  (setq doom-leader-alt-key "C-SPC"
+        doom-localleader-alt-key "C-SPC m")
+  ;; :completion company claims `C-SPC' in insert state (config/default's
+  ;; +evil-bindings.el), and that evil state map wins over the leader's
+  ;; `general-override-mode-map', so in a buffer without company-mode the key
+  ;; only reports "company not enabled in this buffer". Drop it; `C-@' keeps
+  ;; company-complete-common, and both keys are distinct under WSLg's GUI.
+  (map! :i "C-SPC" nil)
+  ;; The `setq' above only lands on a cold start, since Doom installs the
+  ;; leader from `doom-after-init-hook'; `doom/reload' re-runs this file long
+  ;; after that hook. Bind it here too, the same way Doom does, so a reload is
+  ;; enough. `doom/leader' is the prefix command for `doom-leader-map'.
+  (evil-define-key* '(insert emacs) general-override-mode-map
+    (kbd "C-SPC") 'doom/leader))
