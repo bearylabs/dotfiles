@@ -24,6 +24,11 @@ in
   wsl.enable = true;
   wsl.defaultUser = "hrudek";
 
+  # GPU accel for WSLg (d3d12/mesa passthrough). Without this the i3/X11
+  # session falls back to software rendering, causing laggy compositing
+  # and sluggish input in the wslg window.
+  hardware.graphics.enable = true;
+
   networking.hostName = "nixos-wsl";
 
   time.timeZone = "Europe/Berlin";
@@ -47,6 +52,9 @@ in
   users.users.hrudek = {
     isNormalUser = true;
     description = "Hendrik Rudek";
+    # WSL shells don't create a logind session, so /run/user/1000
+    # (XDG_RUNTIME_DIR) is never made. Lingering creates it at boot.
+    linger = true;
     extraGroups = [
       "wheel"
       "docker"
@@ -110,6 +118,10 @@ in
   # Work machine: gh (and gh dash) target the corporate GHE instance when no
   # repo context implies a host.
   environment.sessionVariables.GH_HOST = "siempelkamp.ghe.com";
+
+  # System-wide default editor (was falling back to nano).
+  environment.variables.EDITOR = "vim";
+  environment.variables.VISUAL = "vim";
 
   # NixOS-WSL manages /etc/resolv.conf via the WSL integration.
   networking.resolvconf.enable = false;
@@ -178,6 +190,25 @@ in
     gnumake
     libgcc
 
+    # doom emacs tooling
+    sqlite # :tools lookup, backs dash-docs
+    pandoc # :lang markdown, backs markdown-preview
+    shfmt # :lang sh formatting
+
+    # language servers
+    pyright
+    yaml-language-server
+    terraform-ls
+    typescript
+    typescript-language-server
+
+    # python tooling (doom :lang python expects these on PATH)
+    black
+    isort
+    pipenv
+    python3Packages.pytest
+    python3Packages.pyflakes
+
     # ansible
     ansible
 
@@ -191,6 +222,14 @@ in
     kubectx # includes kubens
     k9s
   ];
+
+  fonts = {
+    packages = with pkgs; [
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.symbols-only
+      symbola # Emacs' unicode fallback font
+    ];
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

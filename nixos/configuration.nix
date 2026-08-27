@@ -420,6 +420,25 @@ in
     gnumake
     libgcc
 
+    # doom emacs tooling
+    sqlite # :tools lookup, backs dash-docs
+    pandoc # :lang markdown, backs markdown-preview
+    shfmt # :lang sh formatting
+
+    # language servers
+    pyright
+    yaml-language-server
+    terraform-ls
+    typescript
+    typescript-language-server
+
+    # python tooling (doom :lang python expects these on PATH)
+    black
+    isort
+    pipenv
+    python3Packages.pytest
+    python3Packages.pyflakes
+
     # ansible
     ansible
 
@@ -439,6 +458,7 @@ in
       inter
       nerd-fonts.jetbrains-mono
       nerd-fonts.symbols-only
+      symbola # Emacs' unicode fallback font
       openmoji-color
     ];
   };
