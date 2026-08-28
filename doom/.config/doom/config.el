@@ -166,6 +166,42 @@
 (after! magit
   (setq git-commit-style-convention-checks '(non-empty-second-line)))
 
+;; Treemacs only highlights files by git status out of the box, so a modified
+;; file inside a collapsed directory is invisible. `deferred' propagates the
+;; status up to parent directories too (async, needs python3).
+(setq +treemacs-git-mode 'deferred)
+
+;; Doom turns on path collapsing (`a/b/c' on one row) whenever git mode is
+;; extended or deferred. Keep one directory per row instead.
+(after! treemacs
+  (setq treemacs-collapse-dirs 0)
+
+  ;; Treemacs refreshes from file-notify events, but only after
+  ;; `treemacs-file-event-delay' ms of quiet, and it only watches directories
+  ;; that were expanded while `treemacs-filewatch-mode' was already on. Shorten
+  ;; the debounce and push the git state of the file we just wrote ourselves, so
+  ;; the highlight lands on save instead of a second later or not at all.
+  (setq treemacs-file-event-delay 500
+        treemacs-silent-refresh t
+        treemacs-silent-filewatch t)
+
+  (defun +treemacs-update-git-state-h ()
+    "Refresh the saved file's git fontification in treemacs."
+    (when (and buffer-file-name (treemacs-get-local-buffer))
+      (treemacs-do-update-single-file-git-state buffer-file-name nil t)))
+  (add-hook 'after-save-hook #'+treemacs-update-git-state-h)
+
+  ;; Git operations outside Emacs (a commit in vterm, a rebase in another
+  ;; window) change the status of files treemacs never sees written, and .git/
+  ;; itself is not watched. Magit is covered by `treemacs-magit'; catch the rest
+  ;; by refreshing when the frame regains focus.
+  (defun +treemacs-refresh-on-focus-h ()
+    "Refresh every treemacs project when the frame regains focus."
+    (when (frame-focus-state)
+      (when-let ((buf (treemacs-get-local-buffer)))
+        (treemacs--do-refresh buf 'all))))
+  (add-function :after after-focus-change-function #'+treemacs-refresh-on-focus-h))
+
 ;; Load WSLg specific config
 (when (file-exists-p "/mnt/wslg")
   (load! "wsl.el"))
