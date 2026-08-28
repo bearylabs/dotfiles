@@ -61,3 +61,14 @@
 
 ;; Better debugging
 (package! dape)   
+
+;; Second terminal, for the AI TUIs (claude, copilot, codex). vterm stays the
+;; terminal for everything else; it just cannot serve a TUI that scrolls its own
+;; viewport, since its module never calls libvterm's mouse entry points and so
+;; never forwards the wheel to the program. ghostel drives libghostty-vt (the VT
+;; engine behind Ghostty) through a Zig dynamic module, which passes mouse
+;; events through at native throughput. eat can do the same in pure elisp, but
+;; is visibly laggy under load. `evil-ghostel' lives in the same repo, under
+;; extensions/.
+(package! ghostel)
+(package! evil-ghostel)

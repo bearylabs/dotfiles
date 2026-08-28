@@ -202,6 +202,72 @@
         (treemacs--do-refresh buf 'all))))
   (add-function :after after-focus-change-function #'+treemacs-refresh-on-focus-h))
 
+;; Carries the leader key in ghostel buffers; the binding itself is made once
+;; ghostel loads, below. A minor-mode map rather than `ghostel-mode-map', which
+;; the input modes inherit and install with `use-local-map': which-key paints
+;; every entry it can also resolve through `current-local-map' in
+;; `which-key-local-map-description-face', so a leader in the local map turns
+;; the whole menu that color. Minor-mode maps outrank the local map, so the key
+;; still lands; char mode still wins over it, through its own
+;; `emulation-mode-map-alists' entry.
+(defvar-keymap +ghostel-leader-mode-map
+  :doc "Keymap carrying the leader key in `ghostel-mode' buffers.")
+
+(define-minor-mode +ghostel-leader-mode
+  "Keep the Doom leader reachable in ghostel buffers."
+  :keymap +ghostel-leader-mode-map)
+
+;; Terminal for the AI TUIs (claude, copilot, codex), which draw a fixed input
+;; box and scroll their own viewport. vterm cannot serve those: its module never
+;; calls libvterm's mouse entry points, so a wheel event only ever scrolls the
+;; Emacs window over the buffer, dragging the input box along with it. ghostel
+;; forwards mouse events to the program over the SGR protocol instead. vterm
+;; stays the terminal for everything else, on `SPC o t'.
+(use-package! ghostel
+  :commands ghostel
+  :hook (ghostel-mode . +ghostel-leader-mode)
+  :init
+  ;; The module is a binary downloaded on first use, and it defaults to living
+  ;; in the package directory -- which straight rebuilds on every `doom sync',
+  ;; taking the module with it. Keep it in Doom's data dir, which survives.
+  (setq ghostel-module-directory (expand-file-name "ghostel/" doom-data-dir))
+  :config
+  ;; `ghostel-shell' follows $SHELL, which is zsh here; the interactive
+  ;; terminals get fish, same as vterm.
+  (setq ghostel-shell "/run/current-system/sw/bin/fish")
+
+  ;; `SPC' is a literal space in a terminal, so the leader is only reachable
+  ;; through `doom-leader-alt-key' -- `M-SPC', or `C-SPC' under WSLg (wsl.el).
+  ;; Neither arrives on its own: semi-char mode sends `M-SPC' to the program,
+  ;; and deliberately leaves `C-SPC' unbound so it reaches the global map,
+  ;; where it lands on `set-mark-command'. The exception stops the first, and
+  ;; the binding below covers both. Char mode forwards everything by design,
+  ;; leader included.
+  (unless (member doom-leader-alt-key ghostel-keymap-exceptions)
+    (setopt ghostel-keymap-exceptions
+            (cons doom-leader-alt-key ghostel-keymap-exceptions)))
+  (define-key +ghostel-leader-mode-map (kbd doom-leader-alt-key) #'doom/leader)
+
+  ;; Without this the buffer counts as unreal (it visits no file and its name
+  ;; is starred), so `+workspaces-add-current-buffer-h' never registers it with
+  ;; the perspective and it is missing from `SPC ,'. `vterm-mode' is on that
+  ;; list out of the box; ghostel opens in a normal window rather than a popup,
+  ;; so the buffer switcher is the way back to it.
+  (add-to-list 'doom-real-buffer-modes 'ghostel-mode))
+
+;; Routes insert-state ESC to the program in alt-screen TUIs, which is what the
+;; vterm block above does by hand. `C-c C-r' toggles that per buffer, `C-c
+;; <escape>' reaches normal state once without changing the routing.
+(use-package! evil-ghostel
+  :after ghostel
+  :hook (ghostel-mode . evil-ghostel-mode))
+
+;; A bare `ghostel' pops to the existing terminal and only spawns a new one
+;; under a non-numeric prefix arg, which routes `ghostel--start' to the next
+;; free instance. Hand it that arg unconditionally: every press is a new
+;; terminal, and the old ones stay reachable through `SPC ,'.
+(map! :leader :desc "Ghostel terminal" "o G" (cmd! (ghostel '(4))))
+
 ;; Load WSLg specific config
 (when (file-exists-p "/mnt/wslg")
   (load! "wsl.el"))

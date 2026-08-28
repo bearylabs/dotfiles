@@ -44,3 +44,29 @@
   ;; enough. `doom/leader' is the prefix command for `doom-leader-map'.
   (evil-define-key* '(insert emacs) general-override-mode-map
     (kbd "C-SPC") 'doom/leader))
+
+;; WSLg only: the leader's which-key labels follow the leader key, and the two
+;; parted ways above. Doom registers them while the modules load, as key-based
+;; replacements for the literal `SPC ...' and `M-SPC ...' sequences (see
+;; `doom--define-leader-key'), which is long before this file changes the alt
+;; key. The bindings do move -- `doom-init-leader-keys-h' installs them from
+;; `doom-after-init-hook', after this file -- so `C-SPC' opens the leader but
+;; renders it with whatever descriptions survive without a replacement. Clone
+;; the `M-SPC' entries onto `C-SPC'. Runs last so it also catches the leader
+;; keys config.el binds. Both prefixes are literal, so swapping them inside the
+;; stored regexp is safe.
+(when (file-exists-p "/mnt/wslg")
+  (after! which-key
+    (let ((old "\\`M-SPC ")
+          (new "\\`C-SPC "))
+      (dolist (entry (copy-sequence which-key-replacement-alist))
+        (let ((key (car-safe (car entry))))
+          (when (and (stringp key) (string-prefix-p old key))
+            ;; `cl-pushnew', so a second load of this file -- `doom/reload'
+            ;; resets the alist first, a bare `load' does not -- cannot stack
+            ;; another copy of every entry on top.
+            (cl-pushnew (cons (cons (concat new (substring key (length old)))
+                                    (cdr (car entry)))
+                              (cdr entry))
+                        which-key-replacement-alist
+                        :test #'equal)))))))
