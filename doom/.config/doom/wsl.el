@@ -45,6 +45,25 @@
   (evil-define-key* '(insert emacs) general-override-mode-map
     (kbd "C-SPC") 'doom/leader))
 
+;; WSLg only: this is the machine carrying an envvar file. `doom env' dumps the
+;; whole shell environment into it and Emacs loads that at startup, so a dump
+;; taken from inside a Claude Code session -- easy to take now that ghostel is
+;; where those sessions run -- bakes in that session's CLAUDE_* variables,
+;; CLAUDE_CODE_CHILD_SESSION among them. Every terminal Emacs spawns afterwards
+;; inherits the set, and the next `claude' takes itself for a subprocess of a
+;; session that exited long ago: it treats the marker as inherited and turns off
+;; transcript saving. `doom-env-deny' is the fix on the generating side, but
+;; nothing loads $DOOMDIR/cli.el in Doom 3 (bin/doom's own help text
+;; notwithstanding), so scrub on this side instead -- whatever the envvar file
+;; holds, `process-environment' is clean before a terminal can copy it. The
+;; stale CLAUDE_CODE_MESSAGING_TOKEN is worth dropping on its own account.
+(when (file-exists-p "/mnt/wslg")
+  (dolist (var '("AI_AGENT" "CLAUDECODE" "CLAUDE_CODE_CHILD_SESSION"
+                 "CLAUDE_CODE_ENTRYPOINT" "CLAUDE_CODE_EXECPATH"
+                 "CLAUDE_CODE_MESSAGING_SOCKET" "CLAUDE_CODE_MESSAGING_TOKEN"
+                 "CLAUDE_CODE_SESSION_ID" "CLAUDE_EFFORT" "CLAUDE_PID"))
+    (setenv var nil)))
+
 ;; WSLg only: the leader's which-key labels follow the leader key, and the two
 ;; parted ways above. Doom registers them while the modules load, as key-based
 ;; replacements for the literal `SPC ...' and `M-SPC ...' sequences (see
