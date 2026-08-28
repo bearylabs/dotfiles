@@ -202,20 +202,21 @@
         (treemacs--do-refresh buf 'all))))
   (add-function :after after-focus-change-function #'+treemacs-refresh-on-focus-h))
 
-;; Carries the leader key in ghostel buffers; the binding itself is made once
-;; ghostel loads, below. A minor-mode map rather than `ghostel-mode-map', which
-;; the input modes inherit and install with `use-local-map': which-key paints
-;; every entry it can also resolve through `current-local-map' in
+;; Carries the keys ghostel's own maps would otherwise swallow (the leader,
+;; `C-v'); the bindings themselves are made once ghostel loads, below. A
+;; minor-mode map rather than `ghostel-mode-map', which the input modes inherit
+;; and install with `use-local-map': which-key paints every entry it can also
+;; resolve through `current-local-map' in
 ;; `which-key-local-map-description-face', so a leader in the local map turns
 ;; the whole menu that color. Minor-mode maps outrank the local map, so the key
 ;; still lands; char mode still wins over it, through its own
 ;; `emulation-mode-map-alists' entry.
-(defvar-keymap +ghostel-leader-mode-map
-  :doc "Keymap carrying the leader key in `ghostel-mode' buffers.")
+(defvar-keymap +ghostel-keys-mode-map
+  :doc "Keymap carrying Emacs-side keys in `ghostel-mode' buffers.")
 
-(define-minor-mode +ghostel-leader-mode
-  "Keep the Doom leader reachable in ghostel buffers."
-  :keymap +ghostel-leader-mode-map)
+(define-minor-mode +ghostel-keys-mode
+  "Keep the Doom leader and `C-v' reachable in ghostel buffers."
+  :keymap +ghostel-keys-mode-map)
 
 ;; Terminal for the AI TUIs (claude, copilot, codex), which draw a fixed input
 ;; box and scroll their own viewport. vterm cannot serve those: its module never
@@ -225,7 +226,7 @@
 ;; stays the terminal for everything else, on `SPC o t'.
 (use-package! ghostel
   :commands ghostel
-  :hook (ghostel-mode . +ghostel-leader-mode)
+  :hook (ghostel-mode . +ghostel-keys-mode)
   :init
   ;; The module is a binary downloaded on first use, and it defaults to living
   ;; in the package directory -- which straight rebuilds on every `doom sync',
@@ -246,7 +247,34 @@
   (unless (member doom-leader-alt-key ghostel-keymap-exceptions)
     (setopt ghostel-keymap-exceptions
             (cons doom-leader-alt-key ghostel-keymap-exceptions)))
-  (define-key +ghostel-leader-mode-map (kbd doom-leader-alt-key) #'doom/leader)
+  (define-key +ghostel-keys-mode-map (kbd doom-leader-alt-key) #'doom/leader)
+
+  ;; A TUI that offers its own copy (claude, codex, and anything under tmux or
+  ;; neovim) hands the text back over OSC 52, since it has no other way out of
+  ;; the terminal. ghostel drops those requests unless this is on, which is why
+  ;; the program reports "copied to clipboard" and nothing lands anywhere. The
+  ;; handler does `kill-new' plus `gui-set-selection', so the text reaches both
+  ;; the kill ring and -- through XWayland and WSLg -- the Windows clipboard.
+  ;;
+  ;; The tradeoff: any escape sequence in command output can now overwrite the
+  ;; clipboard silently, e.g. from `cat' on a hostile file or a remote shell.
+  ;; That is the reason it ships off by default.
+  ;;
+  ;; The bundled xterm-ghostty terminfo still withholds the `Ms' capability, so
+  ;; apps that probe terminfo before trying (neovim, tmux) will not discover it;
+  ;; those need upstream Ghostty's terminfo. Apps that just emit the sequence,
+  ;; which is what the AI TUIs do, work as soon as this is set.
+  (setq ghostel-enable-osc52 t)
+
+  ;; `C-v' pastes in insert state, mirroring the vterm binding above and normal
+  ;; terminal emulators. `ghostel-yank' sends the kill ring as a bracketed
+  ;; paste, so a TUI's input box takes it as one chunk. Insert and emacs states
+  ;; only: `C-v' stays `evil-visual-block' in normal state. Kept in the
+  ;; minor-mode map rather than `ghostel-semi-char-mode-map', whose contents
+  ;; `ghostel--rebuild-semi-char-keymap' replaces wholesale on every change to
+  ;; `ghostel-keymap-exceptions'.
+  (evil-define-key* '(insert emacs) +ghostel-keys-mode-map
+    (kbd "C-v") #'ghostel-yank)
 
   ;; Without this the buffer counts as unreal (it visits no file and its name
   ;; is starred), so `+workspaces-add-current-buffer-h' never registers it with
