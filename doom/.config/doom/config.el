@@ -299,3 +299,51 @@
 ;; Load WSLg specific config
 (when (file-exists-p "/mnt/wslg")
   (load! "wsl.el"))
+
+;; The `:os tty' module already activates evil-terminal-cursor-changer on
+;; `tty-setup-hook'; this only picks the shapes. `emacs -nw' then gets the same
+;; block/bar distinction the GUI draws.
+(setq evil-normal-state-cursor  'box
+      evil-motion-state-cursor  'box
+      evil-visual-state-cursor  'box
+      evil-replace-state-cursor 'hbar
+      evil-insert-state-cursor  'bar
+      evil-emacs-state-cursor   'hbar)
+
+;; A tty frame has no fringes, so every indicator Doom draws there is simply
+;; not rendered: the VC gutter from `:ui vc-gutter', flycheck's error and
+;; warning arrows, vi-tilde-fringe's past-EOB tildes. diff-hl and flycheck can
+;; both draw into the margins instead, which tty frames do have -- diff-hl on
+;; the left, matching its fringe side, flycheck on the right.
+;;
+;; These variables are global rather than per-frame, so a daemon serving a GUI
+;; and a tty frame at once would move the GUI's indicators to the margin too.
+(add-hook! 'tty-setup-hook
+  (defun +tty-indicators-to-margins-h ()
+    (setq flycheck-indication-mode 'right-margin)
+    (after! diff-hl (diff-hl-margin-mode +1))))
+
+;; lsp-ui's documentation popup is a child frame, and tty child frames only
+;; arrived in Emacs 31. Until then the popup silently does nothing in a
+;; terminal frame; without a child frame lsp-ui-doc renders into an ordinary
+;; window instead, which works everywhere.
+;; Set outside `after!': a `defcustom' keeps a value the variable already has,
+;; so this lands whether or not lsp-ui has loaded yet.
+(add-hook! 'tty-setup-hook
+  (defun +tty-lsp-ui-doc-without-childframe-h ()
+    (unless (featurep 'tty-child-frames)
+      (setq lsp-ui-doc-use-childframe nil))))
+
+;; Everything above, and the whole of `:os tty' -- terminal mouse, OSC 52
+;; clipboard, the Kitty keyboard protocol, the evil cursor shapes -- hangs off
+;; `tty-setup-hook', and that hook never runs for the frame `emacs -nw' starts
+;; in: Doom loads its module config and this file after Emacs has already
+;; initialised the initial terminal. Only frames opened later, an
+;; `emacsclient -nw' against a daemon, get it. So run the hook once by hand for
+;; the frame already present. Must stay last in this file, after `wsl.el' has
+;; added its own entry.
+;;
+;; Skipped under a daemon: there the first frame may be graphical, and much of
+;; what these functions set is global rather than frame-local.
+(unless (or (daemonp) (display-graphic-p))
+  (run-hooks 'tty-setup-hook))
