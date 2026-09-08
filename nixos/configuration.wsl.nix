@@ -163,6 +163,8 @@ in
     lazygit
     psmisc
     powershell
+    xdotool
+    xeyes
 
     # monitoring
     htop
