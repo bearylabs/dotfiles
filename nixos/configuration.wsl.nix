@@ -13,6 +13,19 @@ let
       url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
     }
   );
+
+  # ncurses' xterm-direct announces 24-bit colour with the ITU-T T.416 form of
+  # the SGR sequence, \e[38:2::R:G:Bm. Windows Terminal does not parse it and
+  # drops the sequence, taking every colour Emacs draws with it -- not just the
+  # theme. These entries carry the same capability with ";" separators, which WT
+  # does understand. WSL-only: a native terminal handles the stock entry, so
+  # this stays out of the shared home.nix.
+  wtTerminfo = pkgs.runCommand "wt-direct-terminfo" {
+    nativeBuildInputs = [ pkgs.ncurses ];
+  } ''
+    mkdir -p $out/share/terminfo
+    tic -x -o $out/share/terminfo ${../terminfo/wt-direct.ti}
+  '';
 in
 {
   imports = [
@@ -64,6 +77,12 @@ in
 
   home-manager.users.hrudek = {
     imports = [ ./home.nix ];
+
+    # ~/.terminfo is already in ncurses' default search path, so no
+    # TERMINFO_DIRS -- setting that would replace the built-in paths rather
+    # than extend them.
+    home.file.".terminfo".source = "${wtTerminfo}/share/terminfo";
+
     home.file.".gitconfig.local".text = ''
       [user]
         name = hrudek
