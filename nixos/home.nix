@@ -9,18 +9,38 @@ let
     state_file="$config_dir/theme-mode"
     gsettings_bin="${pkgs.glib}/bin/gsettings"
 
+    # gsettings resolves schemas off XDG_DATA_DIRS; a bare WSL shell has none.
+    export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:''${XDG_DATA_DIRS:-}"
+
+    # i3 under WSLg runs no XSETTINGS/settings daemon, so GTK never sees the
+    # gsettings keys. The settings.ini files are what actually take effect;
+    # gsettings is kept for anything that does read it (and is best-effort,
+    # since a dbus-less shell falls back to the memory backend).
+    write_gtk() {
+      theme="$1"
+      prefer_dark="$2"
+      for ver in 3.0 4.0; do
+        mkdir -p "$config_dir/gtk-$ver"
+        printf '[Settings]\ngtk-theme-name=%s\ngtk-application-prefer-dark-theme=%s\n' \
+          "$theme" "$prefer_dark" > "$config_dir/gtk-$ver/settings.ini"
+      done
+      printf 'gtk-theme-name="%s"\n' "$theme" > "$HOME/.gtkrc-2.0"
+    }
+
     apply_dark() {
       mkdir -p "$config_dir"
       printf '%s\n' dark > "$state_file"
-      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'prefer-dark'
-      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+      write_gtk Adwaita-dark 1
+      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
+      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || true
     }
 
     apply_light() {
       mkdir -p "$config_dir"
       printf '%s\n' light > "$state_file"
-      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'default'
-      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita'
+      write_gtk Adwaita 0
+      "$gsettings_bin" set org.gnome.desktop.interface color-scheme 'default' || true
+      "$gsettings_bin" set org.gnome.desktop.interface gtk-theme 'Adwaita' || true
     }
 
     current_mode() {
@@ -156,5 +176,11 @@ in
   home.packages = [
     powerSource
     themeToggle
+
+    # Adwaita-dark lives in gnome-themes-extra; GTK finds it via
+    # ~/.nix-profile/share/themes on XDG_DATA_DIRS.
+    pkgs.gnome-themes-extra
+    pkgs.adwaita-icon-theme
+    pkgs.gsettings-desktop-schemas
   ];
 }
