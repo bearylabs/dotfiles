@@ -189,3 +189,32 @@ the ring, so returning it twice would stack duplicates."
   (add-hook! 'tty-setup-hook
     (defun +wsl-tty-clipboard-paste-h ()
       (setq interprogram-paste-function #'+wsl-tty-clipboard-paste))))
+
+;; WSLg only, terminal frames: the mouse.
+;;
+;; `:os tty' enabled `xterm-mouse-mode' unconditionally until Doom 2.2, which
+;; gated it on `(< emacs-major-version 31)' and deferred to Emacs 31's own
+;; auto-enable. That auto-enable does not fire here: `xterm--init' only turns
+;; the mode on for terminals whose XTVERSION answer matches Konsole, VTE,
+;; WezTerm, iTerm2, kitty or foot, or whose TERM is alacritty or contour
+;; (bug#74833). Windows Terminal is neither, so `emacs -nw' comes up mouseless.
+;;
+;; The allowlist is not arbitrary. With the mode on, Emacs takes the mouse
+;; events and the terminal's own drag-selection stops reaching the system
+;; clipboard, so Emacs has to be able to stand in for it -- OSC 52 in both
+;; directions. Windows Terminal refuses the read half, which is what keeps it
+;; off the list. Here that half arrives by another road: `xsel' over WSLg,
+;; installed on `interprogram-paste-function' just above. The condition the
+;; allowlist stands for is met; the identity check it performs cannot see it.
+;;
+;; Calling the mode explicitly is the sanctioned override -- the auto-enable is
+;; guarded by `(not xterm-mouse-mode-called)', so an explicit call wins and is
+;; not undone. No version guard: on Emacs 30 `:os tty' enables the mode itself
+;; and a second enable is a no-op.
+;;
+;; Shift+drag stays the way out, bypassing mouse reporting for a native
+;; Windows Terminal selection.
+(when (file-exists-p "/mnt/wslg")
+  (add-hook! 'tty-setup-hook
+    (defun +wsl-tty-mouse-h ()
+      (xterm-mouse-mode 1))))
