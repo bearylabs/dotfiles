@@ -96,22 +96,7 @@ in
   };
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.overlays = [
-    emacs-overlay
-    (final: prev: {
-      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
-        (pyFinal: pyPrev: {
-          # test expectations use "pkg@ url" but pipx now emits "pkg @ url"
-          pipx = pyPrev.pipx.overrideAttrs (old: {
-            disabledTests = (old.disabledTests or [ ]) ++ [
-              "test_parse_specifier_for_metadata"
-              "test_fix_package_name"
-            ];
-          });
-        })
-      ];
-    })
-  ];
+  nixpkgs.overlays = [ emacs-overlay ];
 
   nix.settings.experimental-features = [
     "nix-command"
