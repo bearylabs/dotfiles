@@ -12,7 +12,7 @@ let
       };
   emacs-overlay = import (
     builtins.fetchTarball {
-      url = "https://github.com/nix-community/emacs-overlay/archive/87181272bf633bbc9f19a8aa8662833940bf18ed.tar.gz";
+      url = "https://github.com/nix-community/emacs-overlay/archive/73954822fae76d4cffb6eb60142229129542a7c0.tar.gz";
     }
   );
 in
