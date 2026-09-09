@@ -323,17 +323,6 @@
     (setq flycheck-indication-mode 'right-margin)
     (after! diff-hl (diff-hl-margin-mode +1))))
 
-;; lsp-ui's documentation popup is a child frame, and tty child frames only
-;; arrived in Emacs 31. Until then the popup silently does nothing in a
-;; terminal frame; without a child frame lsp-ui-doc renders into an ordinary
-;; window instead, which works everywhere.
-;; Set outside `after!': a `defcustom' keeps a value the variable already has,
-;; so this lands whether or not lsp-ui has loaded yet.
-(add-hook! 'tty-setup-hook
-  (defun +tty-lsp-ui-doc-without-childframe-h ()
-    (unless (featurep 'tty-child-frames)
-      (setq lsp-ui-doc-use-childframe nil))))
-
 ;; Everything above, and the whole of `:os tty' -- terminal mouse, OSC 52
 ;; clipboard, the Kitty keyboard protocol, the evil cursor shapes -- hangs off
 ;; `tty-setup-hook', and that hook never runs for the frame `emacs -nw' starts
