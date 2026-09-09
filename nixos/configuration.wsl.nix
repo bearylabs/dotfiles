@@ -184,6 +184,7 @@ in
     powershell
     xdotool
     xeyes
+    xsel # terminal Emacs reads the Windows clipboard through it, see doom/wsl.el
 
     # monitoring
     htop

@@ -128,3 +128,64 @@
       (advice-add 'doom-modeline-icon :filter-return #'+wsl-tty-pad-nerd-icon-a)
       (advice-add 'doom-modeline-icon-for-buffer :filter-return
                   #'+wsl-tty-pad-nerd-icon-a))))
+
+;; WSLg only, terminal frames: yanking text copied in Windows.
+;;
+;; `:os tty +osc' installs clipetty, and clipetty is copy-only -- it sets
+;; `interprogram-cut-function' to push kills out over OSC 52 and never touches
+;; `interprogram-paste-function'. OSC 52 does have a read half, but terminals
+;; refuse to implement it (any escape sequence in command output could then
+;; exfiltrate the clipboard), Windows Terminal included. A tty frame also opens
+;; no X connection of its own, so `gui-get-selection' -- what the WSLg GUI frame
+;; uses -- is unavailable here too. That leaves the kill ring as the only source
+;; a yank has, which is why `p' keeps handing back the last text killed inside
+;; Emacs however often the Windows clipboard changes. The direction that works
+;; is the one clipetty covers.
+;;
+;; Pasting inside vterm/ghostel looks like it works only because that goes
+;; through the terminal, not through Emacs: Windows Terminal's own paste types
+;; the text into the pty as a bracketed paste, and the child program inserts it.
+;; Nothing consults the kill ring on that path.
+;;
+;; WSLg mirrors the Windows clipboard onto XWayland's CLIPBOARD selection, so
+;; `xsel' can read it from the Linux side without leaving WSL: ~3ms per call,
+;; against ~800ms for `powershell.exe -Command Get-Clipboard'. Only the paste
+;; half is replaced; kills keep leaving through clipetty's OSC 52, which also
+;; works over ssh and outside WSLg.
+;;
+;; The bridge hands the line endings over as Windows wrote them, so the text
+;; arrives with CRLF and has to be converted. It also drops the very last byte
+;; when that is a newline: copying one full line in a browser yields
+;; "text\r", not "text\r\n". Turning the leftover lone CR into a newline
+;; puts that break back rather than inventing one.
+;;
+;; `interprogram-paste-function' is a global, not frame-local, so under a daemon
+;; serving a GUI frame as well this routes its yanks through xsel too. Same
+;; clipboard, one subprocess instead of a native selection request.
+
+(defvar +wsl-tty-last-clipboard nil
+  "Text `+wsl-tty-clipboard-paste' returned last, to avoid repeating it.")
+
+(defun +wsl-tty-clipboard-paste ()
+  "Return the Windows clipboard, read through WSLg's X CLIPBOARD selection.
+Returns nil when the text is unchanged since the last call or already sits
+at the head of the kill ring; `current-kill' pushes whatever comes back onto
+the ring, so returning it twice would stack duplicates."
+  (when-let* ((xsel (executable-find "xsel"))
+              ;; stderr discarded: with no X server reachable xsel writes a
+              ;; diagnostic and exits, and an empty result falls back to the
+              ;; kill ring on its own.
+              (text (with-output-to-string
+                      (with-current-buffer standard-output
+                        (call-process xsel nil '(t nil) nil
+                                      "--clipboard" "--output")))))
+    (setq text (string-replace "\r" "\n" (string-replace "\r\n" "\n" text)))
+    (unless (or (string-empty-p text)
+                (equal text +wsl-tty-last-clipboard)
+                (equal text (car kill-ring)))
+      (setq +wsl-tty-last-clipboard text))))
+
+(when (file-exists-p "/mnt/wslg")
+  (add-hook! 'tty-setup-hook
+    (defun +wsl-tty-clipboard-paste-h ()
+      (setq interprogram-paste-function #'+wsl-tty-clipboard-paste))))
