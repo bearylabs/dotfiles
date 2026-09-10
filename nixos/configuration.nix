@@ -184,6 +184,20 @@ in
     # Hibernate on the same schedule when docked; the delay is about not
     # losing the session, and AC can be unplugged while the lid is closed.
     HibernateOnACPower = "yes";
+    # systemd's default is "platform shutdown", and it picks whichever value
+    # *writes* to /sys/power/disk without error -- so it always lands on
+    # platform. That path hands the power-off to the firmware and, right before
+    # it, aborts on any pending wakeup event:
+    #
+    #   PM: hibernation: Wakeup event detected during hibernation, rolling back.
+    #
+    # The rollback is not clean here. The image is already written and the GPU
+    # is already torn down for S4, and amdgpu does not survive being brought
+    # back from that: psp DESTROY_TMR fails, flip_done times out, the ASIC is
+    # reset, and the session is gone with no way back but the power button.
+    # Plain shutdown powers off directly after writing the image, with no
+    # firmware hand-off and no wakeup check to trip over.
+    HibernateMode = "shutdown";
   };
 
   # Swapfile for hibernation (suspend-then-hibernate above). Size >= RAM.
