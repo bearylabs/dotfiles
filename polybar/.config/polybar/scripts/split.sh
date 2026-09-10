@@ -83,10 +83,24 @@ render
 # Keybindings, new windows and focus moves all surface as one of these events,
 # which covers every ordinary way the direction changes.
 #
+# The subscription is a coprocess rather than the left half of a pipeline so
+# that its pid is reachable from the trap. polybar kills only this script when
+# it stops a module, and a subscription left behind sits blocked on the i3
+# socket: it only notices its pipe is gone at the next i3 event, which can be
+# minutes away, so it survives the bar it belonged to.
+coproc SUB { exec i3-msg -t subscribe -m '["window","workspace","binding","mode"]'; }
+trap 'kill "${SUB_PID:-}" 2>/dev/null' EXIT INT TERM
+
 # `split` run any other way -- i3-msg, or this module's own click handler --
-# emits no event at all, so a slow tick backstops it. Everything it catches is
-# already on screen within a second, and an unchanged tick prints nothing.
-{
-  while :; do printf '\n'; sleep 1; done &
-  i3-msg -t subscribe -m '["window","workspace","binding","mode"]'
-} | while read -r _; do render; done
+# emits no event at all, so the read timeout doubles as a slow backstop tick.
+# Everything it catches is already on screen within a second, and an unchanged
+# tick prints nothing. A separate ticker process would be a second child to
+# leak, which is the whole point of the coprocess above.
+while :; do
+  read -r -t 1 -u "${SUB[0]}" _ && { render; continue; }
+  # Over 128 is the read timing out, i.e. the backstop tick. Anything else is
+  # end of file: the subscription is gone and there is nothing left to watch,
+  # so exit and let polybar restart the module.
+  (($? > 128)) || break
+  render
+done
