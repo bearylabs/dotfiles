@@ -484,6 +484,15 @@ in
   # power manager re-enabling it.
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usbhid", TEST=="power/control", ATTR{power/control}="on"
+
+    # The Logi Bolt receiver is the only USB device that arms a wakeup source,
+    # and it fires spuriously out of s2idle. That aborts suspend-then-hibernate
+    # before its own timer, so systemd gives up on hibernating and logind just
+    # re-suspends ~30s later, leaving the machine cycling all night instead of
+    # going to disk. Runtime autosuspend stays off (rule above); this only
+    # stops the receiver from arming a wake. The lid and power button still wake
+    # the machine; the mouse and keyboard no longer do.
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", ATTR{power/wakeup}="disabled"
   '';
 
   # Some programs need SUID wrappers, can be configured further or are
