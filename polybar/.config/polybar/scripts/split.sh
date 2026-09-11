@@ -9,22 +9,21 @@
 # Tabbed and stacked have no counterpart in GlazeWM, but i3 has them and there
 # the next window is not a spatial split at all, so they get their own glyph.
 #
-# Clicking toggles the direction. A fullscreen window has no direction to
-# change, so it reports state instead and takes no click -- same as the widget.
+# Clicking toggles the direction. i3 covers the bar when a window goes
+# fullscreen, so that state needs no indicator of its own -- there is nothing
+# on screen to show it on.
 
 set -u
 
 overlay0='#6c7086'
-peach='#fab387'
 
 readonly SPLIT_H=$''   # cod-split_horizontal -- next window opens right
 readonly SPLIT_V=$''   # cod-split_vertical   -- next window opens below
 readonly TABBED=$'\U000f04e9'  # md-tab
 readonly STACKED=$'\U000f09fe' # md-layers_outline
-readonly FULL=$''      # cod-screen_full
 
 # Walks the tree carrying the parent along, and reports the focused node's
-# parent layout plus its own fullscreen state.
+# parent layout.
 #
 # The node has to be bound to $self before descending: after the `|` the input
 # is already the child, so passing `.` there would hand every node itself as
@@ -32,25 +31,17 @@ readonly FULL=$''      # cod-screen_full
 # shellcheck disable=SC2016  # $parent and $self are jq bindings, not shell.
 readonly QUERY='
   def walk($parent):
-    (if .focused then { layout: ($parent.layout // "splith"), full: .fullscreen_mode }
-     else empty end),
+    (if .focused then ($parent.layout // "splith") else empty end),
     (. as $self | (.nodes[]?, .floating_nodes[]?) | walk($self));
-  walk(null) | "\(.layout) \(.full)"
+  walk(null)
 '
 
 build() {
-  local layout full glyph
+  local layout glyph
 
-  read -r layout full < <(i3-msg -t get_tree | jq -r "$QUERY" | head -n1)
+  layout=$(i3-msg -t get_tree | jq -r "$QUERY" | head -n1)
 
-  if [[ -z ${layout:-} ]]; then
-    return
-  fi
-
-  if [[ $full != 0 ]]; then
-    # No tiling direction to change while fullscreen, so the glyph reports
-    # state and carries no click region.
-    printf '%%{O8}%%{T2}%%{F%s}%s%%{F-}%%{T-}%%{O8}' "$peach" "$FULL"
+  if [[ -z $layout ]]; then
     return
   fi
 
