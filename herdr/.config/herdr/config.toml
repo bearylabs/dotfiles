@@ -314,6 +314,8 @@ accent = "#c6a0f6"
 # Accepts: hex (#89b4fa), named colors (cyan, blue, magenta), or rgb(r,g,b)
 # accent = "cyan"
 
+sidebar_collapsed_mode = "hidden"  # default is "compact"
+
 # Background notification popup delivery
 [ui.toast]
 # off = disable pop-up notifications
