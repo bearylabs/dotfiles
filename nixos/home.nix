@@ -149,6 +149,11 @@ in
   home.file.".gitconfig".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/gitconfig/.gitconfig";
 
+  # Only the config file: Herdr keeps its sockets, logs and session state in
+  # ~/.config/herdr, which has no business in the dotfiles repo.
+  home.file.".config/herdr/config.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/herdr/.config/herdr/config.toml";
+
   home.file.".config/i3".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/i3/.config/i3";
 
