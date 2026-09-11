@@ -50,3 +50,5 @@ keybind = performable:ctrl+v=paste_from_clipboard
 window-decoration = server
 window-padding-x = 10
 window-padding-y = 10, 1
+
+theme = Catppuccin Macchiato
