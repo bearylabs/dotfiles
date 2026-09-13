@@ -42,6 +42,9 @@
 # # Just for example:
 # resize-overlay-duration = 4s 200ms
 font-family = JetBrainsMono Nerd Font
+font-feature = -calt
+font-feature = -liga
+font-feature = -dlig
 keybind = performable:ctrl+c=copy_to_clipboard
 # keybind = performable:super+c=copy_to_clipboard
 keybind = performable:ctrl+v=paste_from_clipboard
