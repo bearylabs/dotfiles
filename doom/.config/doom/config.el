@@ -310,6 +310,47 @@
       evil-insert-state-cursor  'bar
       evil-emacs-state-cursor   'hbar)
 
+;; `:os tty +osc' only covers the outbound half of the clipboard: clipetty
+;; advises `interprogram-cut-function' and ships the kill over OSC 52, so a
+;; yank in `emacs -nw' does reach the X clipboard. Nothing fills the inbound
+;; half. A tty frame has no window-system selection, so `gui-selection-value'
+;; is unavailable and Doom leaves `interprogram-paste-function' nil; `p' then
+;; only ever sees Emacs' own kill ring, and the only way to get outside text in
+;; is to let the terminal type it -- Ghostty's `ctrl+v' as a bracketed paste,
+;; which needs insert state. OSC 52 can request the clipboard back in theory,
+;; but the reply arrives asynchronously as input and Ghostty refuses those
+;; reads by default, so it is no help here.
+;;
+;; Shell out to xclip instead, which talks to the same X11 selection the
+;; browser and the GUI Emacs use. That makes `p', `P' and `"+p' all work from
+;; normal state.
+(defvar +tty-clipboard--last nil
+  "Last text `+tty-clipboard-paste' handed to the kill ring.")
+
+(defun +tty-clipboard-paste ()
+  "Return the X11 clipboard, or nil when there is nothing new to yank.
+Returning nil on unchanged text is what keeps `current-kill' from
+pushing a duplicate entry onto the kill ring on every paste."
+  (when-let* (((not (display-graphic-p)))
+              (xclip (executable-find "xclip"))
+              (text (with-temp-buffer
+                      (let ((coding-system-for-read 'utf-8))
+                        ;; stderr is dropped: xclip exits non-zero and
+                        ;; complains when the selection holds no text target
+                        ;; (empty clipboard, or an image copied from Chrome).
+                        (when (zerop (call-process xclip nil '(t nil) nil
+                                                   "-out" "-selection" "clipboard"))
+                          (buffer-string))))))
+    (unless (or (string-empty-p text)
+                (equal text +tty-clipboard--last)
+                (equal text (car kill-ring)))
+      (setq +tty-clipboard--last text))))
+
+;; Global rather than frame-local, like `interprogram-paste-function' itself;
+;; the `display-graphic-p' guard above is what keeps a GUI frame on
+;; `gui-selection-value'.
+(setq interprogram-paste-function #'+tty-clipboard-paste)
+
 ;; A tty frame has no fringes, so every indicator Doom draws there is simply
 ;; not rendered: the VC gutter from `:ui vc-gutter', flycheck's error and
 ;; warning arrows, vi-tilde-fringe's past-EOB tildes. diff-hl and flycheck can
