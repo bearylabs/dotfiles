@@ -203,6 +203,7 @@ in
     shfmt # :lang sh formatting
 
     # language servers
+    bash-language-server
     pyright
     yaml-language-server
     terraform-ls

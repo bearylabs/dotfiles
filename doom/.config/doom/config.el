@@ -336,3 +336,11 @@
 ;; what these functions set is global rather than frame-local.
 (unless (or (daemonp) (display-graphic-p))
   (run-hooks 'tty-setup-hook))
+
+;; bash-language-server completes variables and functions it can parse, but it
+;; goes quiet on anything it doesn't understand (heredocs, half-written lines).
+;; Keep buffer words and filenames as a grouped fallback so completion never
+;; comes up empty in a shell script.
+(after! sh-script
+  (set-company-backend! 'sh-mode
+    '(:separate company-capf company-dabbrev-code company-files)))
