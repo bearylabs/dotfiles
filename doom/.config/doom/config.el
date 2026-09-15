@@ -410,3 +410,8 @@ pushing a duplicate entry onto the kill ring on every paste."
           (car result)
         result))))
 
+;; apheleia formats terraform-mode with `tofu fmt', which isn't installed here
+;; -- and a missing formatter binary fails quietly, so `(format +onsave)' simply
+;; did nothing in .tf files. Point it at the terraform binary NixOS does install.
+(after! apheleia
+  (setf (alist-get 'terraform-mode apheleia-mode-alist) 'terraform))
