@@ -70,6 +70,22 @@ end
 # load per-directory env vars via .envrc files
 direnv hook fish | source
 
+# herdr restores a tab's layout, cwd and scrollback, but respawns a bare shell in
+# every pane -- only AI-agent panes are resumed (session.resume_agents_on_restore).
+# An editor tab therefore comes back painted from pane history with nothing
+# running in it. Relaunch Emacs ourselves when the tab is an editor tab; the tab's
+# custom_name survives the restart in ~/.config/herdr/session.json.
+#
+# INSIDE_EMACS guards the shells Emacs itself spawns (vterm, ansi-term, M-x shell).
+# Quitting Emacs returns to this same shell without re-triggering, since
+# config.fish is not re-read.
+if status is-interactive; and set -q HERDR_PANE_ID; and not set -q INSIDE_EMACS
+    set -l _tab (herdr tab get $HERDR_TAB_ID 2>/dev/null | string match -rg '"label":"([^"]*)"')
+    if string match -qir 'doom|emacs' -- $_tab
+        emacs -nw
+    end
+end
+
 # herdr-automatic-rename: live tab naming hook
 for _f in $HOME/.config/herdr/plugins/github/herdr-automatic-rename-*/shell/hook.fish
     test -r "$_f"; and source "$_f"; and break
