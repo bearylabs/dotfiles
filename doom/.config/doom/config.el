@@ -385,3 +385,28 @@ pushing a duplicate entry onto the kill ring on every paste."
 (after! sh-script
   (set-company-backend! 'sh-mode
     '(:separate company-capf company-dabbrev-code company-files)))
+
+;; `:tools terraform' gives terraform-mode the `company-terraform' backend, but
+;; `:tools lsp' prepends `+lsp-company-backends' to `company-backends' whenever
+;; `lsp-completion-mode' starts, and `+company--backends' sorts minor-mode entries
+;; ahead of major-mode ones. So with `(terraform +lsp)' the LSP's bare
+;; `company-capf' shadowed company-terraform completely -- and terraform-ls offers
+;; no `local.' references inside a `locals' block, nor any reference at all inside
+;; a nested object expression, which is most of what a locals block is. Put
+;; company-terraform into the group that actually wins.
+(setq-hook! 'terraform-mode-hook
+  +lsp-company-backends '(:separate company-terraform company-capf company-yasnippet))
+
+;; company-terraform reports its prefix as (PREFIX . t) in interpolations, and
+;; `company--good-prefix-p' honours that `t' ahead of `company-minimum-prefix-length'
+;; -- so an empty prefix after `= ' opened its whole 69-entry function catalogue,
+;; and a single character was enough everywhere else. Drop the override so the
+;; usual minimum applies to this backend too.
+(after! company-terraform
+  (defadvice! +terraform-company-obey-prefix-length-a (fn command &rest args)
+    :around #'company-terraform
+    (let ((result (apply fn command args)))
+      (if (and (eq command 'prefix) (consp result))
+          (car result)
+        result))))
+
