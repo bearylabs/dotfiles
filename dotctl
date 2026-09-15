@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Colors for output
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly RESET='\033[0m'
+readonly BOLD='\033[1m'
+
+# Absolute path to the repo. Derived from BASH_SOURCE so dotctl works from any
+# cwd, including through the symlink on PATH.
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly DOTFILES_DIR
+
+# Nix channels are subscribed by name — home.nix imports <home-manager/nixos>.
+readonly NIX_CHANNEL_HOME_MANAGER="https://github.com/nix-community/home-manager/archive/master.tar.gz"
+readonly NIX_CHANNEL_NIXOS="https://nixos.org/channels/nixos-unstable"
+readonly NIXOS_CONFIG="$DOTFILES_DIR/nixos/configuration.nix"
+readonly NIXOS_WSL_CONFIG="$DOTFILES_DIR/nixos/configuration.wsl.nix"
+readonly NIXOS_HOME_MANAGER="$DOTFILES_DIR/nixos/home.nix"
+
+# Progress indicators
+CURRENT_STEP=0
+TOTAL_STEPS=0
+
+# Filled in by __detect_system; consumed by the init steps.
+DOTCTL_DISTRO=unknown
+DOTCTL_WSL=false
+
+# Helper functions
+__print_header() {
+	echo -e "\n${BOLD}${BLUE}==>${RESET} ${BOLD}$1${RESET}"
+}
+
+__print_success() {
+	echo -e "${GREEN}✓${RESET} $1"
+}
+
+__print_error() {
+	echo -e "${RED}✗${RESET} $1" >&2
+}
+
+__print_warning() {
+	echo -e "${YELLOW}⚠${RESET} $1"
+}
+
+__print_info() {
+	echo -e "${CYAN}ℹ${RESET} $1"
+}
+
+__print_step() {
+	((++CURRENT_STEP))
+	echo -e "\n${BOLD}[${CURRENT_STEP}/${TOTAL_STEPS}]${RESET} $1"
+}
+
+__command_exists() {
+	command -v "$1" >/dev/null 2>&1
+}
+
+# Make the dotctl command available on PATH
+__link_dotctl_command() {
+	local source="$DOTFILES_DIR/dotctl"
+	local target="$HOME/.local/bin/dotctl"
+
+	if ! __command_exists "dotctl"; then
+		mkdir -p "$(dirname "$target")"
+		ln -sf "$source" "$target"
+		__print_success "linked dotctl -> $target"
+	else
+		__print_info "dotctl already on PATH"
+	fi
+}
+
+# Identify the distro and whether we run under WSL. Both decide which init
+# steps apply.
+__detect_system() {
+	local id="unknown" id_like=""
+
+	if [[ -r /etc/os-release ]]; then
+		# os-release is shell syntax by spec. Pre-declaring the names as
+		# local keeps its dozen variables out of the global scope.
+		local ID="" ID_LIKE=""
+		# shellcheck disable=SC1091
+		. /etc/os-release
+		id="${ID:-unknown}"
+		id_like="${ID_LIKE:-}"
+	fi
+
+	case "$id" in
+	nixos)
+		DOTCTL_DISTRO=nixos
+		;;
+	debian | ubuntu)
+		DOTCTL_DISTRO=debian
+		;;
+	*)
+		# Derivatives (Mint, Pop!_OS) name their base in ID_LIKE,
+		# which is a space-separated list.
+		case " $id_like " in
+		*" debian "*) DOTCTL_DISTRO=debian ;;
+		*) DOTCTL_DISTRO=unknown ;;
+		esac
+		;;
+	esac
+
+	# WSL_DISTRO_NAME is missing in systemd units; /proc/version is not.
+	if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null; then
+		DOTCTL_WSL=true
+	fi
+
+	if [[ "$DOTCTL_DISTRO" == unknown ]]; then
+		__print_error "unsupported system: ID=$id"
+		return 1
+	fi
+}
+
+# Steps that run on every system, before any distro-specific work.
+__preflight() {
+	__link_dotctl_command
+	__detect_system
+	__print_info "System: $DOTCTL_DISTRO"
+	if [[ "$DOTCTL_WSL" == true ]]; then
+		__print_info "WSL: true"
+	fi
+}
+
+# Point $2 at $1. readlink prints nothing for a real file or a missing path, so
+# the guard also covers "not a symlink". --backup keeps whatever was there as
+# $2.~1~ instead of destroying it.
+__set_symlink() {
+	local src=$1
+	local target=$2
+	if [[ "$(readlink "$target")" == "$src" ]]; then
+		return 0
+	fi
+	sudo ln -sfn --backup=numbered "$src" "$target"
+	__print_success "linked $target -> $src"
+
+}
+
+# Point /etc/nixos at the repo and subscribe to the channels home.nix needs.
+__nixos_config() {
+	local nixos_home_target="/etc/nixos/home.nix"
+	local nixos_config_target="/etc/nixos/configuration.nix"
+
+	if [[ "$DOTCTL_WSL" == false ]]; then
+		__set_symlink "$NIXOS_CONFIG" "$nixos_config_target"
+	else
+		__set_symlink "$NIXOS_WSL_CONFIG" "$nixos_config_target"
+	fi
+
+	__set_symlink "$NIXOS_HOME_MANAGER" "$nixos_home_target"
+	sudo nix-channel --add "$NIX_CHANNEL_NIXOS" nixos
+	sudo nix-channel --add "$NIX_CHANNEL_HOME_MANAGER" home-manager
+	sudo nix-channel --update
+
+	__print_success "NixOS config linked, channels updated"
+}
+
+__nixos_rebuild() {
+	sudo nixos-rebuild switch
+	__print_success "nixos-rebuild complete"
+}
+
+# Commands
+cmd_init() {
+	__print_header "Initializing dotfiles"
+	__preflight
+	case "$DOTCTL_DISTRO" in
+	nixos)
+		__nixos_config
+		__nixos_rebuild
+		;;
+	esac
+}
+
+cmd_help() {
+	echo "usage: dotctl <command>"
+	echo
+	echo "commands:"
+	echo "    init    set up this machine"
+	echo "    help    show this message"
+}
+
+# Dispatch
+main() {
+	case "${1:-help}" in
+	init)
+		cmd_init
+		;;
+	help | --help | -h)
+		cmd_help
+		;;
+	*)
+		__print_error "unknown command: $1"
+		cmd_help
+		return 1
+		;;
+	esac
+}
+
+main "$@"
