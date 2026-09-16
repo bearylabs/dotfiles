@@ -166,6 +166,11 @@ in
   home.file.".config/i3status".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/i3status/.config/i3status";
 
+  home.file.".agents/skills" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/agents/.agents/skills";
+    force = true;
+  };
+
   home.file.".config/polybar".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/polybar/.config/polybar";
 
@@ -186,6 +191,11 @@ in
 
   home.file.".pi/agent/keybindings.json" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/keybindings.json";
+    force = true;
+  };
+
+  home.file.".pi/agent/settings.json" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/settings.json";
     force = true;
   };
 
