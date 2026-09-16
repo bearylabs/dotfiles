@@ -142,7 +142,10 @@
 (after! lsp-mode
   (setq lsp-idle-delay 0.1)
   (setq lsp-completion-enable-additional-text-edit t)
-  (setq lsp-modeline-code-actions-enable t))
+  (setq lsp-modeline-code-actions-enable t)
+  ;; Trust Projectile/project.el's detected root instead of prompting to import
+  ;; each project into lsp-mode's persisted session.
+  (setq lsp-auto-guess-root t))
 
 ;; load go-specific dap package
 ;; (after! dap-mode
@@ -160,6 +163,11 @@
 ;; workspace and losing its buffers on the next switch.
 ;; (setq +workspaces-on-switch-project-behavior t)
 
+;; Worktrees are short-lived, so silently remove vanished ones from
+;; Projectile's known-project list instead of asking for confirmation.
+(after! projectile
+  (setq projectile-auto-cleanup-known-projects t))
+
 ;; Doom turns on the `overlong-summary-line' check, which makes `C-c C-c'
 ;; stop and ask "Summary line is too long.  Commit anyway?" past 50 chars.
 ;; Keep the overlong tail highlighted, drop the blocking prompt.
@@ -170,6 +178,10 @@
 ;; file inside a collapsed directory is invisible. `deferred' propagates the
 ;; status up to parent directories too (async, needs python3).
 (setq +treemacs-git-mode 'deferred)
+
+;; This must be set before Treemacs loads its persisted project list; an
+;; `after!' block would run too late, after Treemacs has already prompted.
+(setq treemacs-missing-project-action 'remove)
 
 ;; Doom turns on path collapsing (`a/b/c' on one row) whenever git mode is
 ;; extended or deferred. Keep one directory per row instead.

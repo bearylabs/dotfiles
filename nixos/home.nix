@@ -169,6 +169,26 @@ in
   home.file.".config/polybar".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/polybar/.config/polybar";
 
+  home.file.".pi/agent/extensions/copilot-usage.ts" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/copilot-usage.ts";
+    force = true;
+  };
+
+  home.file.".pi/agent/extensions/pi-skill-toggle" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/pi-skill-toggle";
+    force = true;
+  };
+
+  home.file.".pi/agent/themes/catppuccin-macchiato.json" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/themes/catppuccin-macchiato.json";
+    force = true;
+  };
+
+  home.file.".pi/agent/keybindings.json" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/keybindings.json";
+    force = true;
+  };
+
   home.file.".tmux.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/tmux/.tmux.conf";
 

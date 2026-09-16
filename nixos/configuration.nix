@@ -378,6 +378,8 @@ in
     python3
     python3Packages.pip
     pipx
+    rustc
+    cargo
 
     # desktop
     solaar
