@@ -1,6 +1,9 @@
 # Codex
 .codex
 
+# Machine-local Pi settings
+/pi/.pi/agent/settings.json
+
 # Nix OS
 hardware-configuration.nix
 
