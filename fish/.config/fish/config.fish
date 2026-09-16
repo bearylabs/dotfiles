@@ -20,6 +20,10 @@ set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config 
 # terminal already renders Doom correctly on the stock entry, and an unknown
 # TERM would leave Emacs with no terminal description at all.
 function emacs --description 'Doom Emacs, truecolor in WSL terminal frames'
+    # No args means terminal frame by default.
+    if not set -q argv[1]
+        set argv -nw
+    end
     set -l term $TERM
     # Nested rather than joined with `and': fish evaluates conjunctions strictly
     # left to right, so `A; and B; or C' would read as `(A and B) or C' and let
