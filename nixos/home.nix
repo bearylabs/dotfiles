@@ -179,6 +179,11 @@ in
     force = true;
   };
 
+  home.file.".pi/agent/extensions/codex-usage.ts" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/codex-usage.ts";
+    force = true;
+  };
+
   home.file.".pi/agent/extensions/pi-skill-toggle" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/pi-skill-toggle";
     force = true;

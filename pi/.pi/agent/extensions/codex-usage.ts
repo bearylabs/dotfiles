@@ -1,0 +1,150 @@
+/**
+ * Show OpenAI Codex rate-limit usage in Pi's footer.
+ *
+ * Uses the OAuth credential already stored by `/login openai-codex`.
+ */
+
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+
+const STATUS_KEY = "codex-usage";
+const REQUEST_TIMEOUT_MS = 8_000;
+const USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
+
+interface UsageWindow {
+	used_percent?: number;
+	limit_window_seconds?: number;
+	reset_at?: number;
+}
+
+interface CodexUsage {
+	plan_type?: string;
+	rate_limit?: {
+		primary_window?: UsageWindow;
+		secondary_window?: UsageWindow;
+	};
+}
+
+interface UsageResult {
+	status?: string;
+	details: string;
+}
+
+function accountIdFromToken(token: string): string | undefined {
+	try {
+		const payload = token.split(".")[1];
+		if (!payload) return undefined;
+		const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<string, unknown>;
+		const auth = decoded["https://api.openai.com/auth"];
+		if (!auth || typeof auth !== "object") return undefined;
+		const accountId = (auth as Record<string, unknown>).chatgpt_account_id;
+		return typeof accountId === "string" && accountId !== "" ? accountId : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function windowLabel(window: UsageWindow, fallback: string): string {
+	const seconds = window.limit_window_seconds;
+	if (typeof seconds !== "number") return fallback;
+	if (seconds >= 6 * 24 * 60 * 60) return "wk";
+	if (seconds % (60 * 60) === 0) return `${seconds / (60 * 60)}h`;
+	return fallback;
+}
+
+function resetDescription(resetAt: number | undefined): string {
+	if (typeof resetAt !== "number") return "unknown reset";
+	return `resets ${new Date(resetAt * 1_000).toLocaleString()}`;
+}
+
+function formatUsage(usage: CodexUsage): UsageResult {
+	const primary = usage.rate_limit?.primary_window;
+	const secondary = usage.rate_limit?.secondary_window;
+	const windows = [
+		primary && typeof primary.used_percent === "number"
+			? { label: windowLabel(primary, "short"), used: primary.used_percent, resetAt: primary.reset_at }
+			: undefined,
+		secondary && typeof secondary.used_percent === "number"
+			? { label: windowLabel(secondary, "long"), used: secondary.used_percent, resetAt: secondary.reset_at }
+			: undefined,
+	].filter((window): window is { label: string; used: number; resetAt: number | undefined } => window !== undefined);
+
+	if (windows.length === 0) {
+		return { status: "Codex: no usage data", details: "No Codex rate-limit usage available" };
+	}
+
+	const plan = usage.plan_type ? ` (${usage.plan_type})` : "";
+	return {
+		status: `Codex: ${windows.map((window) => `${Math.round(window.used)}% ${window.label}`).join(" · ")}`,
+		details: `Codex usage${plan}: ${windows.map((window) => `${window.label} ${Math.round(window.used)}% used, ${resetDescription(window.resetAt)}`).join("; ")}`,
+	};
+}
+
+async function fetchUsage(ctx: ExtensionContext): Promise<UsageResult> {
+	const resolved = await ctx.modelRegistry.getProviderAuth("openai-codex");
+	const accessToken = resolved?.auth.apiKey;
+	if (!accessToken) {
+		return { details: "No OpenAI Codex login found; run /login openai-codex" };
+	}
+
+	const accountId = accountIdFromToken(accessToken);
+	if (!accountId) throw new Error("OpenAI OAuth token has no account ID");
+
+	const response = await fetch(USAGE_URL, {
+		headers: {
+			Accept: "application/json",
+			Authorization: `Bearer ${accessToken}`,
+			"ChatGPT-Account-Id": accountId,
+			"User-Agent": "pi-coding-agent",
+		},
+		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+	});
+
+	if (!response.ok) throw new Error(`OpenAI API returned ${response.status}`);
+	return formatUsage((await response.json()) as CodexUsage);
+}
+
+export default function (pi: ExtensionAPI) {
+	let request: Promise<UsageResult> | undefined;
+	let active = false;
+	let lastResult: UsageResult | undefined;
+
+	async function refresh(ctx: ExtensionContext): Promise<UsageResult> {
+		if (!request) request = fetchUsage(ctx).finally(() => { request = undefined; });
+
+		try {
+			const result = await request;
+			lastResult = result;
+			if (active) ctx.ui.setStatus(STATUS_KEY, result.status);
+			return result;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "unknown error";
+			const result = { status: "Codex: unavailable", details: `Codex usage unavailable: ${message}` };
+			lastResult = result;
+			if (active) ctx.ui.setStatus(STATUS_KEY, result.status);
+			return result;
+		}
+	}
+
+	pi.on("session_start", (_event, ctx) => {
+		active = true;
+		ctx.ui.setStatus(STATUS_KEY, lastResult?.status);
+		void refresh(ctx);
+	});
+
+	pi.on("agent_settled", (_event, ctx) => {
+		void refresh(ctx);
+	});
+
+	pi.on("session_shutdown", (_event, ctx) => {
+		active = false;
+		ctx.ui.setStatus(STATUS_KEY, undefined);
+	});
+
+	pi.registerCommand("codex-usage", {
+		description: "Refresh and show OpenAI Codex rate-limit usage",
+		handler: async (_args, ctx) => {
+			const result = await refresh(ctx);
+			ctx.ui.notify(result.details, result.status === "Codex: unavailable" ? "error" : "info");
+		},
+	});
+}

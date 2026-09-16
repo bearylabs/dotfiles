@@ -37,7 +37,7 @@ interface CopilotUser {
 }
 
 interface UsageResult {
-	status: string;
+	status?: string;
 	details: string;
 }
 
@@ -108,7 +108,6 @@ async function fetchUsage(): Promise<UsageResult> {
 	const credential = await readCredential();
 	if (!credential || typeof credential.refresh !== "string" || credential.refresh === "") {
 		return {
-			status: "Copilot: not logged in",
 			details: "No GitHub Copilot login found; run /login",
 		};
 	}
@@ -162,7 +161,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", (_event, ctx) => {
 		active = true;
-		ctx.ui.setStatus(STATUS_KEY, lastResult?.status ?? "Copilot: loading…");
+		ctx.ui.setStatus(STATUS_KEY, lastResult?.status);
 		void refresh(ctx);
 	});
 
