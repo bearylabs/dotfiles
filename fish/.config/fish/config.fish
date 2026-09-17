@@ -86,7 +86,7 @@ direnv hook fish | source
 if status is-interactive; and set -q HERDR_PANE_ID; and not set -q INSIDE_EMACS
     set -l _tab (herdr tab get $HERDR_TAB_ID 2>/dev/null | string match -rg '"label":"([^"]*)"')
     if string match -qir 'doom|emacs' -- $_tab
-        emacs -nw
+        emacs -nw .
     end
 end
 

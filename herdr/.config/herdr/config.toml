@@ -185,6 +185,12 @@ description = "jump to anything"
 # directory = "~/.herdr/worktrees"
 
 [ui]
+# Run the Git autofetch plugin immediately and then every three minutes. Empty
+# output keeps this scheduler entry hidden from the tab bar.
+tab_bar_right = [
+  { type = "command", command = "\"$HERDR_BIN_PATH\" plugin action invoke herdr-autofetch.tick >/dev/null 2>&1", interval_seconds = 180, timeout_seconds = 240 },
+]
+
 # Sidebar width (auto-scaled based on workspace names, this sets the default)
 # sidebar_width = 26
 

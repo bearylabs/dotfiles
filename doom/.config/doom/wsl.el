@@ -70,6 +70,16 @@
                  "CLAUDE_CODE_SESSION_ID" "CLAUDE_EFFORT" "CLAUDE_PID"))
     (setenv var nil)))
 
+;; WSLg only: terraform-ls currently reports false diagnostics in tfvars files,
+;; even when they sit beside the root module's variable declarations. Keep LSP
+;; completion available there, but suppress its diagnostics for every *.tfvars.
+(when (file-exists-p "/mnt/wslg")
+  (add-hook! 'terraform-mode-hook
+    (defun +wsl-terraform-tfvars-no-diagnostics-h ()
+      (when (and buffer-file-name
+                 (string-match-p "\\.tfvars\\'" buffer-file-name))
+        (setq-local lsp-diagnostics-provider :none)))))
+
 ;; WSLg only: the leader's which-key labels follow the leader key, and the two
 ;; parted ways above. Doom registers them as key-based replacements over the
 ;; literal key sequence (see `doom--define-leader-key'), so a description only
