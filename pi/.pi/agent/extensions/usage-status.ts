@@ -18,7 +18,7 @@ export default function (pi: ExtensionAPI) {
 		const status = Array.from(statuses.entries())
 			.sort(([left], [right]) => left.localeCompare(right))
 			.map(([, text]) => text)
-			.join(" • ");
+			.join(" | ");
 		currentCtx?.ui.setStatus(STATUS_KEY, status || undefined);
 	}
 
