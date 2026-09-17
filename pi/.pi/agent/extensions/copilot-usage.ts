@@ -11,6 +11,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const STATUS_KEY = "copilot-usage";
+const STATUS_EVENT = "usage-status:update";
 const REQUEST_TIMEOUT_MS = 8_000;
 const CONFIG_DIR = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
 const AUTH_PATH = join(CONFIG_DIR, "auth.json");
@@ -148,20 +149,20 @@ export default function (pi: ExtensionAPI) {
 		try {
 			const result = await request;
 			lastResult = result;
-			if (active) ctx.ui.setStatus(STATUS_KEY, result.status);
+			if (active) pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: result.status });
 			return result;
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "unknown error";
 			const result = { status: "Copilot: unavailable", details: `Copilot usage unavailable: ${message}` };
 			lastResult = result;
-			if (active) ctx.ui.setStatus(STATUS_KEY, result.status);
+			if (active) pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: result.status });
 			return result;
 		}
 	}
 
 	pi.on("session_start", (_event, ctx) => {
 		active = true;
-		ctx.ui.setStatus(STATUS_KEY, lastResult?.status);
+		pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: lastResult?.status });
 		void refresh(ctx);
 	});
 
@@ -169,9 +170,9 @@ export default function (pi: ExtensionAPI) {
 		void refresh(ctx);
 	});
 
-	pi.on("session_shutdown", (_event, ctx) => {
+	pi.on("session_shutdown", () => {
 		active = false;
-		ctx.ui.setStatus(STATUS_KEY, undefined);
+		pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: undefined });
 	});
 
 	pi.registerCommand("copilot-usage", {

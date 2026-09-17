@@ -184,6 +184,11 @@ in
     force = true;
   };
 
+  home.file.".pi/agent/extensions/usage-status.ts" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/usage-status.ts";
+    force = true;
+  };
+
   home.file.".pi/agent/extensions/pi-skill-toggle" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/pi-skill-toggle";
     force = true;
