@@ -185,10 +185,11 @@ description = "manage canonical worktrees"
 # directory = "~/.herdr/worktrees"
 
 [ui]
-# Run the Git autofetch plugin immediately and then every three minutes. Empty
-# output keeps this scheduler entry hidden from the tab bar.
+# Run background plugins periodically. Empty output keeps these scheduler
+# entries hidden from the tab bar.
 tab_bar_right = [
   { type = "command", command = "\"$HERDR_BIN_PATH\" plugin action invoke herdr-autofetch.tick >/dev/null 2>&1", interval_seconds = 180, timeout_seconds = 240 },
+  { type = "command", command = "\"$HERDR_BIN_PATH\" plugin action invoke herdr-simple-tab-names.tick >/dev/null 2>&1", interval_seconds = 1, timeout_seconds = 2 },
 ]
 
 # Sidebar width (auto-scaled based on workspace names, this sets the default)
@@ -228,7 +229,7 @@ host_cursor = "native"
 
 # Optional modifier that forwards right-click hold/drag gestures to pane apps instead of opening Herdr's pane menu.
 # Empty/off disables this. Shift is intentionally unsupported because terminals commonly reserve Shift+mouse.
-# right_click_passthrough_modifier = ""
+right_click_passthrough_modifier = "ctrl"
 
 # Force a full redraw when the outer terminal regains focus.
 # Set false to reduce visible flashing when switching back to Herdr.
@@ -243,7 +244,7 @@ host_cursor = "native"
 
 # Ask for a tab name before creating a new tab.
 # Set false to create tabs immediately with generated names.
-# prompt_new_tab_name = true
+prompt_new_tab_name = false
 
 # Ask for a workspace name before interactive creation.
 # prompt_new_workspace_name = false
