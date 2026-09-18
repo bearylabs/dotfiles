@@ -165,8 +165,8 @@ navigate_workspace_down = "ctrl+j"
 [[keys.command]]
 key = "prefix+t"
 type = "plugin_action"
-command = "herdr-navigator.open"
-description = "jump to anything"
+command = "herdr-better-worktrees.manage"
+description = "manage canonical worktrees"
 
 # Legacy indexed shortcut config is still parsed for compatibility.
 # Prefer switch_tab, switch_workspace, and focus_agent for new configs.

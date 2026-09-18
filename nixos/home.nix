@@ -143,6 +143,11 @@ in
   home.file.".config/fish/config.fish".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/fish/.config/fish/config.fish";
 
+  home.file.".config/fish/functions" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/fish/.config/fish/functions";
+    force = true;
+  };
+
   # Flameshot 14 routes captures through the freedesktop Screenshot portal, and
   # the only backend implementing it is the GNOME one, which never answers
   # under i3. useX11LegacyScreenshot makes it grab through X11 directly.
@@ -191,6 +196,11 @@ in
 
   home.file.".pi/agent/extensions/pi-skill-toggle" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/pi-skill-toggle";
+    force = true;
+  };
+
+  home.file.".pi/agent/extensions/pi-worktrees" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/pi-worktrees";
     force = true;
   };
 

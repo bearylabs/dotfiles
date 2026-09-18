@@ -28,6 +28,7 @@ interface CodexUsage {
 interface UsageResult {
 	status?: string;
 	details: string;
+	renderStatus?: () => string;
 }
 
 function accountIdFromToken(token: string): string | undefined {
@@ -47,7 +48,7 @@ function accountIdFromToken(token: string): string | undefined {
 function windowLabel(window: UsageWindow, fallback: string): string {
 	const seconds = window.limit_window_seconds;
 	if (typeof seconds !== "number") return fallback;
-	if (seconds >= 6 * 24 * 60 * 60) return "wk";
+	if (seconds >= 6 * 24 * 60 * 60) return "7d";
 	if (seconds % (60 * 60) === 0) return `${seconds / (60 * 60)}h`;
 	return fallback;
 }
@@ -57,7 +58,24 @@ function resetDescription(resetAt: number | undefined): string {
 	return `resets ${new Date(resetAt * 1_000).toLocaleString()}`;
 }
 
-function formatUsage(usage: CodexUsage): UsageResult {
+function resetIn(resetAt: number | undefined): string | undefined {
+	if (typeof resetAt !== "number") return undefined;
+	const totalMinutes = Math.floor(Math.max(0, resetAt - Date.now() / 1_000) / 60);
+	if (totalMinutes < 1) return "<1m";
+
+	const days = Math.floor(totalMinutes / (24 * 60));
+	const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+	const minutes = totalMinutes % 60;
+	if (days > 0) return `${days}d${hours > 0 ? ` ${hours}h` : ""}`;
+	if (hours > 0) return `${hours}h${minutes > 0 ? ` ${minutes}m` : ""}`;
+	return `${minutes}m`;
+}
+
+function formatUsage(
+	usage: CodexUsage,
+	muted: (text: string) => string,
+	prominent: (text: string) => string,
+): UsageResult {
 	const primary = usage.rate_limit?.primary_window;
 	const secondary = usage.rate_limit?.secondary_window;
 	const windows = [
@@ -73,10 +91,16 @@ function formatUsage(usage: CodexUsage): UsageResult {
 		return { status: "Codex: no usage data", details: "No Codex rate-limit usage available" };
 	}
 
+	const renderStatus = () => `Codex: ${windows.map((window) => {
+		const remaining = resetIn(window.resetAt);
+		const reset = remaining ? ` ${muted(`(${remaining})`)}` : "";
+		return `${window.label} ${prominent(`${Math.round(window.used)}%`)}${reset}`;
+	}).join(" · ")}`;
 	const plan = usage.plan_type ? ` (${usage.plan_type})` : "";
 	return {
-		status: `Codex: ${windows.map((window) => `${Math.round(window.used)}% ${window.label}`).join(" · ")}`,
+		status: renderStatus(),
 		details: `Codex usage${plan}: ${windows.map((window) => `${window.label} ${Math.round(window.used)}% used, ${resetDescription(window.resetAt)}`).join("; ")}`,
+		renderStatus,
 	};
 }
 
@@ -101,13 +125,24 @@ async function fetchUsage(ctx: ExtensionContext): Promise<UsageResult> {
 	});
 
 	if (!response.ok) throw new Error(`OpenAI API returned ${response.status}`);
-	return formatUsage((await response.json()) as CodexUsage);
+	return formatUsage(
+		(await response.json()) as CodexUsage,
+		(text) => ctx.ui.theme.fg("dim", text),
+		(text) => ctx.ui.theme.fg("accent", ctx.ui.theme.bold(text)),
+	);
 }
 
 export default function (pi: ExtensionAPI) {
 	let request: Promise<UsageResult> | undefined;
 	let active = false;
 	let lastResult: UsageResult | undefined;
+	let countdownTimer: ReturnType<typeof setInterval> | undefined;
+
+	function updateCountdown() {
+		if (!active || !lastResult?.renderStatus) return;
+		lastResult.status = lastResult.renderStatus();
+		pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: lastResult.status });
+	}
 
 	async function refresh(ctx: ExtensionContext): Promise<UsageResult> {
 		if (!request) request = fetchUsage(ctx).finally(() => { request = undefined; });
@@ -130,6 +165,9 @@ export default function (pi: ExtensionAPI) {
 		active = true;
 		pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: lastResult?.status });
 		void refresh(ctx);
+		if (countdownTimer) clearInterval(countdownTimer);
+		countdownTimer = setInterval(updateCountdown, 30_000);
+		countdownTimer.unref();
 	});
 
 	pi.on("agent_settled", (_event, ctx) => {
@@ -138,6 +176,8 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_shutdown", () => {
 		active = false;
+		if (countdownTimer) clearInterval(countdownTimer);
+		countdownTimer = undefined;
 		pi.events.emit(STATUS_EVENT, { key: STATUS_KEY, status: undefined });
 	});
 

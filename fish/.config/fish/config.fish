@@ -6,7 +6,12 @@ set -gx PATH $HOME/.config/emacs/bin $PATH  # Doom CLI tools (doom sync, etc.)
 set -gx PATH $HOME/.local/bin $PATH
 set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config set prefix ~/.npm-global)
 
-# --init-directory required so emacs picks up Doom rather than ~/.emacs.d.
+# Run Doom Emacs through a persistent daemon. Every invocation opens a terminal
+# client frame in the current terminal; file arguments are handled by
+# emacsclient, so `emacs README.md` reuses the same Emacs process.
+#
+# --init-directory is required so a newly started daemon picks up Doom rather
+# than ~/.emacs.d.
 #
 # Under WSL, terminal frames also get a direct-color TERM. Emacs takes its
 # colour depth from terminfo alone -- it ignores COLORTERM -- so Windows
@@ -15,29 +20,25 @@ set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config 
 # configuration.wsl.nix: ncurses' stock xterm-direct emits the
 # colon-separated SGR form, \e[38:2::R:G:Bm, which WT discards along with every
 # other colour Emacs draws.
-#
-# Only under WSL, since only there does that terminfo entry exist -- a native
-# terminal already renders Doom correctly on the stock entry, and an unknown
-# TERM would leave Emacs with no terminal description at all.
-function emacs --description 'Doom Emacs, truecolor in WSL terminal frames'
-    # No args means terminal frame by default.
-    if not set -q argv[1]
-        set argv -nw
+function emacs --description 'Open a terminal Doom Emacs client'
+    if not command emacsclient --eval t >/dev/null 2>&1
+        command emacs --init-directory $HOME/.config/emacs --daemon; or return
     end
+
     set -l term $TERM
-    # Nested rather than joined with `and': fish evaluates conjunctions strictly
-    # left to right, so `A; and B; or C' would read as `(A and B) or C' and let
-    # a non-WSL `emacs -t' through.
     if set -q WSL_DISTRO_NAME
-        if contains -- -nw $argv; or contains -- -t $argv; or contains -- --no-window-system $argv
-            if set -q TMUX
-                set term tmux-direct-wt
-            else
-                set term xterm-direct-wt
-            end
+        if set -q TMUX
+            set term tmux-direct-wt
+        else
+            set term xterm-direct-wt
         end
     end
-    TERM=$term command emacs --init-directory $HOME/.config/emacs $argv
+
+    TERM=$term command emacsclient -t $argv
+end
+
+function magit --description 'Open Magit status in a terminal Emacs client'
+    emacs --eval '(magit-status)'
 end
 
 # git aliases
@@ -45,6 +46,17 @@ alias gs "git status"
 alias gc "git commit -m"
 alias ga "git add"
 alias gd "git diff"
+
+# Git worktree abbreviations. Fish expands these to the full command before
+# execution, so the resulting command remains visible and editable.
+abbr -a -g gwt git worktree
+abbr -a -g gwta git worktree add
+abbr -a -g gwtls git worktree list
+abbr -a -g gwtlo git worktree lock
+abbr -a -g gwtmv git worktree move
+abbr -a -g gwtpr git worktree prune
+abbr -a -g gwtrm git worktree remove
+abbr -a -g gwtulo git worktree unlock
 
 if status is-interactive
     # Commands to run in interactive sessions can go here
