@@ -6,6 +6,9 @@ command_timeout = 2000
 # Put custom.scm right after directory
 format = "$directory${custom.scm}$all"
 
+[aws]
+disabled = true
+
 [buf]
 disabled = true
 
