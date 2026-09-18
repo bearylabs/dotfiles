@@ -113,13 +113,13 @@ Replace `right` with `down` when appropriate. Read the new pane ID from `.result
 An available shell pane must be at its interactive prompt, with the shell itself in the foreground and no foreground command, editor, or agent running. Start a supported agent in that pane with a useful unique name:
 
 ```bash
-herdr agent start reviewer --kind codex --pane <returned-pane-id>
+herdr agent start reviewer --kind pi --pane <returned-pane-id>
 ```
 
-Use the kind requested by the user. Run `herdr agent` to inspect the installed kind list and options. Pass native agent arguments only after `--`:
+Use the kind requested by the user; otherwise default to `pi`. Run `herdr agent` to inspect the installed kind list and options. Pass native agent arguments only after `--`:
 
 ```bash
-herdr agent start reviewer --kind codex --pane <returned-pane-id> -- <agent-args...>
+herdr agent start reviewer --kind pi --pane <returned-pane-id> -- <agent-args...>
 ```
 
 A successful `agent start` returns only after Herdr detects the expected agent in the same pane and considers it ready for interactive input. If the agent is blocked during startup, the command returns `agent_not_ready` immediately but keeps the name available for `agent read` and `agent send-keys`. Wait until the agent becomes idle before prompting it. Startup defaults to a 30-second timeout.
