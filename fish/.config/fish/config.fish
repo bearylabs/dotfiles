@@ -34,7 +34,31 @@ function emacs --description 'Open a terminal Doom Emacs client'
         end
     end
 
-    TERM=$term command emacsclient -t $argv
+    # A daemon keeps both its working directory and Doom workspace between
+    # clients. Merely passing the directory would visit it inside the previous
+    # workspace, leaving that workspace's old Magit/Treemacs layout visible.
+    # For a directory-only launch, explicitly switch Doom to a workspace rooted
+    # at the calling shell's cwd and use Dired as its initial buffer.
+    set -l open_cwd false
+    if test (count $argv) -eq 0
+        set open_cwd true
+    else if test (count $argv) -eq 1
+        switch $argv[1]
+            # This wrapper already creates a terminal frame, so these spellings
+            # are equivalent to a bare `emacs` invocation.
+            case -nw --no-window-system -t --tty
+                set open_cwd true
+        end
+    end
+
+    if $open_cwd
+        # Base64 keeps arbitrary path characters out of the Elisp expression.
+        set -l encoded_cwd (printf %s "$PWD" | base64 --wrap=0)
+        set -l expression "(let ((+workspaces-on-switch-project-behavior t) (+workspaces-switch-project-function #'dired)) (+workspaces-switch-to-project-h (decode-coding-string (base64-decode-string \"$encoded_cwd\") 'utf-8)))"
+        TERM=$term command emacsclient -t --eval $expression
+    else
+        TERM=$term command emacsclient -t $argv
+    end
 end
 
 function magit --description 'Open Magit status in a terminal Emacs client'
