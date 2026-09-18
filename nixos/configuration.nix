@@ -370,6 +370,7 @@ in
 
     # terminal
     fish
+    starship
     kitty
     ghostty
     tmux

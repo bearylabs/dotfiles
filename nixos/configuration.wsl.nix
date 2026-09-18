@@ -177,6 +177,7 @@ in
 
     # terminal
     fish
+    starship
     tmux
 
     # language
