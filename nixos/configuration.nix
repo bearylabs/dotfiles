@@ -175,7 +175,7 @@ in
 
   systemd.sleep.settings.Sleep = {
     # Hibernate after a longer lid-closed period to avoid draining the battery.
-    HibernateDelaySec = "45min";
+    HibernateDelaySec = "2h";
     SuspendEstimationSec = "45min";
     HibernateOnACPower = "yes";
 
