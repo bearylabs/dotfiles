@@ -322,6 +322,7 @@ in
   environment.systemPackages = with pkgs; [
     # editors
     vim
+    neovim
     vscode
     emacs
 
