@@ -159,31 +159,26 @@ in
   programs.virt-manager.enable = true;
 
   services.logind.settings.Login = {
+    # Closing the lid suspends first, then hibernates after the delay below.
+    # This keeps short lid-closed periods quick to resume.
     HandleLidSwitch = "suspend-then-hibernate";
     # logind counts the session as docked while a second display is connected,
     # and the external monitor is the only enabled output anyway, so closing the
     # lid there should keep the machine running rather than put it to sleep.
     HandleLidSwitchDocked = "ignore";
-    IdleAction = "suspend-then-hibernate";
-    # Keep suspend after the xidlehook display timeout so the screen blanks at
-    # 8 minutes before the system sleeps.
-    IdleActionSec = "15min";
+    IdleAction = "hibernate";
+    # The old policy suspended after 15 minutes and intended to hibernate after
+    # another 45 minutes. Keep the same one-hour deadline without unreliable
+    # suspend-then-hibernate. xidlehook still blanks the screen after 8 minutes.
+    IdleActionSec = "60min";
   };
 
-  # After suspending, hibernate to disk if still asleep this long (safety net
-  # for battery drain / long lid-closed periods). Requires swapDevices below.
   systemd.sleep.settings.Sleep = {
+    # Hibernate after a longer lid-closed period to avoid draining the battery.
     HibernateDelaySec = "45min";
-    # systemd only evaluates HibernateDelaySec when it wakes from the s2idle
-    # phase, and the RTC alarm for that wakeup comes from its battery-discharge
-    # estimate, not from HibernateDelaySec. Left at the 60min default the
-    # estimate drifted to multi-hour alarms, so hibernation actually fired
-    # after 4-14h instead of 45min. Capping the estimation interval bounds the
-    # wakeup so the delay above is honoured.
     SuspendEstimationSec = "45min";
-    # Hibernate on the same schedule when docked; the delay is about not
-    # losing the session, and AC can be unplugged while the lid is closed.
     HibernateOnACPower = "yes";
+
     # systemd's default is "platform shutdown", and it picks whichever value
     # *writes* to /sys/power/disk without error -- so it always lands on
     # platform. That path hands the power-off to the firmware and, right before
@@ -200,7 +195,7 @@ in
     HibernateMode = "shutdown";
   };
 
-  # Swapfile for hibernation (suspend-then-hibernate above). Size >= RAM.
+  # Swapfile for hibernation. Size >= RAM.
   # NOTE: resume_offset in boot.kernelParams must be filled in AFTER first
   # rebuild creates this file — see comment near kernelParams below.
   swapDevices = [
@@ -503,14 +498,20 @@ in
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usbhid", TEST=="power/control", ATTR{power/control}="on"
 
-    # The Logi Bolt receiver is the only USB device that arms a wakeup source,
-    # and it fires spuriously out of s2idle. That aborts suspend-then-hibernate
-    # before its own timer, so systemd gives up on hibernating and logind just
-    # re-suspends ~30s later, leaving the machine cycling all night instead of
-    # going to disk. Runtime autosuspend stays off (rule above); this only
-    # stops the receiver from arming a wake. The lid and power button still wake
-    # the machine; the mouse and keyboard no longer do.
+    # The Logi Bolt receiver can fire spuriously out of s2idle. Runtime
+    # autosuspend stays off (rule above); this only stops the receiver from
+    # arming a wake. The lid and power button still wake the machine; the mouse
+    # and keyboard connected through the receiver no longer do.
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", ATTR{power/wakeup}="disabled"
+
+    # The HP firmware exposes an ACPI battery trip-point alarm, but its SMBIOS
+    # wake-up type remains "Power Switch" (type 6) instead of reporting an
+    # "APM Timer" (type 3). systemd therefore mistakes the battery alarm for a
+    # manual wakeup, aborts suspend-then-hibernate, and logind starts it again
+    # while the lid is still
+    # closed. Disable the broken firmware alarm; systemd then uses its own RTC
+    # timer and the fixed HibernateDelaySec above.
+    ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", TEST=="alarm", ATTR{alarm}="0"
   '';
 
   # Some programs need SUID wrappers, can be configured further or are
