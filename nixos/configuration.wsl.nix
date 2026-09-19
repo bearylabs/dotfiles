@@ -156,6 +156,7 @@ in
     wget
     ripgrep
     fd
+    tree-sitter
     bind # nslookup
     nmap
     usbutils

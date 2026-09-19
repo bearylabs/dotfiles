@@ -346,6 +346,7 @@ in
     wget
     ripgrep
     fd
+    tree-sitter
     jq # Also drives the polybar split-direction module.
     bind # nslookup
     nmap
