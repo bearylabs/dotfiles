@@ -84,7 +84,7 @@ blue = "#8aadf4"
 # Most reliable direct bindings are ctrl+letter, function keys, and explicit modified chords.
 # alt+..., cmd/super, and punctuation-with-modifiers may depend on your terminal/tmux setup.
 # prefix = "ctrl+b"
-prefix = "ctrl+a"
+prefix = "backtick"
 
 # Prefix-mode actions
 # help = "prefix+?"
@@ -92,7 +92,8 @@ prefix = "ctrl+a"
 # detach = "prefix+q"
 # reload_config = "prefix+shift+r"
 reload_config = "prefix+r"
-# open_notification_target = "prefix+o"
+# prefix+o is reserved for herdr-annotate's document browser.
+open_notification_target = ""
 # workspace_picker = "prefix+w"
 # goto = "prefix+g"
 new_workspace = ["prefix+shift+n", "prefix+shift+c"]
@@ -167,6 +168,70 @@ key = "prefix+t"
 type = "plugin_action"
 command = "herdr-better-worktrees.manage"
 description = "manage canonical worktrees"
+
+# vim-herdr-navigation forwards these chords into Vim/Neovim or Doom Emacs
+# when one is focused; otherwise it focuses the adjacent Herdr pane.
+[[keys.command]]
+key = "ctrl+h"
+type = "plugin_action"
+command = "vim-herdr-navigation.left"
+description = "navigate left (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+j"
+type = "plugin_action"
+command = "vim-herdr-navigation.down"
+description = "navigate down (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "plugin_action"
+command = "vim-herdr-navigation.up"
+description = "navigate up (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "plugin_action"
+command = "vim-herdr-navigation.right"
+description = "navigate right (editor/herdr)"
+
+# Herdr Annotate: terminal annotations
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "annotate.capture"
+description = "annotate text"
+
+[[keys.command]]
+key = "prefix+shift+a"
+type = "plugin_action"
+command = "annotate.copy-context"
+description = "copy annotations as context"
+
+[[keys.command]]
+key = "prefix+ctrl+a"
+type = "plugin_action"
+command = "annotate.copy-archive"
+description = "copy annotations as context and archive them"
+
+[[keys.command]]
+key = "prefix+m"
+type = "plugin_action"
+command = "annotate.manage"
+description = "manage annotations"
+
+# Herdr Annotate: document and agent-reply review
+[[keys.command]]
+key = "prefix+o"
+type = "plugin_action"
+command = "annotate.open"
+description = "review documents in this folder"
+
+[[keys.command]]
+key = "prefix+shift+o"
+type = "plugin_action"
+command = "annotate.last"
+description = "review the agent's last reply"
 
 # Legacy indexed shortcut config is still parsed for compatibility.
 # Prefer switch_tab, switch_workspace, and focus_agent for new configs.

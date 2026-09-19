@@ -195,6 +195,11 @@ in
     force = true;
   };
 
+  home.file.".pi/agent/extensions/claude-usage.ts" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/claude-usage.ts";
+    force = true;
+  };
+
   home.file.".pi/agent/extensions/usage-status.ts" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/pi/.pi/agent/extensions/usage-status.ts";
     force = true;

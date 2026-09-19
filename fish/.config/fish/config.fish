@@ -9,6 +9,10 @@ set -gx PATH $HOME/.config/emacs/bin $PATH  # Doom CLI tools (doom sync, etc.)
 set -gx PATH $HOME/.local/bin $PATH
 set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config set prefix ~/.npm-global)
 
+# Let vim-herdr-navigation pass C-h/j/k/l through to Doom Emacs. Doom handles
+# its own windows first and calls back into Herdr when it reaches a frame edge.
+set -gx HERDR_NAV_PASSTHROUGH_RE '^emacs(client)?$'
+
 # Run Doom Emacs through a persistent daemon. Every invocation opens a terminal
 # client frame in the current terminal; file arguments are handled by
 # emacsclient, so `emacs README.md` reuses the same Emacs process.
@@ -54,13 +58,21 @@ function emacs --description 'Open a terminal Doom Emacs client'
         end
     end
 
+    # A daemon does not inherit each emacsclient's environment. Preserve the
+    # calling Herdr pane as a frame parameter so Doom can navigate back out of
+    # the correct pane instead of using the daemon's stale HERDR_PANE_ID.
+    set -l frame_args
+    if set -q HERDR_PANE_ID
+        set frame_args --frame-parameters "((herdr-pane-id . \"$HERDR_PANE_ID\"))"
+    end
+
     if $open_cwd
         # Base64 keeps arbitrary path characters out of the Elisp expression.
         set -l encoded_cwd (printf %s "$PWD" | base64 --wrap=0)
         set -l expression "(let ((+workspaces-on-switch-project-behavior t) (+workspaces-switch-project-function #'dired)) (+workspaces-switch-to-project-h (decode-coding-string (base64-decode-string \"$encoded_cwd\") 'utf-8)))"
-        TERM=$term command emacsclient -t --eval $expression
+        TERM=$term command emacsclient -t $frame_args --eval $expression
     else
-        TERM=$term command emacsclient -t $argv
+        TERM=$term command emacsclient -t $frame_args $argv
     end
 end
 

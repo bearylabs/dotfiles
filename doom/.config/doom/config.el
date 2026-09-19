@@ -40,6 +40,80 @@
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
+;; Keep point away from the window edges, like Vim's `scrolloff=8', and scroll
+;; only as much as necessary instead of recentering the window.
+(setq scroll-margin 8
+      scroll-conservatively 101)
+
+;; Use H/L for the start/end of the current line instead of the top/bottom of
+;; the visible window, mirroring Evil's ^/$ motions. The bindings are installed
+;; together with the Herdr navigation bindings below so they win over Doom's
+;; defaults.
+
+;; Move through Doom windows with C-h/j/k/l. At the edge of the Emacs frame,
+;; hand focus back to Herdr so the same keys continue into adjacent panes.
+;; Do not bind these keys in Herdr itself: Herdr must first forward them to Doom
+;; so Emacs gets a chance to select one of its own windows.
+(require 'windmove)
+
+(defun +herdr/window-navigate (direction)
+  "Select the Doom window in DIRECTION, or the adjacent Herdr pane at an edge."
+  (let ((window (condition-case nil
+                    (windmove-find-other-window direction)
+                  (error nil))))
+    (if (window-live-p window)
+        (select-window window)
+      (let* ((configured-bin (getenv "HERDR_BIN_PATH"))
+             (herdr-bin (if (string-empty-p (or configured-bin ""))
+                            (executable-find "herdr")
+                          configured-bin))
+             ;; An Emacs daemon's environment belongs to the shell that started
+             ;; it and may contain a stale pane ID. The fish emacsclient wrapper
+             ;; records the calling pane on each terminal frame instead.
+             (pane-id (or (frame-parameter nil 'herdr-pane-id)
+                          (getenv "HERDR_PANE_ID"))))
+        (cond
+         ((string-empty-p (or pane-id ""))
+          (message "No Doom window or Herdr pane in that direction"))
+         ((not herdr-bin)
+          (message "Cannot focus Herdr pane: herdr executable not found"))
+         (t
+          (make-process
+           :name (format "herdr-focus-%s" direction)
+           :command (list herdr-bin "pane" "focus"
+                          "--direction" (symbol-name direction) "--pane" pane-id)
+           :connection-type 'pipe
+           :noquery t)))))))
+
+(defun +herdr/window-left ()
+  (interactive)
+  (+herdr/window-navigate 'left))
+
+(defun +herdr/window-down ()
+  (interactive)
+  (+herdr/window-navigate 'down))
+
+(defun +herdr/window-up ()
+  (interactive)
+  (+herdr/window-navigate 'up))
+
+(defun +herdr/window-right ()
+  (interactive)
+  (+herdr/window-navigate 'right))
+
+(after! evil
+  ;; `evil-define-key*' applies these immediately instead of deferring them like
+  ;; `map!' can, preventing Doom's default C-j newline binding from winning.
+  (evil-define-key* 'normal 'global
+    (kbd "H")   #'evil-first-non-blank
+    (kbd "L")   #'evil-end-of-line
+    (kbd "C-h") #'+herdr/window-left
+    (kbd "C-j") #'+herdr/window-down
+    (kbd "C-k") #'+herdr/window-up
+    (kbd "C-l") #'+herdr/window-right
+    (kbd "S-RET") #'electric-newline-and-maybe-indent
+    [S-return]     #'electric-newline-and-maybe-indent))
+
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
