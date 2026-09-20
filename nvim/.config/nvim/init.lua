@@ -173,6 +173,7 @@ do
   vim.o.confirm = true
 end
 
+require 'hrudek.keymaps'
 -- ============================================================
 -- SECTION 2: KEYMAPS & AUTOCMDS
 -- basic keymaps, basic autocmds
@@ -209,7 +210,7 @@ do
     },
   }
 
-  vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+  vim.keymap.set('n', '<leader>bd', function() require('snacks').bufdelete() end, { desc = '[B]uffer [D]elete' })
 
   -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
   -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -330,6 +331,12 @@ local function gh(repo) return 'https://github.com/' .. repo end
 -- guess-indent, gitsigns, which-key, colorscheme, todo-comments, mini modules
 -- ============================================================
 do
+  -- Snacks provides small, independent quality-of-life utilities.
+  vim.pack.add { gh 'folke/snacks.nvim' }
+  require('snacks').setup {
+    bufdelete = { enabled = true },
+  }
+
   -- [[ Installing and Configuring Plugins ]]
   --
   -- To install a plugin simply call `vim.pack.add` with its git url.
@@ -406,7 +413,7 @@ do
   vim.pack.add { gh 'folke/which-key.nvim' }
   require('which-key').setup {
     -- Delay between pressing a key and opening which-key (milliseconds)
-    delay = 0,
+    delay = 200,
     icons = { mappings = vim.g.have_nerd_font },
     -- Document existing key chains
     spec = {
@@ -742,7 +749,20 @@ do
     -- But for many setups, the LSP (`rust_analyzer`) will work just fine
     -- rust_analyzer = {},
 
-    stylua = {}, -- Used to format Lua code
+    -- Language servers for the languages used in this setup.
+    astro = {},
+    bashls = {},
+    cssls = {},
+    eslint = {},
+    html = {},
+    jsonls = {},
+    pyright = {},
+    sqruff = {}, -- SQL language server, linter, and formatter
+    svelte = {},
+    tailwindcss = {},
+    terraformls = {},
+    ts_ls = {},
+    yamlls = {},
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -801,7 +821,12 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    -- Formatters used by conform.nvim. Terraform formatting is provided by
+    -- the terraform CLI and therefore has to be installed outside Mason.
+    'prettierd',
+    'ruff',
+    'shfmt',
+    'stylua',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -820,30 +845,55 @@ do
   -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
   require('conform').setup {
-    notify_on_error = false,
+    notify_on_error = true,
     format_on_save = function(bufnr)
-      -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
+        astro = true,
+        css = true,
+        html = true,
+        javascript = true,
+        javascriptreact = true,
+        json = true,
+        jsonc = true,
+        lua = true,
+        python = true,
+        scss = true,
+        sh = true,
+        sql = true,
+        svelte = true,
+        terraform = true,
+        ['terraform-vars'] = true,
+        typescript = true,
+        typescriptreact = true,
+        yaml = true,
       }
+
       if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
-      else
-        return nil
+        return { timeout_ms = 2000, lsp_format = 'fallback' }
       end
     end,
     default_format_opts = {
-      lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
+      lsp_format = 'fallback',
     },
-    -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      astro = { 'prettierd', 'prettier', stop_after_first = true },
+      css = { 'prettierd', 'prettier', stop_after_first = true },
+      html = { 'prettierd', 'prettier', stop_after_first = true },
+      javascript = { 'prettierd', 'prettier', stop_after_first = true },
+      javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+      json = { 'prettierd', 'prettier', stop_after_first = true },
+      jsonc = { 'prettierd', 'prettier', stop_after_first = true },
+      lua = { 'stylua' },
+      python = { 'ruff_format' },
+      scss = { 'prettierd', 'prettier', stop_after_first = true },
+      sh = { 'shfmt' },
+      sql = { 'sqruff' },
+      svelte = { 'prettierd', 'prettier', stop_after_first = true },
+      terraform = { 'terraform_fmt' },
+      ['terraform-vars'] = { 'terraform_fmt' },
+      typescript = { 'prettierd', 'prettier', stop_after_first = true },
+      typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+      yaml = { 'prettierd', 'prettier', stop_after_first = true },
     },
   }
 
@@ -1015,8 +1065,8 @@ do
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
