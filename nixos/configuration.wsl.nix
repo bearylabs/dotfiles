@@ -157,7 +157,10 @@ in
     wget
     ripgrep
     fd
+    fzf
+    tree
     tree-sitter
+    zoxide
     bind # nslookup
     nmap
     usbutils

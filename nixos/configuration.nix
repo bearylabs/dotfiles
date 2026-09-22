@@ -346,7 +346,10 @@ in
     wget
     ripgrep
     fd
+    fzf
+    tree
     tree-sitter
+    zoxide
     jq # Also drives the polybar split-direction module.
     bind # nslookup
     nmap
