@@ -137,6 +137,7 @@ in
   environment.systemPackages = with pkgs; [
     # editors
     vim
+    neovim
     emacs
 
     # core runtime/deps
