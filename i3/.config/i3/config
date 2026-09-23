@@ -247,10 +247,6 @@ exec_always --no-startup-id ~/.config/polybar/launch.sh
 # window steals focus, which fights with keyboard-driven window switching.
 focus_follows_mouse no
 
-# Launch IDEs
-bindsym F2 exec emacs
-bindsym F1 exec code
-
 # Application assignments
 
 # Open certain apps on a fixed workspace, wherever they're launched from.

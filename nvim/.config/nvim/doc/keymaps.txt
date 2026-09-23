@@ -1,0 +1,163 @@
+*custom-keymaps* *keymaps.txt*
+
+==============================================================================
+CUSTOM KEYBINDINGS
+
+This page describes the most important custom Neovim keybindings.
+<Leader> is the Space key. The mode column uses N (Normal),
+I (Insert), V (Visual), and T (Terminal).
+
+Open this help:                                           *keymaps-help*
+
+N  <Leader>?       Open this keymap help
+N  /               Fuzzily search within this help popup
+N  <Up>/<Down>     Navigate filtered keymaps
+N  <Left>/<Right>  Move within the filter query
+N  <Leader>sk      Search all active keymaps with Telescope
+
+==============================================================================
+FILES AND BUFFERS                                       *keymaps-files*
+
+N  <Leader>e       Open or close the Oil file explorer
+N  <Leader>bd      Close the current buffer
+N  <Leader>w       Save the current file
+N  <Leader>q       Close the current window
+N  <Leader><Leader> Search open buffers with Telescope
+
+==============================================================================
+SEARCH AND REPLACE                                     *keymaps-search*
+
+N  S               Find and replace the word under the cursor in this buffer
+N  <Leader>S       Open Spectre for project-wide search and replace
+N  <Leader>/       Search the current buffer
+N  <Leader>sf      Find files, including hidden files
+N  <Leader>sg      Search text in the project
+N  <Leader>sw      Search for the word under the cursor
+V  <Leader>sw      Search for the selected text
+N  <Leader>s/      Search text in all open files
+N  <Leader>sd      Search diagnostics
+N  <Leader>sr      Resume the last Telescope search
+N  <Leader>s.      Search recently opened files
+N  <Leader>ss      Select a Telescope picker
+N  <Leader>sc      Search Neovim commands
+N  <Leader>sh      Search Neovim help
+N  <Leader>sn      Search Neovim configuration files
+N  *               Search forward for the word and center the result
+N  #               Search backward for the word and center the result
+N  n / N           Center the next/previous search result
+N  <Esc>           Clear search highlighting
+
+Inside Telescope:
+
+I  <C-j>/<Down>    Select the next entry
+I  <C-k>/<Up>      Select the previous entry
+I  <C-q>           Send selection to quickfix and open it
+I  <C-x>           Delete the selected buffer
+
+==============================================================================
+SURROUND                                               *keymaps-surround*
+
+mini.surround and vim-surround-compatible aliases work in parallel.
+
+N  sa{motion}{x}   Surround a text object with x, e.g. saiw"
+V  sa{x}           Surround the selection with x
+N  sd{x}           Delete surrounding x
+N  sr{old}{new}    Replace surrounding, e.g. sr)"
+
+N  ys{motion}{x}   vim-surround alias, e.g. ysiw"
+N  yss{x}          Surround the entire line
+N  ds{x}           vim-surround alias for deleting
+N  cs{old}{new}    vim-surround alias for replacing
+V  S{x}            Surround the selection in vim-surround style
+
+Common surroundings: "  '  )  ]  }
+
+==============================================================================
+LSP AND DIAGNOSTICS                                      *keymaps-lsp*
+
+The LSP bindings are only available in buffers with an active LSP.
+
+N  K               Show hover documentation
+N  <Leader>k       Show hover documentation
+I  <C-k>           Show signature help
+N  gd              Go to definition
+N  gD              Go to declaration
+N  gr              Show references with Telescope
+N  gi              Show implementations with Telescope
+N  td              Go to type definition
+N  <Leader>rn      Rename symbol
+N,V <Leader>ca     Execute a code action
+N  <Leader>bs      Search symbols in the current document
+N  <Leader>ps      Search workspace symbols
+N  <Leader>th      Toggle inlay hints
+N  <Leader>d       Show the diagnostic under the cursor
+N  <Leader>ld      Load diagnostics into the quickfix list
+N  <Leader>cn      Go to the next quickfix entry
+N  <Leader>cp      Go to the previous quickfix entry
+N  <Leader>co      Open the quickfix list
+N  <Leader>cc      Close the quickfix list
+
+==============================================================================
+NAVIGATION AND EDITING                             *keymaps-navigation*
+
+N  H / L           Jump to the beginning/end of the line
+V  H / L           Jump to the beginning/end of the selected line
+V  <A-j>/<A-k>     Move the selected block down/up
+N  <S-CR>          Insert a blank line without entering Insert mode
+I  jj / kk         Leave Insert mode
+N  <C-u>/<C-d>     Scroll half a page and center the cursor
+N  { / }           Jump to the previous/next paragraph and center
+N  gg / G          Jump to the beginning/end of the file and center
+N  <C-i>/<C-o>     Move forward/backward in the jump list and center
+N  %               Jump to the matching bracket and center
+T  <Esc><Esc>      Leave Terminal mode
+
+Window and Herdr navigation:
+
+N  <C-h>           Move left
+N  <C-j>           Move down
+N  <C-k>           Move up
+N  <C-l>           Move right
+
+At the edge of a Neovim split, focus moves to the adjacent Herdr pane.
+
+==============================================================================
+FORMATTING AND COMPLETION                           *keymaps-completion*
+
+N,V <Leader>f      Format the current buffer
+I  <C-Space>       Open the completion menu
+I  <C-j>/<Down>    Select the next suggestion
+I  <C-k>/<Up>      Select the previous suggestion
+I  <CR>            Select and accept the suggestion
+I  <C-c>           Cancel completion
+I  <Tab>/<S-Tab>   Move forward/backward through snippet placeholders
+I  <C-u>/<C-d>     Scroll completion documentation
+
+==============================================================================
+GIT                                                    *keymaps-git*
+
+N  ]c / [c         Jump to the next/previous Git hunk
+N,V <Leader>hs     Stage hunk
+N,V <Leader>hr     Reset hunk
+N  <Leader>hS      Stage the entire buffer
+N  <Leader>hR      Reset the entire buffer
+N  <Leader>hp      Preview hunk
+N  <Leader>hi      Preview hunk inline
+N  <Leader>hb      Show Git blame for the current line
+N  <Leader>hd      Diff against the index
+N  <Leader>hD      Diff against the last commit
+N  <Leader>hq      Add file changes to quickfix
+N  <Leader>hQ      Add repository changes to quickfix
+N  <Leader>tb      Toggle inline blame
+N  <Leader>tw      Toggle word diff
+O,V ih             Select a Git hunk as a text object
+
+==============================================================================
+
+See also:
+  |map|                 General Vim keymaps
+  |mini.surround|       Surround actions
+  |telescope.nvim|      Fuzzy search
+  |lsp|                 Language Server Protocol
+
+vim:tw=78:ts=8:noet:ft=help:norl:

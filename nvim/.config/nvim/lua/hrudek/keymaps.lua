@@ -7,17 +7,26 @@ vim.keymap.set('n', 'L', '$', { desc = 'Jump to end of line' })
 -- Insert a blank line below without entering insert mode
 vim.keymap.set('n', '<S-CR>', 'o<Esc>', { desc = 'Insert blank line below' })
 
--- Toggle NeoTree file explorer
-vim.keymap.set('n', '<leader>e', '<Cmd>Neotree toggle reveal<CR>', {
-  desc = 'Toggle NeoTree file explorer',
-  silent = true,
-})
+-- Buffers and file explorer
+vim.keymap.set('n', '<leader>bd', function() require('snacks').bufdelete() end, { desc = '[B]uffer [D]elete' })
+vim.keymap.set('n', '<leader>e', function() require('oil').toggle_float() end, { desc = 'Toggle Oil file explorer' })
+
+vim.keymap.set('n', '<leader>?', function() require('hrudek.keymap_help').toggle() end, { desc = 'Toggle personal keymap help' })
 
 vim.keymap.set('n', 'S', function()
   local cmd = ':%s/<C-r><C-w>/<C-r><C-w>/gI<Left><Left><Left>'
   local keys = vim.api.nvim_replace_termcodes(cmd, true, false, true)
   vim.api.nvim_feedkeys(keys, 'n', false)
 end, { desc = 'Quick find/replace word under cursor' })
+
+-- vim-surround-compatible aliases for mini.surround
+vim.keymap.set('n', 'ys', 'sa', { remap = true, desc = 'Add surrounding' })
+vim.keymap.set('n', 'ds', 'sd', { remap = true, desc = 'Delete surrounding' })
+vim.keymap.set('n', 'cs', 'sr', { remap = true, desc = 'Replace surrounding' })
+vim.keymap.set('n', 'yss', 'sa_', { remap = true, desc = 'Surround line' })
+
+-- Project-wide search and replace
+vim.keymap.set('n', '<leader>S', function() require('spectre').toggle() end, { desc = 'Toggle Spectre for global find/replace' })
 
 -- Save and Quit
 vim.keymap.set('n', '<leader>w', '<cmd>w<cr>', { silent = false, desc = 'Save current buffer' })
@@ -59,6 +68,13 @@ vim.keymap.set('i', 'kk', '<Esc>', { desc = 'Exit insert mode' })
 
 -- Visual Mode --
 
+-- Add a surrounding to the selection using vim-surround's standard binding.
+vim.keymap.set('x', 'S', [[:<C-u>lua MiniSurround.add('visual')<CR>]], { silent = true, desc = 'Surround selection' })
+
 -- Jump to start/end of line
 vim.keymap.set('x', 'H', '^', { desc = 'Jump to beginning of line' })
 vim.keymap.set('x', 'L', '$', { desc = 'Jump to end of line' })
+
+-- Move the selected block and keep it selected.
+vim.keymap.set('x', '<A-j>', ":m '>+1<CR>gv=gv", { desc = 'Move selected block down' })
+vim.keymap.set('x', '<A-k>', ":m '<-2<CR>gv=gv", { desc = 'Move selected block up' })

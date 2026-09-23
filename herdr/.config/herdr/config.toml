@@ -195,6 +195,30 @@ type = "plugin_action"
 command = "vim-herdr-navigation.right"
 description = "navigate right (editor/herdr)"
 
+[[keys.command]]
+key = "ctrl+left"
+type = "plugin_action"
+command = "vim-herdr-navigation.left"
+description = "navigate left (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+down"
+type = "plugin_action"
+command = "vim-herdr-navigation.down"
+description = "navigate down (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+up"
+type = "plugin_action"
+command = "vim-herdr-navigation.up"
+description = "navigate up (editor/herdr)"
+
+[[keys.command]]
+key = "ctrl+right"
+type = "plugin_action"
+command = "vim-herdr-navigation.right"
+description = "navigate right (editor/herdr)"
+
 # Herdr Annotate: terminal annotations
 [[keys.command]]
 key = "prefix+a"
