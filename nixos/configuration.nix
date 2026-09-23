@@ -5,11 +5,6 @@
 { config, pkgs, ... }:
 
 let
-  zen-browser =
-    import (builtins.fetchTarball "https://github.com/youwen5/zen-browser-flake/archive/master.tar.gz")
-      {
-        inherit pkgs;
-      };
   emacs-overlay = import (
     builtins.fetchTarball {
       url = "https://github.com/nix-community/emacs-overlay/archive/73954822fae76d4cffb6eb60142229129542a7c0.tar.gz";
@@ -23,6 +18,7 @@ in
     # Include the results of the hardware scan.
     /etc/nixos/hardware-configuration.nix
     <home-manager/nixos>
+    ./keyboard-remaps.nix
   ];
 
   # Bootloader.
@@ -114,12 +110,12 @@ in
 
   security.pam.services.login.enableGnomeKeyring = true;
   security.pam.services.gdm-password.enableGnomeKeyring = true;
-  # Configure keymap in X11. X owns keyboard config now that i3 (unlike sway)
-  # has no input configuration of its own.
+  # Configure the common X11 keymap. Device-specific rewrites for the laptop
+  # keyboard are defined in keyboard-remaps.nix.
   services.xserver.xkb = {
     layout = "us";
     variant = "";
-    options = "ctrl:nocaps";
+    options = "";
   };
 
   # Touchpad and pointer behaviour, previously set in the sway config.
@@ -407,7 +403,6 @@ in
     rpi-imager
     mediawriter
     prusa-slicer
-    zen-browser.default
 
     # emacs dependencies
     emacsPackages.pbcopy
@@ -466,42 +461,15 @@ in
     ];
   };
 
-  # Remap the physical left Alt and left Super keys before desktop sessions see
-  # them. This makes the keyboard behave as if those two keys were swapped.
-  services.interception-tools = {
-    enable = true;
-    plugins = [ pkgs.interception-tools-plugins.dual-function-keys ];
-
-    # Listen only for the two keys involved in the swap and emit remapped events
-    # through uinput.
-    udevmonConfig = ''
-      - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${pkgs.interception-tools-plugins.dual-function-keys}/bin/dual-function-keys -c /etc/dual-function-keys.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
-        DEVICE:
-          EVENTS:
-            EV_KEY: [KEY_LEFTALT, KEY_LEFTMETA]
-    '';
-  };
-
-  # Swap physical left Alt and left Super.
-  environment.etc."dual-function-keys.yaml".text = ''
-    ---
-    MAPPINGS:
-      - KEY: KEY_LEFTALT
-        TAP: KEY_LEFTMETA
-        HOLD: KEY_LEFTMETA
-        HOLD_START: BEFORE_CONSUME
-
-      - KEY: KEY_LEFTMETA
-        TAP: KEY_LEFTALT
-        HOLD: KEY_LEFTALT
-        HOLD_START: BEFORE_CONSUME
-  '';
-
   # Explicitly keep USB HID devices (keyboard, mouse dongle) out of autosuspend.
   # Belt-and-suspenders: powertop is disabled, but guard against any future
   # power manager re-enabling it.
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usbhid", TEST=="power/control", ATTR{power/control}="on"
+
+    # Allow browser-based configurators such as Keychron Launcher to access
+    # the Keychron Q11 through WebHID.
+    KERNEL=="hidraw*", ATTRS{idVendor}=="3434", ATTRS{idProduct}=="01e0", GROUP="users", MODE="0660"
 
     # The Logi Bolt receiver can fire spuriously out of s2idle. Runtime
     # autosuspend stays off (rule above); this only stops the receiver from
