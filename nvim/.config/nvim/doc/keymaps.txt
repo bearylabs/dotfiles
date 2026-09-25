@@ -9,10 +9,6 @@ I (Insert), V (Visual), and T (Terminal).
 
 Open this help:                                           *keymaps-help*
 
-N  <Leader>?       Open this keymap help
-N  /               Fuzzily search within this help popup
-N  <Up>/<Down>     Navigate filtered keymaps
-N  <Left>/<Right>  Move within the filter query
 N  <Leader>sk      Search all active keymaps with Telescope
 
 ==============================================================================
@@ -22,6 +18,7 @@ N  <Leader>e       Open or close the Oil file explorer
 N  <Leader>bd      Close the current buffer
 N  <Leader>w       Save the current file
 N  <Leader>q       Close the current window
+N  :e!             Discard unsaved changes and reload the current file
 N  <Leader><Leader> Search open buffers with Telescope
 
 ==============================================================================
@@ -49,8 +46,6 @@ N  <Esc>           Clear search highlighting
 
 Inside Telescope:
 
-I  <C-j>/<Down>    Select the next entry
-I  <C-k>/<Up>      Select the previous entry
 I  <C-q>           Send selection to quickfix and open it
 I  <C-x>           Delete the selected buffer
 
@@ -112,24 +107,11 @@ N  <C-i>/<C-o>     Move forward/backward in the jump list and center
 N  %               Jump to the matching bracket and center
 T  <Esc><Esc>      Leave Terminal mode
 
-Window and Herdr navigation:
-
-N  <C-h>           Move left
-N  <C-j>           Move down
-N  <C-k>           Move up
-N  <C-l>           Move right
-
-At the edge of a Neovim split, focus moves to the adjacent Herdr pane.
-
 ==============================================================================
 FORMATTING AND COMPLETION                           *keymaps-completion*
 
 N,V <Leader>f      Format the current buffer
 I  <C-Space>       Open the completion menu
-I  <C-j>/<Down>    Select the next suggestion
-I  <C-k>/<Up>      Select the previous suggestion
-I  <CR>            Select and accept the suggestion
-I  <C-c>           Cancel completion
 I  <Tab>/<S-Tab>   Move forward/backward through snippet placeholders
 I  <C-u>/<C-d>     Scroll completion documentation
 

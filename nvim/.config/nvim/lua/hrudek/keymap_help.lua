@@ -196,6 +196,13 @@ function M.toggle()
   local close = function()
     if help_win and vim.api.nvim_win_is_valid(help_win) then vim.api.nvim_win_close(help_win, true) end
   end
+
+  vim.api.nvim_create_autocmd('WinLeave', {
+    buffer = buffer,
+    once = true,
+    callback = function() vim.schedule(close) end,
+  })
+
   vim.keymap.set('n', 'q', close, { buffer = buffer, silent = true })
   vim.keymap.set('n', '<Esc>', close, { buffer = buffer, silent = true })
   vim.keymap.set('n', '<C-c>', close, { buffer = buffer, silent = true })

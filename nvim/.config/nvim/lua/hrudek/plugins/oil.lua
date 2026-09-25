@@ -1,7 +1,6 @@
 vim.pack.add {
   'https://github.com/stevearc/oil.nvim',
   'https://github.com/nvim-tree/nvim-web-devicons',
-  'https://github.com/refractalize/oil-git-status.nvim',
 }
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -11,7 +10,7 @@ vim.api.nvim_create_autocmd('FileType', {
 
 require('oil').setup {
   win_options = {
-    signcolumn = 'yes:2',
+    signcolumn = 'no',
   },
   confirmation = {
     border = 'rounded',
@@ -28,4 +27,4 @@ require('oil').setup {
   },
 }
 
-require('oil-git-status').setup()
+require('hrudek.oil_git_status').setup()

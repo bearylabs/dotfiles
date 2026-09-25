@@ -305,6 +305,7 @@ in
 
   # Enable fish shell
   programs.fish.enable = true;
+  programs.zoxide.enable = true;
   programs.dconf.enable = true;
 
   programs.nix-ld.enable = true;
@@ -345,7 +346,6 @@ in
     fzf
     tree
     tree-sitter
-    zoxide
     jq # Also drives the polybar split-direction module.
     bind # nslookup
     nmap

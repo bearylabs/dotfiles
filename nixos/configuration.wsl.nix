@@ -106,6 +106,7 @@ in
   programs.fish.enable = true;
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false;
+  programs.zoxide.enable = true;
   programs.nix-ld.enable = true;
   programs.openvpn3.enable = true;
 
@@ -160,7 +161,6 @@ in
     fzf
     tree
     tree-sitter
-    zoxide
     bind # nslookup
     nmap
     usbutils
