@@ -1,0 +1,542 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.1.0"
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+REPO="$(cd "$(dirname "$SCRIPT_PATH")" && pwd -P)"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+CONFIG_FILE="$CONFIG_HOME/dotctl/config"
+STOW_DIR="$REPO/stow"
+DRY_RUN=false
+YES=false
+VERBOSE=false
+COLOR=true
+ORIGINAL_ARGS=("$@")
+SELECTED_PROFILE=""
+
+if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then COLOR=false; fi
+red='\033[31m'; green='\033[32m'; yellow='\033[33m'; blue='\033[34m'; reset='\033[0m'
+color() { $COLOR && printf '%b' "$1" || true; }
+info() { printf '%b==>%b %s\n' "$(color "$blue")" "$(color "$reset")" "$*"; }
+ok() { printf '%b✓%b %s\n' "$(color "$green")" "$(color "$reset")" "$*"; }
+warn() { printf '%bwarning:%b %s\n' "$(color "$yellow")" "$(color "$reset")" "$*" >&2; }
+die() { printf '%berror:%b %s\n' "$(color "$red")" "$(color "$reset")" "$*" >&2; exit 1; }
+
+show_cmd() { printf '  '; printf '%q ' "$@"; printf '\n'; }
+run() {
+  if $VERBOSE || $DRY_RUN; then show_cmd "$@"; fi
+  $DRY_RUN || "$@"
+}
+need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
+confirm() {
+  local prompt="$1" answer
+  $YES && return 0
+  [[ -t 0 && -t 1 ]] || return 1
+  read -r -p "$prompt [y/N] " answer
+  [[ "$answer" == [yY] || "$answer" == [yY][eE][sS] ]]
+}
+
+usage() {
+  cat <<EOF
+Usage: dotctl [global flags] <command> [options]
+
+Linux dotfiles bootstrap and update wrapper.
+
+Commands:
+  init --profile personal|work  Save a profile, link dotctl, and apply all layers
+  apply [--only LAYER]          Apply all layers, or system|dotfiles|tools|integrations
+  update                        Fast-forward the repo, update everything, then run doctor
+  doctor                        Read-only installation checks
+  stow                          Safely restow the selected dotfile packages
+  link                          Link dotctl into ~/.local/bin
+  help                          Show this help
+  version                       Show the version
+
+Global flags:
+  --dry-run                     Print mutating commands without running them
+  -y, --yes                     Accept prompts (GitHub web login may still be interactive)
+  -v, --verbose                 Print commands before running them
+  --no-color                    Disable colored output
+  -h, --help                    Show help
+  -V, --version                 Show version
+EOF
+}
+
+platform() {
+  local id=""
+  [[ -r /etc/os-release ]] && id="$(. /etc/os-release; printf '%s' "${ID:-}")"
+  case "$id" in
+    nixos)
+      if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/sys/kernel/osrelease /proc/version 2>/dev/null; then
+        printf 'nixos-wsl\n'
+      else
+        printf 'nixos\n'
+      fi
+      ;;
+    ubuntu) printf 'ubuntu\n' ;;
+    *) printf 'unsupported\n' ;;
+  esac
+}
+
+read_profile() {
+  local value="$SELECTED_PROFILE"
+  [[ -z "$value" && -r "$CONFIG_FILE" ]] && IFS= read -r value < "$CONFIG_FILE"
+  case "$value" in personal|work) printf '%s\n' "$value" ;; *) return 1 ;; esac
+}
+
+save_profile() {
+  local profile="$1"
+  case "$profile" in personal|work) ;; *) die "profile must be 'personal' or 'work'" ;; esac
+  SELECTED_PROFILE="$profile"
+  if $DRY_RUN; then
+    info "Would write profile '$profile' to $CONFIG_FILE"
+  else
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    printf '%s\n' "$profile" > "$CONFIG_FILE"
+    chmod 600 "$CONFIG_FILE"
+  fi
+}
+
+load_list() {
+  local file="$1" line
+  [[ -r "$file" ]] || die "missing data file: $file"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line//$'\r'/}"
+    read -r line <<< "$line"
+    [[ -n "$line" ]] && printf '%s\n' "$line"
+  done < "$file"
+}
+
+cmd_link() {
+  (($# == 0)) || die "link takes no arguments"
+  local dir="$HOME/.local/bin" target="$HOME/.local/bin/dotctl"
+  if [[ -e "$target" && ! -L "$target" ]]; then
+    die "$target exists and is not a symlink; remove it manually"
+  fi
+  if [[ -L "$target" && "$(readlink -f "$target")" == "$SCRIPT_PATH" ]]; then
+    ok "$target already points to $SCRIPT_PATH"
+  else
+    run mkdir -p "$dir"
+    run ln -sfn "$SCRIPT_PATH" "$target"
+    ok "Linked $target -> $SCRIPT_PATH"
+  fi
+  case ":$PATH:" in *":$dir:"*) ;; *) warn "$dir is not on PATH; add it to your shell startup file, then start a new shell" ;; esac
+}
+
+ubuntu_prerequisites() {
+  local package file
+  local -a wanted=() missing=()
+  shopt -s nullglob
+  local -a files=("$REPO"/packages/ubuntu-*.txt)
+  shopt -u nullglob
+  ((${#files[@]})) || die "no packages/ubuntu-*.txt files found"
+  for file in "${files[@]}"; do
+    while IFS= read -r package; do wanted+=("$package"); done < <(load_list "$file")
+  done
+  for package in "${wanted[@]}"; do
+    dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null | grep -q '^ii ' || missing+=("$package")
+  done
+  if ((${#missing[@]})); then
+    info "Installing missing Ubuntu essentials: ${missing[*]}"
+    run sudo apt-get update
+    run sudo apt-get install -y --no-install-recommends "${missing[@]}"
+  else
+    ok "Ubuntu essentials are installed"
+  fi
+  if ! command -v mise >/dev/null 2>&1; then
+    info "Installing mise with the official installer"
+    if $DRY_RUN; then
+      show_cmd curl -fsSL https://mise.run '|' sh
+    else
+      local installer
+      installer="$(mktemp)"
+      trap 'rm -f "${installer:-}"' RETURN
+      curl -fsSL https://mise.run -o "$installer"
+      sh "$installer"
+      rm -f "$installer"
+      trap - RETURN
+      export PATH="$HOME/.local/bin:$PATH"
+    fi
+  else
+    ok "mise is installed"
+  fi
+}
+
+nixos_rebuild() {
+  local p="$1" config
+  case "$p" in
+    nixos) config="$REPO/nix/configuration.nix" ;;
+    nixos-wsl) config="$REPO/nix/configuration.wsl.nix" ;;
+    *) die "internal error: invalid NixOS platform $p" ;;
+  esac
+  [[ -r "$config" ]] || die "missing NixOS configuration: $config"
+  run sudo nixos-rebuild switch -I "nixos-config=$config"
+}
+
+system_layer() {
+  local mode="${1:-apply}" p
+  p="$(platform)"
+  info "System prerequisites ($p)"
+  case "$p" in
+    ubuntu) ubuntu_prerequisites ;;
+    nixos|nixos-wsl)
+      if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
+      nixos_rebuild "$p"
+      ;;
+    *) die "unsupported Linux distribution (supported: NixOS, NixOS-WSL, Ubuntu)" ;;
+  esac
+}
+
+github_auth() {
+  need gh
+  if gh auth token --hostname github.com >/dev/null 2>&1; then
+    ok "GitHub authentication for github.com is valid"
+    return
+  fi
+  if [[ ! -t 0 || ! -t 1 ]]; then
+    die "GitHub authentication is required. Set GH_TOKEN or run: gh auth login --hostname github.com --web"
+  fi
+  confirm "Authenticate gh with github.com in the browser?" || die "GitHub authentication is required before mise tools can be installed"
+  run gh auth login --hostname github.com --web
+  $DRY_RUN && return
+  gh auth token --hostname github.com >/dev/null 2>&1 || die "gh login completed but no valid github.com token is available"
+  ok "GitHub authentication validated"
+}
+
+ubuntu_git_credential_manager() {
+  command -v git-credential-manager >/dev/null 2>&1 && {
+    ok "Git Credential Manager is installed"
+    return
+  }
+
+  local machine asset_arch tag version url package
+  machine="$(uname -m)"
+  case "$machine" in
+    x86_64) asset_arch=x64 ;;
+    aarch64|arm64) asset_arch=arm64 ;;
+    *) die "Git Credential Manager does not support Ubuntu architecture: $machine" ;;
+  esac
+
+  if $DRY_RUN; then
+    info "Would install the latest Git Credential Manager release for linux-$asset_arch"
+    return
+  fi
+
+  tag="$(gh api repos/git-ecosystem/git-credential-manager/releases/latest --jq .tag_name)"
+  version="${tag#v}"
+  url="https://github.com/git-ecosystem/git-credential-manager/releases/download/$tag/gcm-linux-$asset_arch-$version.deb"
+  package="$(mktemp --suffix=.deb)"
+  if ! curl -fsSL "$url" -o "$package"; then
+    rm -f "$package"
+    die "failed to download Git Credential Manager $tag"
+  fi
+  if ! sudo apt-get install -y "$package"; then
+    rm -f "$package"
+    die "failed to install Git Credential Manager $tag"
+  fi
+  rm -f "$package"
+  ok "Git Credential Manager $version is installed"
+}
+
+profile_prerequisites() {
+  local profile p
+  profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
+  p="$(platform)"
+  if [[ "$profile" == work && "$p" == ubuntu ]]; then
+    ubuntu_git_credential_manager
+  fi
+}
+
+stow_packages() {
+  local profile="$1" package
+  local -a packages=()
+  while IFS= read -r package; do packages+=("$package"); done < <(load_list "$REPO/packages/stow-common.txt")
+  packages+=("git-$profile")
+  printf '%s\n' "${packages[@]}"
+}
+
+stow_layer() {
+  local profile inactive package
+  profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
+  [[ "$profile" == personal ]] && inactive=work || inactive=personal
+  need stow
+  local -a packages=()
+  while IFS= read -r package; do
+    [[ -d "$STOW_DIR/$package" ]] || die "unknown Stow package in package data: $package"
+    packages+=("$package")
+  done < <(stow_packages "$profile")
+
+  info "Simulating Stow changes for profile '$profile'"
+  stow -n -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+  if $DRY_RUN; then
+    show_cmd stow -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+  else
+    run stow -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+  fi
+  ok "Stow packages selected for '$profile'"
+}
+
+mise_env() {
+  export PATH="$HOME/.local/bin:$PATH"
+  if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate bash)"
+  fi
+}
+
+tools_layer() {
+  export PATH="$HOME/.local/bin:$PATH"
+  need mise
+  [[ -e "$HOME/.config/mise/config.toml" ]] || $DRY_RUN || die "mise config is not stowed; run: dotctl apply --only dotfiles"
+  info "Trusting the repository-managed mise configuration"
+  run mise trust "$HOME/.config/mise/config.toml"
+  mise_env
+  info "Installing mise-managed tools"
+  run mise install --cd "$REPO"
+}
+
+sync_integrations() {
+  local source integration
+  mise_env
+  need herdr
+  info "Syncing Herdr plugins"
+  while IFS= read -r source; do run herdr plugin install "$source" --yes; done < <(load_list "$REPO/packages/herdr-plugins.txt")
+  info "Syncing Herdr agent integrations"
+  while IFS= read -r integration; do run herdr integration install "$integration"; done < <(load_list "$REPO/packages/herdr-integrations.txt")
+  if command -v az >/dev/null 2>&1 || $DRY_RUN; then
+    run mise run --cd "$REPO" azure:extensions
+  else
+    die "Azure CLI is missing after mise install"
+  fi
+}
+
+apply_layers() {
+  local only="${1:-}" mode="${2:-apply}"
+  case "$only" in ''|system|dotfiles|tools|integrations) ;; *) die "--only must be system, dotfiles, tools, or integrations" ;; esac
+  if [[ -z "$only" || "$only" == system ]]; then system_layer "$mode"; fi
+  if [[ -z "$only" || "$only" == tools ]]; then
+    github_auth
+    profile_prerequisites
+  fi
+  if [[ -z "$only" || "$only" == dotfiles ]]; then stow_layer; fi
+  if [[ -z "$only" || "$only" == tools ]]; then tools_layer; fi
+  if [[ -z "$only" || "$only" == integrations ]]; then sync_integrations; fi
+}
+
+cmd_init() {
+  local profile=""
+  while (($#)); do
+    case "$1" in
+      --profile) (($# > 1)) || die "--profile requires a value"; profile="$2"; shift 2 ;;
+      --profile=*) profile="${1#*=}"; shift ;;
+      *) die "unknown init option: $1" ;;
+    esac
+  done
+  [[ -n "$profile" ]] || die "init requires --profile personal|work"
+  save_profile "$profile"
+  cmd_link
+  apply_layers
+}
+
+cmd_apply() {
+  local only=""
+  while (($#)); do
+    case "$1" in
+      --only) (($# > 1)) || die "--only requires a value"; only="$2"; shift 2 ;;
+      --only=*) only="${1#*=}"; shift ;;
+      *) die "unknown apply option: $1" ;;
+    esac
+  done
+  if [[ -z "$only" || "$only" == dotfiles ]]; then
+    read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
+  fi
+  apply_layers "$only"
+}
+
+update_repo() {
+  need git
+  [[ -z "$(git -C "$REPO" status --porcelain)" ]] || die "refusing update: repository has uncommitted changes"
+  git -C "$REPO" symbolic-ref -q HEAD >/dev/null || die "refusing update: HEAD is detached"
+  local upstream
+  upstream="$(git -C "$REPO" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)" || die "refusing update: current branch has no upstream"
+  info "Fast-forwarding from $upstream"
+  run git -C "$REPO" pull --ff-only
+}
+
+cmd_update() {
+  (($# == 0)) || die "update takes no arguments"
+  if [[ "${DOTCTL_UPDATE_REEXECED:-0}" != 1 ]]; then
+    update_repo
+    if ! $DRY_RUN; then
+      export DOTCTL_UPDATE_REEXECED=1
+      exec "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
+    fi
+  fi
+  read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
+  system_layer update
+  github_auth
+  stow_layer
+  tools_layer
+  mise_env
+  run mise upgrade --cd "$REPO"
+  sync_integrations
+  cmd_doctor
+}
+
+check_ok() { ok "$1"; }
+check_fail() { warn "$1"; DOCTOR_FAILURES=$((DOCTOR_FAILURES + 1)); }
+check_cmd() {
+  if command -v "$1" >/dev/null 2>&1; then check_ok "$1 is available"; else check_fail "$1 is missing"; fi
+}
+
+cmd_doctor() {
+  (($# == 0)) || die "doctor takes no arguments"
+  DOCTOR_FAILURES=0
+  local p profile upstream target package source integration
+  p="$(platform)"
+  [[ "$p" != unsupported ]] && check_ok "platform: $p" || check_fail "unsupported platform"
+  if profile="$(read_profile)"; then check_ok "profile: $profile"; else check_fail "profile is missing or invalid in $CONFIG_FILE"; profile=""; fi
+
+  if git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then check_ok "repository: $REPO"; else check_fail "$REPO is not a Git work tree"; fi
+  git -C "$REPO" symbolic-ref -q HEAD >/dev/null 2>&1 && check_ok "repository HEAD is attached" || check_fail "repository HEAD is detached"
+  if upstream="$(git -C "$REPO" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then check_ok "upstream: $upstream"; else check_fail "current branch has no upstream"; fi
+  [[ -z "$(git -C "$REPO" status --porcelain 2>/dev/null)" ]] && check_ok "repository is clean" || warn "repository has uncommitted changes (update will refuse)"
+
+  case "$p" in
+    ubuntu)
+      local file
+      shopt -s nullglob
+      local -a ubuntu_files=("$REPO"/packages/ubuntu-*.txt)
+      shopt -u nullglob
+      for file in "${ubuntu_files[@]}"; do
+        while IFS= read -r package; do
+          if dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null | grep -q '^ii '; then
+            check_ok "Ubuntu package: $package"
+          else
+            check_fail "Ubuntu package missing: $package"
+          fi
+        done < <(load_list "$file")
+      done
+      check_cmd mise
+      ;;
+    nixos|nixos-wsl)
+      for package in git gh stow mise; do check_cmd "$package"; done
+      check_cmd nixos-rebuild
+      ;;
+  esac
+  [[ "$profile" != work ]] || check_cmd git-credential-manager
+  if [[ -n "$profile" ]]; then
+    local expected_name expected_email
+    if [[ "$profile" == personal ]]; then
+      expected_name=bearylabs
+      expected_email=info@beary.cloud
+    else
+      expected_name=hendrik-rudek
+      expected_email=hendrik.rudek@siempelkamp.com
+    fi
+    if [[ "$(git config --global --includes user.name 2>/dev/null || true)" == "$expected_name" && "$(git config --global --includes user.email 2>/dev/null || true)" == "$expected_email" ]]; then
+      check_ok "Git identity matches the '$profile' profile"
+    else
+      check_fail "Git identity does not match the '$profile' profile"
+    fi
+  fi
+
+  target="$HOME/.local/bin/dotctl"
+  [[ -L "$target" && "$(readlink -f "$target")" == "$SCRIPT_PATH" ]] && check_ok "dotctl link is correct" || check_fail "$target does not point to $SCRIPT_PATH"
+  case ":$PATH:" in *":$HOME/.local/bin:"*) check_ok "~/.local/bin is on PATH" ;; *) check_fail "~/.local/bin is not on PATH" ;; esac
+  [[ -x "${SHELL:-}" ]] && check_ok "login shell: ${SHELL:-unknown}" || check_fail "SHELL does not name an executable"
+
+  check_cmd stow
+  if [[ -n "$profile" ]] && command -v stow >/dev/null 2>&1; then
+    local -a packages=()
+    while IFS= read -r package; do packages+=("$package"); done < <(stow_packages "$profile")
+    if stow -n -d "$STOW_DIR" -t "$HOME" "${packages[@]}" >/dev/null 2>&1; then check_ok "Stow package tree has no conflicts"; else check_fail "Stow reports conflicts"; fi
+    local broken=0 unmanaged=0 rel
+    for package in "${packages[@]}"; do
+      while IFS= read -r -d '' source; do
+        rel="${source#"$STOW_DIR/$package/"}"; target="$HOME/$rel"
+        if [[ -L "$target" && ! -e "$target" ]]; then
+          warn "broken managed link: $target"
+          broken=$((broken + 1))
+        elif [[ ! -e "$target" || "$(readlink -f "$target")" != "$(readlink -f "$source")" ]]; then
+          warn "not linked to the repository: $target"
+          unmanaged=$((unmanaged + 1))
+        fi
+      done < <(find "$STOW_DIR/$package" -type f -print0)
+    done
+    if ((broken == 0)); then check_ok "no broken managed links"; else check_fail "$broken broken managed link(s)"; fi
+    if ((unmanaged == 0)); then check_ok "all selected files are managed by Stow"; else check_fail "$unmanaged file(s) are not stowed"; fi
+  fi
+
+  check_cmd mise
+  [[ -e "$HOME/.config/mise/config.toml" ]] && check_ok "mise configuration is present" || check_fail "mise configuration is not stowed"
+  if command -v mise >/dev/null 2>&1; then
+    if [[ -z "$(mise ls --cd "$REPO" --missing 2>/dev/null)" ]]; then check_ok "mise tools are installed"; else check_fail "mise reports missing tools"; fi
+  fi
+  check_cmd gh
+  if command -v gh >/dev/null 2>&1 && gh auth token --hostname github.com >/dev/null 2>&1; then check_ok "github.com token is available through gh"; else check_fail "github.com authentication/token is unavailable"; fi
+
+  if command -v herdr >/dev/null 2>&1; then
+    check_ok "herdr is available"
+    local plugins repo_name statuses
+    local -a missing_plugins=() missing_integrations=()
+    plugins="$(herdr plugin list 2>/dev/null || true)"
+    while IFS= read -r source; do
+      repo_name="${source#*/}"; repo_name="${repo_name%%/*}"
+      grep -q "$repo_name" <<< "$plugins" || missing_plugins+=("$repo_name")
+    done < <(load_list "$REPO/packages/herdr-plugins.txt")
+    if ((${#missing_plugins[@]} == 0)); then
+      check_ok "all Herdr plugins are available"
+    else
+      check_fail "missing Herdr plugins: ${missing_plugins[*]}"
+    fi
+
+    statuses="$(herdr integration status 2>/dev/null || true)"
+    while IFS= read -r integration; do
+      grep -Eq "^${integration}: current" <<< "$statuses" || missing_integrations+=("$integration")
+    done < <(load_list "$REPO/packages/herdr-integrations.txt")
+    if ((${#missing_integrations[@]} == 0)); then
+      check_ok "all Herdr integrations are current"
+    else
+      check_fail "missing or outdated Herdr integrations: ${missing_integrations[*]}"
+    fi
+  else
+    check_fail "herdr is missing"
+  fi
+  if command -v az >/dev/null 2>&1 && az extension show --name virtual-network-manager >/dev/null 2>&1; then
+    check_ok "Azure virtual-network-manager extension is installed"
+  else
+    check_fail "Azure virtual-network-manager extension is missing"
+  fi
+
+  if ((DOCTOR_FAILURES)); then warn "doctor found $DOCTOR_FAILURES problem(s)"; return 1; fi
+  ok "doctor found no problems"
+}
+
+# Global flags may appear before or after the command. Command-specific flags are preserved.
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    -y|--yes) YES=true ;;
+    -v|--verbose) VERBOSE=true ;;
+    --no-color) COLOR=false ;;
+    -h|--help) args+=(help) ;;
+    -V|--version) args+=(version) ;;
+    *) args+=("$arg") ;;
+  esac
+done
+set -- "${args[@]}"
+command_name="${1:-help}"
+(($# == 0)) || shift
+case "$command_name" in
+  init) cmd_init "$@" ;;
+  apply) cmd_apply "$@" ;;
+  update) cmd_update "$@" ;;
+  doctor) cmd_doctor "$@" ;;
+  stow) (($# == 0)) || die "stow takes no arguments"; stow_layer ;;
+  link) cmd_link "$@" ;;
+  help) usage ;;
+  version) printf 'dotctl %s\n' "$VERSION" ;;
+  *) die "unknown command: $command_name (run 'dotctl help')" ;;
+esac

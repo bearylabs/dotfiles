@@ -1,13 +1,10 @@
-[user]
-	name = bearylabs
-	email = info@beary.cloud	
 [init]
 	defaultBranch = main
+[include]
+	path = ~/.gitconfig.profile
 [include]
 	path = ~/.gitconfig.local
 [credential "https://siempelkamp.ghe.com"]
 	provider = github
-[credential]
-	credentialStore = plaintext
 [core]
-	excludesfile = /home/hrudek/.gitignore_global
+	excludesfile = ~/.gitignore_global

@@ -1,0 +1,18 @@
+# Stow packages shared by personal and work profiles.
+agents
+doom
+fish
+flameshot
+ghostty
+gitconfig
+herdr
+i3
+i3status
+mise
+nvim
+pi
+polybar
+rofi
+starship
+tmux
+zsh

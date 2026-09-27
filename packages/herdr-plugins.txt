@@ -1,0 +1,6 @@
+# Derived from the installed Herdr plugin registry. No credentials are stored.
+plannotator/herdr-annotate
+bearylabs/herdr-autofetch
+bearylabs/herdr-better-worktrees
+bearylabs/herdr-simple-tab-names
+paulbkim-dev/vim-herdr-navigation

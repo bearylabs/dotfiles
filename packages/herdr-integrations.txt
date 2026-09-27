@@ -1,0 +1,5 @@
+# Install integrations for tools managed by this repository.
+pi
+claude
+codex
+copilot

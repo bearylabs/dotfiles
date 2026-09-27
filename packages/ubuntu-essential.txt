@@ -1,0 +1,14 @@
+# Bootstrap prerequisites only. Developer runtimes and CLIs belong in mise.
+ca-certificates
+build-essential
+curl
+fish
+git
+gh
+jq
+libsecret-tools
+stow
+tmux
+tree
+unzip
+wget
