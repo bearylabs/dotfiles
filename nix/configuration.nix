@@ -68,12 +68,12 @@ in
   # Keep a GUI desktop available in GDM as a fallback desktop session.
   services.desktopManager.gnome.enable = true;
 
-  # Enable i3. i3lock-color provides the `i3lock` binary used by xss-lock.
+  # Enable i3 and its standard screen locker.
   services.xserver.windowManager.i3 = {
     enable = true;
     extraPackages = with pkgs; [
       i3status
-      i3lock-color
+      i3lock
     ];
   };
 
