@@ -5,11 +5,7 @@
 { config, pkgs, ... }:
 
 let
-  emacs-overlay = import (
-    builtins.fetchTarball {
-      url = "https://github.com/nix-community/emacs-overlay/archive/73954822fae76d4cffb6eb60142229129542a7c0.tar.gz";
-    }
-  );
+  packages = import ./packages.nix { inherit pkgs; };
 in
 
 {
@@ -17,7 +13,6 @@ in
   imports = [
     # Include the results of the hardware scan.
     /etc/nixos/hardware-configuration.nix
-    <home-manager/nixos>
     ./keyboard-remaps.nix
   ];
 
@@ -275,13 +270,9 @@ in
       "wheel"
       "libvirtd"
     ];
-    packages = with pkgs; [
-      thunderbird
-    ];
     # Use zsh as the default login shell
     shell = pkgs.fish;
   };
-  home-manager.users.hrudek = import ./home.nix;
 
   # Install firefox.
   programs.firefox.enable = true;
@@ -291,7 +282,6 @@ in
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.overlays = [ emacs-overlay ];
 
   # Enable modern nix CLI + flakes
   nix.settings.experimental-features = [
@@ -306,6 +296,10 @@ in
   # Enable fish shell
   programs.fish.enable = true;
   programs.zoxide.enable = true;
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
   programs.dconf.enable = true;
 
   programs.nix-ld.enable = true;
@@ -314,151 +308,22 @@ in
     glib
   ];
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    # editors
-    vim
-    neovim
-    vscode
-    emacs
-
-    # core runtime/deps
-    libsecret
-    gnome-keyring
-    seahorse
-    nodejs
-    powershell
-
-    # cloud / provisioning
-    awscli2
-    (azure-cli.withExtensions (with azure-cli.extensions; [ virtual-network-manager ]))
-    oci-cli
-    terraform
-
-    # cli tools
-    git
-    git-credential-manager
-    gh
-    wget
-    ripgrep
-    fd
-    fzf
-    tree
-    tree-sitter
-    jq # Also drives the polybar split-direction module.
-    bind # nslookup
-    nmap
-    usbutils
-    ispell
-    shellcheck
-    nixfmt
-    lazygit
-    parted
-    psmisc
-    unzip
-    # monitoring
-    htop
-    btop
-
-    # virtualization
-    virtio-win # Windows guest drivers ISO (disk/net perf)
-
-    # terminal
-    fish
-    starship
-    kitty
-    ghostty
-    tmux
-
-    # language
-    python3
-    python3Packages.pip
-    pipx
-    rustc
-    cargo
-
-    # desktop
-    solaar
-    flameshot
-    brightnessctl
-    networkmanagerapplet
-    pavucontrol
-    rofi # Application launcher.
-    # Status bar. The default build has neither the i3 nor the PulseAudio
-    # module compiled in, and the bar needs both.
-    (polybar.override {
-      i3Support = true;
-      pulseSupport = true;
-    })
-    feh # Sets the desktop wallpaper; X11 has no compositor to do it.
-    xss-lock # Bridges logind lock/sleep signals to i3lock.
-    xidlehook # Staged idle timeouts (dim, lock, display off).
-    xset # DPMS control, used by the idle timeout above.
-    xclip # Copy/Paste functionality.
-    dunst # Notification daemon.
-    libnotify # notify-send, for scripts that raise notifications.
-    google-chrome
-    obsidian
-    rpi-imager
-    mediawriter
-    prusa-slicer
-
-    # emacs dependencies
-    emacsPackages.pbcopy
-    emacsPackages.vterm
-    libvterm
-    libtool
-    gcc
-    glibc
-    libcxx
-    gdb
-    cmake
-    gnumake
-    libgcc
-
-    # doom emacs tooling
-    sqlite # :tools lookup, backs dash-docs
-    pandoc # :lang markdown, backs markdown-preview
-    shfmt # :lang sh formatting
-
-    # language servers
-    bash-language-server
-    pyright
-    yaml-language-server
-    terraform-ls
-    typescript
-    typescript-language-server
-
-    # python tooling (doom :lang python expects these on PATH)
-    black
-    isort
-    pipenv
-    python3Packages.pytest
-    python3Packages.pyflakes
-
-    # ansible
-    ansible
-
-    # cluster
-    kubectl
-    kubeseal
-    kubernetes-helm
-    argocd
-
-    # qol
-    kubectx # includes kubens
-    k9s
-  ];
+  environment.systemPackages = packages.common ++ packages.desktop;
 
   fonts = {
-    packages = with pkgs; [
-      inter
-      nerd-fonts.jetbrains-mono
-      nerd-fonts.symbols-only
-      symbola # Emacs' unicode fallback font
-      openmoji-color
-    ];
+    packages = packages.fonts.common ++ packages.fonts.desktopOnly;
+    fontconfig = {
+      enable = true;
+      defaultFonts = {
+        sansSerif = [ "Inter" ];
+        serif = [ "Inter" ];
+        monospace = [
+          "JetBrainsMono Nerd Font"
+          "Symbols Nerd Font"
+        ];
+        emoji = [ "OpenMoji Color" ];
+      };
+    };
   };
 
   # Explicitly keep USB HID devices (keyboard, mouse dongle) out of autosuspend.

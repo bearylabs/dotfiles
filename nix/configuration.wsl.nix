@@ -8,30 +8,12 @@
 { config, pkgs, ... }:
 
 let
-  emacs-overlay = import (
-    builtins.fetchTarball {
-      url = "https://github.com/nix-community/emacs-overlay/archive/73954822fae76d4cffb6eb60142229129542a7c0.tar.gz";
-    }
-  );
-
-  # ncurses' xterm-direct announces 24-bit colour with the ITU-T T.416 form of
-  # the SGR sequence, \e[38:2::R:G:Bm. Windows Terminal does not parse it and
-  # drops the sequence, taking every colour Emacs draws with it -- not just the
-  # theme. These entries carry the same capability with ";" separators, which WT
-  # does understand. WSL-only: a native terminal handles the stock entry, so
-  # this stays out of the shared home.nix.
-  wtTerminfo = pkgs.runCommand "wt-direct-terminfo" {
-    nativeBuildInputs = [ pkgs.ncurses ];
-  } ''
-    mkdir -p $out/share/terminfo
-    tic -x -o $out/share/terminfo ${../terminfo/wt-direct.ti}
-  '';
+  packages = import ./packages.nix { inherit pkgs; };
 in
 {
   imports = [
     # Include NixOS-WSL modules.
     <nixos-wsl/modules>
-    <home-manager/nixos>
   ];
 
   wsl.enable = true;
@@ -75,28 +57,7 @@ in
     shell = pkgs.fish;
   };
 
-  home-manager.users.hrudek = {
-    imports = [ ./home.nix ];
-
-    # ~/.terminfo is already in ncurses' default search path, so no
-    # TERMINFO_DIRS -- setting that would replace the built-in paths rather
-    # than extend them.
-    home.file.".terminfo".source = "${wtTerminfo}/share/terminfo";
-
-    home.file.".gitconfig.local".text = ''
-      [user]
-        name = hrudek
-        email = hendrik.rudek@siempelkamp.com
-      [credential]
-        helper = store
-        helper = /run/current-system/sw/bin/git-credential-manager
-      [credential "https://dev.azure.com"]
-        useHttpPath = true
-    '';
-  };
-
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.overlays = [ emacs-overlay ];
 
   nix.settings.experimental-features = [
     "nix-command"
@@ -107,6 +68,10 @@ in
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = false;
   programs.zoxide.enable = true;
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
   programs.nix-ld.enable = true;
   programs.openvpn3.enable = true;
 
@@ -135,116 +100,22 @@ in
 
   virtualisation.docker.enable = true;
 
-  environment.systemPackages = with pkgs; [
-    # editors
-    vim
-    neovim
-    emacs
-
-    # core runtime/deps
-    libsecret
-    nodejs
-
-    # cloud / provisioning
-    awscli2
-    (azure-cli.withExtensions (with azure-cli.extensions; [ virtual-network-manager ]))
-    oci-cli
-    terraform
-
-    # cli tools
-    git
-    git-credential-manager
-    gh
-    wget
-    ripgrep
-    fd
-    fzf
-    tree
-    tree-sitter
-    bind # nslookup
-    nmap
-    usbutils
-    parted
-    unzip
-    ispell
-    shellcheck
-    nixfmt
-    lazygit
-    psmisc
-    powershell
-    xdotool
-    xeyes
-    xsel # terminal Emacs reads the Windows clipboard through it, see doom/wsl.el
-
-    # monitoring
-    htop
-    btop
-
-    # terminal
-    fish
-    starship
-    tmux
-
-    # language
-    python3
-    python3Packages.pip
-    pipx
-    rustc
-    cargo
-
-    # emacs dependencies
-    emacsPackages.pbcopy
-    emacsPackages.vterm
-    libvterm
-    libtool
-    gcc
-    glibc
-    libcxx
-    gdb
-    cmake
-    gnumake
-    libgcc
-
-    # doom emacs tooling
-    sqlite # :tools lookup, backs dash-docs
-    pandoc # :lang markdown, backs markdown-preview
-    shfmt # :lang sh formatting
-
-    # language servers
-    bash-language-server
-    pyright
-    yaml-language-server
-    terraform-ls
-    typescript
-    typescript-language-server
-
-    # python tooling (doom :lang python expects these on PATH)
-    black
-    isort
-    pipenv
-    python3Packages.pytest
-    python3Packages.pyflakes
-
-    # ansible
-    ansible
-
-    # cluster
-    kubectl
-    kubeseal
-    kubernetes-helm
-    argocd
-
-    # qol
-    kubectx # includes kubens
-    k9s
-  ];
+  environment.systemPackages = packages.common;
 
   fonts = {
-    packages = with pkgs; [
-      nerd-fonts.jetbrains-mono
-      nerd-fonts.symbols-only
-      symbola # Emacs' unicode fallback font
-    ];
+    packages = packages.fonts.common;
+    fontconfig = {
+      enable = true;
+      defaultFonts = {
+        sansSerif = [ "Inter" ];
+        serif = [ "Inter" ];
+        monospace = [
+          "JetBrainsMono Nerd Font"
+          "Symbols Nerd Font"
+        ];
+        emoji = [ "OpenMoji Color" ];
+      };
+    };
   };
 
   # This value determines the NixOS release from which the default

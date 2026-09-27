@@ -49,8 +49,6 @@ exec_always --no-startup-id sh -c 'pkill -x nm-applet; exec nm-applet --indicato
 exec_always --no-startup-id sh -c 'pkill -x dunst; exec dunst'
 # LocalSend for local file sharing.
 exec --no-startup-id localsend_app --hidden
-# Re-apply saved desktop theme on i3 start/reload.
-exec_always --no-startup-id theme-toggle apply
 
 ### Input configuration
 #
@@ -79,11 +77,6 @@ exec_always --no-startup-id theme-toggle apply
     bindsym $mod+Shift+c reload
     # Restart i3 in place, preserving the layout
     bindsym $mod+Shift+r restart
-    # Toggle light/dark desktop theme
-    bindsym $mod+Shift+t exec theme-toggle toggle
-    bindsym $mod+Ctrl+d exec theme-toggle dark
-    bindsym $mod+Ctrl+l exec theme-toggle light
-
     # Exit i3 (logs you out of your X session)
     bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
 #
