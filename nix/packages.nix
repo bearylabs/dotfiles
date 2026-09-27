@@ -2,92 +2,51 @@
 
 let
   common = with pkgs; [
-    # Editors
+    # Editors and portable developer tools are managed by mise. Keep vim as a
+    # recovery editor that is always available, even before `mise install`.
     vim
-    neovim
 
     # Core runtime/dependencies
     libsecret
-    nodejs
-    powershell
-
-    # Cloud/provisioning
-    awscli2
-    (azure-cli.withExtensions (with azure-cli.extensions; [ virtual-network-manager ]))
-    oci-cli
-    terraform
+    mise
 
     # CLI tools
     git
     git-credential-manager
+    # Used by desktop processes such as Polybar, which do not inherit the
+    # interactive shell environment activated by mise.
+    jq
+    # mise uses the existing gh login to authenticate GitHub downloads, so gh
+    # must be available before mise installs its own tool set.
     gh
     wget
-    ripgrep
-    fd
-    fzf
     tree
-    tree-sitter
     stow
     bind
     nmap
     usbutils
     parted
     unzip
-    shellcheck
     nixfmt
-    lazygit
     psmisc
 
     # Monitoring
     htop
-    btop
 
     # Terminal
     fish
-    starship
     tmux
-
-    # Languages
-    python3
-    python3Packages.pip
-    pipx
-    rustc
-    cargo
 
     # Neovim plugin build dependencies
     gcc
     gnumake
 
-    # Neovim formatting
-    shfmt
-
-    # Language servers
-    bash-language-server
-    pyright
-    yaml-language-server
-    terraform-ls
-    typescript
-    typescript-language-server
-
-    # Ansible
-    ansible
-
-    # Cluster
-    kubectl
-    kubeseal
-    kubernetes-helm
-    argocd
-
-    # Quality of life
-    kubectx
-    k9s
   ];
 
   desktopOnly = with pkgs; [
     vscode
     gnome-keyring
     seahorse
-    jq
     virtio-win
     kitty
     ghostty

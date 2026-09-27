@@ -1,3 +1,8 @@
+# Load tools managed by mise. Keep the shell usable before the initial install.
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
 # Set up the prompt
 
 autoload -Uz promptinit

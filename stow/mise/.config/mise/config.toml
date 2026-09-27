@@ -1,0 +1,64 @@
+# Portable development tools. System services, shells and low-level utilities
+# stay in Nix; runtimes and developer CLIs live here.
+[settings]
+# nix-ld is enabled in both NixOS configurations, so mise can use upstream
+# precompiled binaries instead of compiling Node.js and Python from source.
+node.compile = false
+python.compile = false
+# Reuse the token from `gh auth login`; never store the secret in this repo.
+github.credential_command = "gh auth token --hostname github.com"
+
+[tools]
+# Editors and runtimes
+neovim = "latest"
+node = "lts"
+python = "3.13"
+pipx = "latest"
+rust = "stable"
+powershell-core = "latest"
+
+# Cloud and infrastructure
+aws-cli = "latest"
+azure = "latest"
+# The registry's vfox plugin cannot see mise's Python during installation.
+# Installing the official PyPI package through pipx avoids that plugin.
+"pipx:oci-cli" = "latest"
+terraform = "latest"
+terraform-ls = "latest"
+ansible = "latest"
+
+# Kubernetes
+kubectl = "latest"
+kubeseal = "latest"
+helm = "latest"
+argocd = "latest"
+kubectx = "latest"
+k9s = "latest"
+
+# Developer CLI tools
+ripgrep = "latest"
+fd = "latest"
+fzf = "latest"
+tree-sitter = "latest"
+shellcheck = "latest"
+shfmt = "latest"
+lazygit = "latest"
+btop = "latest"
+starship = "latest"
+
+# Language servers and formatters distributed through npm
+"npm:bash-language-server" = "latest"
+"npm:pyright" = "latest"
+"npm:yaml-language-server" = "latest"
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+
+# AI/development agents
+claude = "latest"
+codex = "latest"
+herdr = "latest"
+pi = "latest"
+
+[tasks."azure:extensions"]
+description = "Install the Azure CLI extensions used by this setup"
+run = "az extension add --name virtual-network-manager --upgrade"

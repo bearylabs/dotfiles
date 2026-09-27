@@ -51,11 +51,30 @@ sudo nix-collect-garbage -d
 
 ## GNU Stow
 
-On NixOS the dotfiles are linked via the `nix/` config; on other distros use GNU Stow.
+Dotfiles are linked with GNU Stow on every supported system. Each directory
+under `stow/` is an independent package.
 
 ```
 git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-stow agents doom fish flameshot ghostty gitconfig herdr i3 i3status \
-  nvim pi polybar rofi starship tmux zsh
+stow --dir="$PWD/stow" --target="$HOME" \
+  agents doom fish flameshot ghostty gitconfig herdr i3 i3status \
+  mise nvim pi polybar rofi starship tmux zsh
+```
+
+## mise
+
+Nix installs mise itself; mise then installs the portable runtimes and developer
+CLIs declared in `stow/mise/.config/mise/config.toml`. After stowing the
+configuration, install them with:
+
+```
+mise install
+mise run azure:extensions
+```
+
+Fish and Zsh activate mise automatically. Update all mise-managed tools with:
+
+```
+mise upgrade
 ```
