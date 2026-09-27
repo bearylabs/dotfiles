@@ -157,18 +157,17 @@ in
     # and the external monitor is the only enabled output anyway, so closing the
     # lid there should keep the machine running rather than put it to sleep.
     HandleLidSwitchDocked = "ignore";
-    IdleAction = "hibernate";
-    # The old policy suspended after 15 minutes and intended to hibernate after
-    # another 45 minutes. Keep the same one-hour deadline without unreliable
-    # suspend-then-hibernate. xidlehook still blanks the screen after 8 minutes.
-    IdleActionSec = "60min";
+    IdleAction = "suspend-then-hibernate";
+    # Suspend after 30 minutes of session inactivity. xidlehook blanks the
+    # screen after 10 minutes; hibernation follows the delay configured below.
+    IdleActionSec = "30min";
   };
 
   systemd.sleep.settings.Sleep = {
-    # Hibernate after a longer lid-closed period to avoid draining the battery.
-    HibernateDelaySec = "2h";
+    # Stay suspended for five hours before hibernating on battery power.
+    HibernateDelaySec = "5h";
     SuspendEstimationSec = "45min";
-    HibernateOnACPower = "yes";
+    HibernateOnACPower = "no";
 
     # systemd's default is "platform shutdown", and it picks whichever value
     # *writes* to /sys/power/disk without error -- so it always lands on
