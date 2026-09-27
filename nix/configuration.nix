@@ -13,22 +13,12 @@ in
   imports = [
     # Include the results of the hardware scan.
     /etc/nixos/hardware-configuration.nix
-    ./keyboard-remaps.nix
+    ./hosts/hp-elitebook-645-g9.nix
   ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  # HP EliteBook 645 G9: BIOS ships ACPI tables tuned for Windows. Declaring
-  # Windows 2020 compatibility makes the firmware expose correct power-delivery
-  # and AC-adapter state that Linux would otherwise miss (charger not detected
-  # after resume, UCSI not binding).
-  boot.kernelParams = [
-    ''acpi_osi="Windows 2020"''
-    "resume=/dev/mapper/luks-aed0c447-af30-4cc5-b955-cb4e269909dc"
-    "resume_offset=35557376"
-  ];
 
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -168,30 +158,7 @@ in
     HibernateDelaySec = "5h";
     SuspendEstimationSec = "45min";
     HibernateOnACPower = "no";
-
-    # systemd's default is "platform shutdown", and it picks whichever value
-    # *writes* to /sys/power/disk without error -- so it always lands on
-    # platform. That path hands the power-off to the firmware and, right before
-    # it, aborts on any pending wakeup event:
-    #
-    #   PM: hibernation: Wakeup event detected during hibernation, rolling back.
-    #
-    # The rollback is not clean here. The image is already written and the GPU
-    # is already torn down for S4, and amdgpu does not survive being brought
-    # back from that: psp DESTROY_TMR fails, flip_done times out, the ASIC is
-    # reset, and the session is gone with no way back but the power button.
-    # Plain shutdown powers off directly after writing the image, with no
-    # firmware hand-off and no wakeup check to trip over.
-    HibernateMode = "shutdown";
   };
-
-  # Swapfile for hibernation. Size >= RAM.
-  # NOTE: resume_offset in boot.kernelParams must be filled in AFTER first
-  # rebuild creates this file — see comment near kernelParams below.
-  swapDevices = [
-    { device = "/swapfile"; size = 20 * 1024; }
-  ];
-  boot.resumeDevice = "/dev/mapper/luks-aed0c447-af30-4cc5-b955-cb4e269909dc";
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
@@ -244,15 +211,6 @@ in
   # causes input freezes on external HID peripherals (keyboard/mouse dongle).
   # auto-cpufreq handles CPU scaling; thermald handles thermal management.
   powerManagement.powertop.enable = false;
-
-  # Re-scan power supply state after resume in case ACPI didn't fire the event.
-  # Reload ath11k_pci: driver doesn't reinitialize cleanly after wakeup.
-  powerManagement.resumeCommands = ''
-    sleep 2
-    ${pkgs.udev}/bin/udevadm trigger --subsystem-match=power_supply
-    ${pkgs.kmod}/bin/modprobe -r ath11k_pci
-    ${pkgs.kmod}/bin/modprobe ath11k_pci
-  '';
 
   # Let the firmware/OS react to thermal pressure and prevent overheating.
   services.thermald.enable = true;
@@ -341,14 +299,6 @@ in
     # and keyboard connected through the receiver no longer do.
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", ATTR{power/wakeup}="disabled"
 
-    # The HP firmware exposes an ACPI battery trip-point alarm, but its SMBIOS
-    # wake-up type remains "Power Switch" (type 6) instead of reporting an
-    # "APM Timer" (type 3). systemd therefore mistakes the battery alarm for a
-    # manual wakeup, aborts suspend-then-hibernate, and logind starts it again
-    # while the lid is still
-    # closed. Disable the broken firmware alarm; systemd then uses its own RTC
-    # timer and the fixed HibernateDelaySec above.
-    ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", TEST=="alarm", ATTR{alarm}="0"
   '';
 
   # Some programs need SUID wrappers, can be configured further or are
