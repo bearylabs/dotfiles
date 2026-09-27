@@ -43,6 +43,9 @@ exec_always --no-startup-id sh -c 'pkill -x xidlehook; exec xidlehook --timer 12
 
 ### Startup applications
 #
+# Complete the daemon started by GDM's PAM module. Without this, the bootstrap
+# daemon exits and applications start a new, locked keyring daemon via D-Bus.
+exec --no-startup-id gnome-keyring-daemon --start --components=secrets
 # NetworkManager tray applet for clickable Wi-Fi and VPN management.
 exec_always --no-startup-id sh -c 'pkill -x nm-applet; exec nm-applet --indicator'
 # Notification daemon.
