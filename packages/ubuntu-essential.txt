@@ -5,8 +5,11 @@ curl
 fish
 git
 gh
+gnupg
 jq
 libsecret-tools
+pass
+pinentry-curses
 stow
 tmux
 tree

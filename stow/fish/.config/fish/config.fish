@@ -6,6 +6,12 @@ set -gx TERM xterm-256color  # force 256-color; some terminals inherit a narrowe
 set -gx PATH $HOME/.local/bin $PATH
 set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config set prefix ~/.npm-global)
 
+# Let GPG/pinentry ask for passphrases in the current terminal.
+if isatty stdin
+    set -gx GPG_TTY (tty)
+    gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+end
+
 # git aliases
 alias gs "git status"
 alias gc "git commit -m"

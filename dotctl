@@ -239,6 +239,99 @@ ubuntu_git_credential_manager() {
   ok "Git Credential Manager $version is installed"
 }
 
+git_profile_identity() {
+  case "$1" in
+    personal) printf 'bearylabs\tinfo@beary.cloud\n' ;;
+    work) printf 'hendrik-rudek\thendrik.rudek@siempelkamp.com\n' ;;
+    *) return 1 ;;
+  esac
+}
+
+gpg_secret_key_for_email() {
+  local email="$1"
+  { gpg --list-secret-keys --with-colons "$email" 2>/dev/null || true; } | awk -F: '$1 == "sec" { print $5; exit }'
+}
+
+ensure_gpg_pinentry() {
+  local pinentry config
+  pinentry="$(command -v pinentry-curses || command -v pinentry || true)"
+  [[ -n "$pinentry" ]] || die "required command not found: pinentry-curses"
+  config="$HOME/.gnupg/gpg-agent.conf"
+  export GPG_TTY="${GPG_TTY:-$(tty 2>/dev/null || true)}"
+  if [[ -r "$config" ]] && grep -Fxq "pinentry-program $pinentry" "$config"; then
+    return
+  fi
+  if $DRY_RUN; then
+    info "Would configure gpg-agent pinentry: $pinentry"
+    return
+  fi
+  mkdir -p "$HOME/.gnupg"
+  chmod 700 "$HOME/.gnupg"
+  if [[ -e "$config" ]]; then
+    grep -v '^pinentry-program ' "$config" > "$config.tmp"
+    mv "$config.tmp" "$config"
+  fi
+  printf 'pinentry-program %s\n' "$pinentry" >> "$config"
+  chmod 600 "$config"
+  gpgconf --kill gpg-agent 2>/dev/null || true
+  ok "Configured gpg-agent pinentry: $pinentry"
+}
+
+ensure_git_credential_gpg_store() {
+  local profile="$1" expected_name expected_email key cmd
+  [[ "$profile" == work ]] || return 0
+  local -a missing=()
+  for cmd in gpg pass git-credential-manager; do
+    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+  done
+  if ! command -v pinentry-curses >/dev/null 2>&1 && ! command -v pinentry >/dev/null 2>&1; then
+    missing+=("pinentry-curses")
+  fi
+  if ((${#missing[@]})); then
+    if $DRY_RUN; then
+      info "Would require commands for gpg-backed Git credentials: ${missing[*]}"
+      return
+    fi
+    die "required command(s) not found: ${missing[*]}"
+  fi
+  IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
+  ensure_gpg_pinentry
+
+  key="$(gpg_secret_key_for_email "$expected_email")"
+  if [[ -z "$key" ]]; then
+    if $DRY_RUN; then
+      info "Would generate a local GPG key for Git credentials: $expected_name <$expected_email>"
+      key="<new-gpg-key>"
+    else
+      if [[ ! -t 0 || ! -t 1 ]]; then
+        die "GPG key for $expected_email is missing. Run interactively: gpg --quick-generate-key '$expected_name <$expected_email>' default default never && pass init <key-id>"
+      fi
+      confirm "Generate a local GPG key for Git credentials ($expected_name <$expected_email>)?" || die "GPG key is required for credentialStore=gpg"
+      run gpg --quick-generate-key "$expected_name <$expected_email>" default default never
+      key="$(gpg_secret_key_for_email "$expected_email")"
+      [[ -n "$key" ]] || die "failed to find the generated GPG key for $expected_email"
+    fi
+  else
+    ok "GPG secret key for $expected_email is available"
+  fi
+
+  if [[ -r "$HOME/.password-store/.gpg-id" ]]; then
+    ok "pass password store is initialized"
+  else
+    info "Initializing pass for Git Credential Manager"
+    run pass init "$key"
+  fi
+
+  if [[ -f "$HOME/.git-credentials" ]]; then
+    if confirm "Remove plaintext Git credential file $HOME/.git-credentials?"; then
+      run rm -f "$HOME/.git-credentials"
+      ok "Removed plaintext Git credential file"
+    else
+      warn "plaintext Git credential file remains: $HOME/.git-credentials"
+    fi
+  fi
+}
+
 profile_prerequisites() {
   local profile p
   profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
@@ -246,6 +339,7 @@ profile_prerequisites() {
   if [[ "$profile" == work && "$p" == ubuntu ]]; then
     ubuntu_git_credential_manager
   fi
+  ensure_git_credential_gpg_store "$profile"
 }
 
 stow_packages() {
@@ -424,20 +518,27 @@ cmd_doctor() {
       check_cmd nixos-rebuild
       ;;
   esac
-  [[ "$profile" != work ]] || check_cmd git-credential-manager
+  if [[ "$profile" == work ]]; then
+    check_cmd git-credential-manager
+    check_cmd gpg
+    check_cmd pass
+    if command -v pinentry-curses >/dev/null 2>&1 || command -v pinentry >/dev/null 2>&1; then check_ok "pinentry is available"; else check_fail "pinentry-curses is missing"; fi
+    local gcm_store
+    gcm_store="$(git config --global --includes credential.credentialStore 2>/dev/null || true)"
+    [[ "$gcm_store" == gpg ]] && check_ok "Git Credential Manager uses gpg store" || check_fail "Git Credential Manager credentialStore is not gpg"
+  fi
   if [[ -n "$profile" ]]; then
     local expected_name expected_email
-    if [[ "$profile" == personal ]]; then
-      expected_name=bearylabs
-      expected_email=info@beary.cloud
-    else
-      expected_name=hendrik-rudek
-      expected_email=hendrik.rudek@siempelkamp.com
-    fi
+    IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
     if [[ "$(git config --global --includes user.name 2>/dev/null || true)" == "$expected_name" && "$(git config --global --includes user.email 2>/dev/null || true)" == "$expected_email" ]]; then
       check_ok "Git identity matches the '$profile' profile"
     else
       check_fail "Git identity does not match the '$profile' profile"
+    fi
+    if [[ "$profile" == work ]] && command -v gpg >/dev/null 2>&1; then
+      if [[ -n "$(gpg_secret_key_for_email "$expected_email")" ]]; then check_ok "GPG secret key for Git credentials is available"; else check_fail "GPG secret key for $expected_email is missing"; fi
+      [[ -r "$HOME/.password-store/.gpg-id" ]] && check_ok "pass password store is initialized" || check_fail "pass password store is not initialized"
+      [[ ! -f "$HOME/.git-credentials" ]] && check_ok "no plaintext ~/.git-credentials file" || check_fail "plaintext ~/.git-credentials file exists"
     fi
   fi
 

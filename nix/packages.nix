@@ -13,6 +13,9 @@ let
     # CLI tools
     git
     git-credential-manager
+    gnupg
+    pass
+    pinentry-curses
     # Used by desktop processes such as Polybar, which do not inherit the
     # interactive shell environment activated by mise.
     jq

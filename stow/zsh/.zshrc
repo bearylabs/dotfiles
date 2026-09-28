@@ -1,6 +1,10 @@
 # User-local executables include dotctl and, on Ubuntu, the mise bootstrap.
 export PATH="$HOME/.local/bin:$PATH"
 
+# Let GPG/pinentry ask for passphrases in the current terminal.
+export GPG_TTY="$(tty)"
+gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1 || true
+
 # Load tools managed by mise. Keep the shell usable before the initial install.
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
