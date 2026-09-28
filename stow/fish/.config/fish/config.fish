@@ -3,82 +3,8 @@ set fish_greeting
 
 # Environment & PATH
 set -gx TERM xterm-256color  # force 256-color; some terminals inherit a narrower $TERM
-set -gx DOOMDIR $HOME/.config/doom
-set -gx EMACSDIR $HOME/.config/emacs
-set -gx PATH $HOME/.config/emacs/bin $PATH  # Doom CLI tools (doom sync, etc.)
 set -gx PATH $HOME/.local/bin $PATH
 set -gx PATH $HOME/.npm-global/bin $PATH  # user-local npm installs (npm config set prefix ~/.npm-global)
-
-# Let vim-herdr-navigation pass C-h/j/k/l through to Doom Emacs. Doom handles
-# its own windows first and calls back into Herdr when it reaches a frame edge.
-set -gx HERDR_NAV_PASSTHROUGH_RE '^emacs(client)?$'
-
-# Run Doom Emacs through a persistent daemon. Every invocation opens a terminal
-# client frame in the current terminal; file arguments are handled by
-# emacsclient, so `emacs README.md` reuses the same Emacs process.
-#
-# --init-directory is required so a newly started daemon picks up Doom rather
-# than ~/.emacs.d.
-#
-# Under WSL, terminal frames also get a direct-color TERM. Emacs takes its
-# colour depth from terminfo alone -- it ignores COLORTERM -- so Windows
-# Terminal's xterm-256color quantises every face to the 256-colour cube, which
-# flattens catppuccin. The *-direct-wt entries come from ~/.terminfo, built by
-# configuration.wsl.nix: ncurses' stock xterm-direct emits the
-# colon-separated SGR form, \e[38:2::R:G:Bm, which WT discards along with every
-# other colour Emacs draws.
-function emacs --description 'Open a terminal Doom Emacs client'
-    if not command emacsclient --eval t >/dev/null 2>&1
-        command emacs --init-directory $HOME/.config/emacs --daemon; or return
-    end
-
-    set -l term $TERM
-    if set -q WSL_DISTRO_NAME
-        if set -q TMUX
-            set term tmux-direct-wt
-        else
-            set term xterm-direct-wt
-        end
-    end
-
-    # A daemon keeps both its working directory and Doom workspace between
-    # clients. Merely passing the directory would visit it inside the previous
-    # workspace, leaving that workspace's old Magit/Treemacs layout visible.
-    # For a directory-only launch, explicitly switch Doom to a workspace rooted
-    # at the calling shell's cwd and use Dired as its initial buffer.
-    set -l open_cwd false
-    if test (count $argv) -eq 0
-        set open_cwd true
-    else if test (count $argv) -eq 1
-        switch $argv[1]
-            # This wrapper already creates a terminal frame, so these spellings
-            # are equivalent to a bare `emacs` invocation.
-            case -nw --no-window-system -t --tty
-                set open_cwd true
-        end
-    end
-
-    # A daemon does not inherit each emacsclient's environment. Preserve the
-    # calling Herdr pane as a frame parameter so Doom can navigate back out of
-    # the correct pane instead of using the daemon's stale HERDR_PANE_ID.
-    set -l frame_args
-    if set -q HERDR_PANE_ID
-        set frame_args --frame-parameters "((herdr-pane-id . \"$HERDR_PANE_ID\"))"
-    end
-
-    if $open_cwd
-        # Base64 keeps arbitrary path characters out of the Elisp expression.
-        set -l encoded_cwd (printf %s "$PWD" | base64 --wrap=0)
-        set -l expression "(let ((+workspaces-on-switch-project-behavior t) (+workspaces-switch-project-function #'dired)) (+workspaces-switch-to-project-h (decode-coding-string (base64-decode-string \"$encoded_cwd\") 'utf-8)))"
-        TERM=$term command emacsclient -t $frame_args --eval $expression
-    else
-        TERM=$term command emacsclient -t $frame_args $argv
-    end
-end
-
-function magit --description 'Open Magit status in a terminal Emacs client'
-    emacs --eval '(magit-status)'
-end
 
 # git aliases
 alias gs "git status"
@@ -119,24 +45,3 @@ end
 
 # load per-directory env vars via .envrc files
 direnv hook fish | source
-
-# herdr restores a tab's layout, cwd and scrollback, but respawns a bare shell in
-# every pane -- only AI-agent panes are resumed (session.resume_agents_on_restore).
-# An editor tab therefore comes back painted from pane history with nothing
-# running in it. Relaunch Emacs ourselves when the tab is an editor tab; the tab's
-# custom_name survives the restart in ~/.config/herdr/session.json.
-#
-# INSIDE_EMACS guards the shells Emacs itself spawns (vterm, ansi-term, M-x shell).
-# Quitting Emacs returns to this same shell without re-triggering, since
-# config.fish is not re-read.
-if status is-interactive; and set -q HERDR_PANE_ID; and not set -q INSIDE_EMACS
-    set -l _tab (herdr tab get $HERDR_TAB_ID 2>/dev/null | string match -rg '"label":"([^"]*)"')
-    if string match -qir 'doom|emacs' -- $_tab
-        emacs -nw .
-    end
-end
-
-# herdr-automatic-rename: live tab naming hook
-for _f in $HOME/.config/herdr/plugins/github/herdr-automatic-rename-*/shell/hook.fish
-    test -r "$_f"; and source "$_f"; and break
-end
