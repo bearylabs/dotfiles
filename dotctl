@@ -163,15 +163,55 @@ ubuntu_prerequisites() {
   fi
 }
 
-nixos_rebuild() {
-  local p="$1" config
-  case "$p" in
-    nixos) config="$REPO/nix/configuration.nix" ;;
-    nixos-wsl) config="$REPO/nix/configuration.wsl.nix" ;;
-    *) die "internal error: invalid NixOS platform $p" ;;
+nixos_config_for_platform() {
+  case "$1" in
+    nixos) printf '%s/nix/configuration.nix\n' "$REPO" ;;
+    nixos-wsl) printf '%s/nix/configuration.wsl.nix\n' "$REPO" ;;
+    *) die "internal error: invalid NixOS platform $1" ;;
   esac
+}
+
+nixos_entrypoint_content() {
+  printf 'import %s\n' "$(nixos_config_for_platform "$1")"
+}
+
+ensure_nixos_entrypoint() {
+  local p="$1" config target expected current backup
+  config="$(nixos_config_for_platform "$p")"
+  target="/etc/nixos/configuration.nix"
+  expected="$(nixos_entrypoint_content "$p")"
   [[ -r "$config" ]] || die "missing NixOS configuration: $config"
-  run sudo nixos-rebuild switch -I "nixos-config=$config"
+
+  if [[ -f "$target" && ! -L "$target" ]]; then
+    current="$(<"$target")"
+    if [[ "$current" == "${expected%$'\n'}" ]]; then
+      ok "$target imports $config"
+      return
+    fi
+  fi
+
+  info "Writing NixOS entrypoint $target -> $config"
+  run sudo install -d -m 755 /etc/nixos
+  if [[ -e "$target" || -L "$target" ]]; then
+    backup="$target.dotctl-backup.$(date +%Y%m%d%H%M%S)"
+    warn "backing up existing $target to $backup"
+    run sudo cp -aP "$target" "$backup"
+    run sudo rm -f "$target"
+  fi
+  if $DRY_RUN; then
+    show_cmd sudo tee "$target" "<<<" "$expected"
+    show_cmd sudo chmod 644 "$target"
+  else
+    printf '%s' "$expected" | sudo tee "$target" >/dev/null
+    sudo chmod 644 "$target"
+  fi
+  ok "$target imports $config"
+}
+
+nixos_rebuild() {
+  local p="$1"
+  ensure_nixos_entrypoint "$p"
+  run sudo nixos-rebuild switch
 }
 
 system_layer() {
@@ -516,6 +556,18 @@ cmd_doctor() {
     nixos|nixos-wsl)
       for package in git gh stow mise; do check_cmd "$package"; done
       check_cmd nixos-rebuild
+      local expected_nixos_entrypoint current_nixos_entrypoint
+      expected_nixos_entrypoint="$(nixos_entrypoint_content "$p")"
+      if [[ -f /etc/nixos/configuration.nix && ! -L /etc/nixos/configuration.nix ]]; then
+        current_nixos_entrypoint="$(</etc/nixos/configuration.nix)"
+        if [[ "$current_nixos_entrypoint" == "$expected_nixos_entrypoint" ]]; then
+          check_ok "/etc/nixos/configuration.nix imports the repository config"
+        else
+          check_fail "/etc/nixos/configuration.nix does not import the repository config"
+        fi
+      else
+        check_fail "/etc/nixos/configuration.nix is missing or is a symlink"
+      fi
       ;;
   esac
   if [[ "$profile" == work ]]; then

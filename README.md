@@ -31,8 +31,10 @@ nix-shell -p git --run 'git clone https://github.com/bearylabs/dotfiles.git ~/do
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
-`init` selects `nix/configuration.nix` and runs `nixos-rebuild switch`. That
-configuration expects the normal generated hardware file at
+`init` writes `/etc/nixos/configuration.nix` as a small wrapper that imports
+`~/dotfiles/nix/configuration.nix`, then runs `nixos-rebuild switch`. Relative
+imports such as `./packages.nix` are still resolved from the repository config,
+and the normal generated hardware file remains at
 `/etc/nixos/hardware-configuration.nix`.
 
 ### NixOS-WSL
@@ -43,8 +45,9 @@ bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
 NixOS-WSL is detected from the NixOS identity plus WSL kernel/environment
-markers. `nix/configuration.wsl.nix` is passed directly to
-`nixos-rebuild switch`; no `/etc/nixos` symlink is needed.
+markers. `init` writes `/etc/nixos/configuration.nix` as a wrapper that imports
+`~/dotfiles/nix/configuration.wsl.nix`, then runs `nixos-rebuild switch`; no
+`/etc/nixos` symlink is needed.
 
 ### PATH after bootstrap
 
