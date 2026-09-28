@@ -1,5 +1,20 @@
+[branch]
+	sort = -committerdate
+[column]
+	ui = auto
+[core]
+	editor = nvim
+[fetch]
+	prune = true
+	writeCommitGraph = true
 [init]
 	defaultBranch = main
+[pull]
+	rebase = true
+[rebase]
+	updateRefs = true
+[rerere]
+	enabled = true
 [include]
 	path = ~/.gitconfig.profile
 [include]
