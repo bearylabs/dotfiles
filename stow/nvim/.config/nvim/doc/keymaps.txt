@@ -119,10 +119,13 @@ I  <C-u>/<C-d>     Scroll completion documentation
 GIT                                                    *keymaps-git*
 
 N  ]c / [c         Jump to the next/previous Git hunk
+N  <Leader>gs      Open Fugitive Git status
 N,V <Leader>hs     Stage hunk
 N,V <Leader>hr     Reset hunk
+N,V <Leader>gr     Reset hunk
 N  <Leader>hS      Stage the entire buffer
 N  <Leader>hR      Reset the entire buffer
+N  <Leader>gR      Reset the entire buffer
 N  <Leader>hp      Preview hunk
 N  <Leader>hi      Preview hunk inline
 N  <Leader>hb      Show Git blame for the current line
