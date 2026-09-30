@@ -100,7 +100,9 @@ in
 
   virtualisation.docker.enable = true;
 
-  environment.systemPackages = packages.common;
+  # Pi uses xclip to read text from WSLg's XWayland clipboard. Keep this as an
+  # OS integration dependency rather than managing it through mise.
+  environment.systemPackages = packages.common ++ [ pkgs.xclip ];
 
   fonts = {
     packages = packages.fonts.common;
