@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.14"
+VERSION="0.2.15"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -124,7 +124,9 @@ load_list() {
 }
 
 windows_dotctl_wrapper() {
-  printf '#!/usr/bin/env bash\n# Managed by dotctl.\nexec bash %q "$@"\n' "$SCRIPT_PATH"
+  # Use Git Bash directly. Resolving `bash` through PATH can select the Windows
+  # System32 WSL launcher, which cannot open an MSYS C:/... script path.
+  printf '#!/bin/bash\n# Managed by dotctl.\nexec /bin/bash %q "$@"\n' "$SCRIPT_PATH"
 }
 
 windows_git_bash_launcher() {
@@ -847,7 +849,7 @@ cmd_update() {
     if $REPO_PULLED && ! $DRY_RUN; then
       export DOTCTL_UPDATE_REEXECED=1
       if [[ "$(platform)" == windows ]]; then
-        exec bash "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
+        exec /bin/bash "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
       else
         exec "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
       fi

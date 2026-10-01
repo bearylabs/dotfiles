@@ -137,7 +137,10 @@ PowerShell process and passes the calling distribution name; the Windows
 profile then reports drive paths such as `C:\\src` to the WSL Herdr server as
 `/mnt/c/src`. Native PowerShell sessions remain unchanged. Common drive and
 same-distribution UNC paths are converted without starting `wsl.exe`; unusual
-paths use `wslpath` only after the working directory changes.
+paths use `wslpath` only after the working directory changes. Fish-specific
+WSL workarounds and interoperability helpers are kept together in
+`~/.config/fish/conf.d/wsl.fish`; Fish loads that file automatically and its
+early guard leaves non-WSL systems unchanged.
 
 ## Profiles
 
