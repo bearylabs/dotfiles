@@ -124,7 +124,8 @@ and the current user's Windows PowerShell profile and adds mise's shim directory
 to the Windows user `PATH`. New shells can therefore run managed commands such
 as `nvim`, `pi`, and `claude` directly. `dotctl` also installs a `gitbash.cmd`
 launcher on the Windows user `PATH`, so entering `gitbash` in PowerShell or
-Command Prompt opens an interactive Git Bash login shell.
+Command Prompt opens an interactive Git Bash login shell with the expected
+`MINGW64` environment.
 
 ## Profiles
 

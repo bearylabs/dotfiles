@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.10"
+VERSION="0.2.11"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -130,12 +130,12 @@ windows_dotctl_wrapper() {
 windows_git_bash_launcher() {
   local bash_exe
   bash_exe="$(cygpath -w /bin/bash.exe)"
-  printf '@echo off\r\nREM Managed by dotctl.\r\n"%s" --login -i\r\n' "$bash_exe"
+  printf '@echo off\r\nREM Managed by dotctl.\r\nset "MSYSTEM=MINGW64"\r\n"%s" --login -i\r\n' "$bash_exe"
 }
 
 install_windows_git_bash_launcher() {
   local dir="$1" target="$1/gitbash.cmd"
-  if [[ -e "$target" ]] && ! grep -Fqx $'REM Managed by dotctl.\r' "$target" 2>/dev/null; then
+  if [[ -e "$target" ]] && ! grep -Fq 'REM Managed by dotctl.' "$target" 2>/dev/null; then
     die "$target exists and is not managed by dotctl; remove it manually"
   fi
   if $DRY_RUN; then
