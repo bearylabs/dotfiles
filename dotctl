@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.6"
+VERSION="0.2.7"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -291,6 +291,14 @@ ensure_scoop() {
   SCOOP_READY=true
 }
 
+scoop_package_installed() {
+  local package="$1" prefix="" unix_prefix=""
+  prefix="$(scoop prefix "$package" 2>/dev/null | tr -d '\r' || true)"
+  [[ -n "$prefix" ]] || return 1
+  unix_prefix="$(cygpath -u "$prefix" 2>/dev/null || true)"
+  [[ -n "$unix_prefix" && -d "$unix_prefix" ]]
+}
+
 windows_prerequisites() {
   local mode="${1:-apply}" package file="$REPO/packages/windows-scoop.txt"
   local -a wanted=() missing=()
@@ -299,7 +307,7 @@ windows_prerequisites() {
   for package in "${wanted[@]}"; do
     if $DRY_RUN && ! command -v scoop >/dev/null 2>&1; then
       missing+=("$package")
-    elif ! scoop prefix "$package" >/dev/null 2>&1; then
+    elif ! scoop_package_installed "$package"; then
       missing+=("$package")
     fi
   done
@@ -770,21 +778,21 @@ cmd_doctor() {
       windows_refresh_scoop_path
       for package in git powershell.exe scoop mise; do check_cmd "$package"; done
       if command -v mise >/dev/null 2>&1; then
-        local tool executable
-        while IFS=$'\t' read -r tool executable; do
-          if mise which --cd "$(mise_workdir)" "$tool" >/dev/null 2>&1; then check_ok "$executable is installed by mise"; else check_fail "$executable is missing from mise"; fi
+        local executable
+        while IFS= read -r executable; do
+          if mise which --cd "$(mise_workdir)" "$executable" >/dev/null 2>&1; then check_ok "$executable is installed by mise"; else check_fail "$executable is missing from mise"; fi
         done <<'EOF'
-node	node
-neovim	nvim
-ripgrep	rg
-fd	fd
-lazygit	lazygit
-claude	claude
-codex	codex
-copilot	copilot
-herdr	herdr
-pi	pi
-tree-sitter	tree-sitter
+node
+nvim
+rg
+fd
+lazygit
+claude
+codex
+copilot
+herdr
+pi
+tree-sitter
 EOF
       fi
       check_cmd gcc
