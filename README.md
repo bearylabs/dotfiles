@@ -80,10 +80,13 @@ git clone https://github.com/bearylabs/dotfiles.git dotfiles
 bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
 ```
 
-Windows setup is user-local and does not request administrator rights. `dotctl`
-installs Scoop when absent, updates it, installs mise through Scoop, and uses
-`windows/mise.toml` for the minimal Windows toolset: Node.js, Neovim, ripgrep,
-fd, Lazygit, Pi, Claude Code, Codex, GitHub Copilot CLI, and Herdr.
+Windows setup is user-local and does not request administrator rights. If Git
+Bash is already running elevated, `dotctl` explicitly permits Scoop's
+`-RunAsAdmin` mode while retaining the current user's default Scoop directory
+under `%USERPROFILE%`. `dotctl` installs Scoop when absent, updates it, installs
+mise through Scoop, and uses `windows/mise.toml` for the minimal Windows toolset:
+Node.js, Neovim, ripgrep, fd, Lazygit, Pi, Claude Code, Codex, GitHub Copilot
+CLI, and Herdr.
 
 Windows does not use Stow or symlinks. The shared Agents, Pi, and Herdr trees are
 copied into the corresponding directories below the user profile; Neovim is
@@ -95,7 +98,8 @@ in `packages/herdr-plugins-windows.txt` is installed.
 
 Scoop installation can still be blocked by corporate PowerShell policy, proxy,
 or application-control rules. In that case `dotctl` stops without attempting to
-elevate privileges.
+elevate privileges. `-RunAsAdmin` only acknowledges an already elevated shell;
+it does not turn the user-local installation into a system-wide installation.
 
 ### PATH after bootstrap
 
