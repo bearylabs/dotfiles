@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.5"
+VERSION="0.2.6"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -291,12 +291,33 @@ ensure_scoop() {
   SCOOP_READY=true
 }
 
+windows_prerequisites() {
+  local mode="${1:-apply}" package file="$REPO/packages/windows-scoop.txt"
+  local -a wanted=() missing=()
+  ensure_scoop
+  while IFS= read -r package; do wanted+=("$package"); done < <(load_list "$file")
+  for package in "${wanted[@]}"; do
+    if $DRY_RUN && ! command -v scoop >/dev/null 2>&1; then
+      missing+=("$package")
+    elif ! scoop prefix "$package" >/dev/null 2>&1; then
+      missing+=("$package")
+    fi
+  done
+  if ((${#missing[@]})); then
+    info "Installing missing Windows prerequisites with Scoop: ${missing[*]}"
+    run scoop install "${missing[@]}"
+  else
+    ok "Windows Scoop prerequisites are installed"
+  fi
+  if [[ "$mode" == update ]] && ((${#wanted[@]})); then run scoop update "${wanted[@]}"; fi
+}
+
 system_layer() {
   local mode="${1:-apply}" p
   p="$(platform)"
   info "System prerequisites ($p)"
   case "$p" in
-    windows) ensure_scoop ;;
+    windows) windows_prerequisites "$mode" ;;
     ubuntu) ubuntu_prerequisites ;;
     nixos|nixos-wsl)
       if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
@@ -763,8 +784,10 @@ codex	codex
 copilot	copilot
 herdr	herdr
 pi	pi
+tree-sitter	tree-sitter
 EOF
       fi
+      check_cmd gcc
       [[ -d "$HOME/.agents" ]] && check_ok "agent skills are copied" || check_fail "$HOME/.agents is missing"
       [[ -d "$HOME/.pi/agent" ]] && check_ok "Pi configuration is copied" || check_fail "$HOME/.pi/agent is missing"
       [[ -f "$HOME/.config/herdr/config.toml" ]] && check_ok "Herdr configuration is copied" || check_fail "$HOME/.config/herdr/config.toml is missing"

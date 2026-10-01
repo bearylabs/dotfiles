@@ -1,0 +1,3 @@
+# Native Windows prerequisites that are better managed by Scoop than mise.
+# GCC provides the compiler and linker required to build Tree-sitter parsers.
+gcc

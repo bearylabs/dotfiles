@@ -6,6 +6,7 @@ neovim = "latest"
 ripgrep = "latest"
 fd = "latest"
 lazygit = "latest"
+tree-sitter = "latest"
 
 claude = "latest"
 codex = "latest"

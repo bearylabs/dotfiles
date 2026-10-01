@@ -84,10 +84,12 @@ Windows setup is user-local and does not request administrator rights. If Git
 Bash is already running elevated, `dotctl` explicitly permits Scoop's
 `-RunAsAdmin` mode while retaining the current user's default Scoop directory
 under `%USERPROFILE%`. `dotctl` installs Scoop when absent, updates it, installs
-mise through Scoop, and uses `windows/mise.toml` for the minimal Windows toolset:
-Node.js, Neovim, ripgrep, fd, Lazygit, Pi, Claude Code, Codex, GitHub Copilot
-CLI, and Herdr. This tool configuration is copied to mise's global user config
-so its shims resolve the managed tools outside the repository as well.
+mise through Scoop, installs native prerequisites such as GCC from
+`packages/windows-scoop.txt`, and uses `windows/mise.toml` for the minimal
+Windows toolset: Node.js, Neovim, Tree-sitter, ripgrep, fd, Lazygit, Pi, Claude
+Code, Codex, GitHub Copilot CLI, and Herdr. This tool configuration is copied to
+mise's global user config so its shims resolve the managed tools outside the
+repository as well.
 
 Windows does not use Stow or symlinks. The shared Agents, Pi, and Herdr trees are
 copied into the corresponding directories below the user profile; Neovim is
@@ -175,8 +177,9 @@ Portable Linux development tools are declared in
 `stow/mise/.config/mise/config.toml`; the minimal native Windows toolset is in
 `windows/mise.toml`. On Linux, `dotctl` installs mise from `mise.run` into
 `~/.local/bin` and uses `mise self-update`. On Windows, Scoop installs and
-updates mise, and `dotctl` copies the Windows declaration to the global mise
-config shared by Git Bash and PowerShell. Platform prerequisites live under
+updates mise and native Windows prerequisites such as GCC, while `dotctl`
+copies the Windows mise declaration to the global config shared by Git Bash and
+PowerShell. Platform prerequisites live under
 `nix/`, `windows/`, and
 `packages/`; profile-specific prerequisites are installed by `dotctl` when
 needed.
