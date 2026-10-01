@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.4"
+VERSION="0.2.5"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -516,6 +516,7 @@ windows_dotfiles_layer() {
   copy_tree "$STOW_DIR/pi/.pi/agent" "$HOME/.pi/agent"
   copy_tree "$STOW_DIR/herdr/.config/herdr" "$HOME/.config/herdr"
   copy_tree "$STOW_DIR/nvim/.config/nvim" "$local_appdata/nvim"
+  run mkdir -p "$HOME/.claude" "$HOME/.codex" "$HOME/.copilot"
   ok "Copied Windows configuration"
 }
 
@@ -582,6 +583,23 @@ ensure_windows_bash_environment() {
   ok "Configured mise for future Git Bash sessions"
 }
 
+ensure_windows_powershell_environment() {
+  local shell marker='# Managed by dotctl: mise activation'
+  local command='$marker = "# Managed by dotctl: mise activation"; $profilePath = $PROFILE.CurrentUserAllHosts; $content = if (Test-Path -LiteralPath $profilePath) { Get-Content -LiteralPath $profilePath -Raw } else { "" }; if (-not $content.Contains($marker)) { New-Item -ItemType Directory -Path (Split-Path -Parent $profilePath) -Force | Out-Null; $block = "`r`n$marker`r`nif (Get-Command mise -ErrorAction SilentlyContinue) { (&mise activate pwsh) | Out-String | Invoke-Expression }`r`n"; Add-Content -LiteralPath $profilePath -Value $block -Encoding UTF8 }; $shims = ((& mise doctor --json | Out-String | ConvertFrom-Json).dirs.shims); $userPath = [Environment]::GetEnvironmentVariable("Path", "User"); if (($userPath -split ";") -notcontains $shims) { $newPath = if ([string]::IsNullOrEmpty($userPath)) { $shims } else { $shims + ";" + $userPath }; [Environment]::SetEnvironmentVariable("Path", $newPath, "User") }'
+  for shell in powershell.exe pwsh.exe; do
+    command -v "$shell" >/dev/null 2>&1 || continue
+    if $DRY_RUN; then show_cmd "$shell" -NoProfile -NonInteractive -Command "$command"; else "$shell" -NoProfile -NonInteractive -Command "$command"; fi
+  done
+  ok "Configured mise for future PowerShell sessions"
+}
+
+install_windows_mise_global_config() {
+  local source="$1" target="$HOME/.config/mise/config.toml"
+  info "Installing global mise tool configuration for Windows shells"
+  run mkdir -p "${target%/*}"
+  run cp "$source" "$target"
+}
+
 tools_layer() {
   local config workdir
   ensure_mise "${1:-apply}"
@@ -591,9 +609,13 @@ tools_layer() {
   [[ -e "$config" ]] || $DRY_RUN || die "mise configuration is missing: $config"
   info "Trusting the repository-managed mise configuration"
   run mise trust "$config"
+  if [[ "$(platform)" == windows ]]; then install_windows_mise_global_config "$config"; fi
   info "Installing mise-managed tools"
   run mise install --cd "$workdir"
-  if [[ "$(platform)" == windows ]]; then ensure_windows_bash_environment; fi
+  if [[ "$(platform)" == windows ]]; then
+    ensure_windows_bash_environment
+    ensure_windows_powershell_environment
+  fi
 }
 
 herdr_plugins_file() {
