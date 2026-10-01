@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.13"
+VERSION="0.2.14"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -692,8 +692,8 @@ windows_has_wsl_distribution() {
 
 ensure_windows_herdr_wsl_prompt() {
   local source="$REPO/windows/herdr-wsl-prompt.ps1"
-  local target shell windows_home
-  local command='$marker = "# Managed by dotctl: Herdr WSL cwd reporting"; $profilePath = $PROFILE.CurrentUserAllHosts; $content = if (Test-Path -LiteralPath $profilePath) { Get-Content -LiteralPath $profilePath -Raw } else { "" }; if (-not $content.Contains($marker)) { New-Item -ItemType Directory -Path (Split-Path -Parent $profilePath) -Force | Out-Null; $block = "`r`n$marker`r`n`$herdrWslPrompt = [IO.Path]::Combine(`$env:USERPROFILE, `".config`", `"dotctl`", `"herdr-wsl-prompt.ps1`")`r`nif (Test-Path -LiteralPath `$herdrWslPrompt) { . `$herdrWslPrompt }`r`n"; Add-Content -LiteralPath $profilePath -Value $block -Encoding UTF8 }'
+  local installer="$REPO/windows/install-herdr-wsl-prompt.ps1"
+  local target shell windows_home installer_windows
 
   case "$(platform)" in
     windows)
@@ -702,21 +702,28 @@ ensure_windows_herdr_wsl_prompt() {
         return
       fi
       target="$HOME/.config/dotctl/herdr-wsl-prompt.ps1"
+      installer_windows="$(cygpath -w "$installer")"
       ;;
     nixos-wsl)
       windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' | tr -d '\r')"
       [[ -n "$windows_home" ]] || die "could not resolve the Windows user profile from WSL"
       target="$(wslpath -u "$windows_home")/.config/dotctl/herdr-wsl-prompt.ps1"
+      installer_windows="$(wslpath -w "$installer")"
       ;;
     *) return ;;
   esac
 
   [[ -f "$source" ]] || die "missing Herdr WSL PowerShell integration: $source"
+  [[ -f "$installer" ]] || die "missing Herdr WSL PowerShell installer: $installer"
   run mkdir -p "${target%/*}"
   run cp "$source" "$target"
   for shell in powershell.exe pwsh.exe; do
     command -v "$shell" >/dev/null 2>&1 || continue
-    if $DRY_RUN; then show_cmd "$shell" -NoProfile -NonInteractive -Command "$command"; else "$shell" -NoProfile -NonInteractive -Command "$command"; fi
+    if $DRY_RUN; then
+      show_cmd "$shell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$installer_windows"
+    else
+      "$shell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$installer_windows"
+    fi
   done
   ok "Configured Herdr WSL cwd reporting for future marked PowerShell sessions"
 }
