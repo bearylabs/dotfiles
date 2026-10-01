@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.0"
-SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
-REPO="$(cd "$(dirname "$SCRIPT_PATH")" && pwd -P)"
+VERSION="0.2.1"
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+  SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
+else
+  # Git Bash installations do not consistently include readlink. Native
+  # Windows setup uses a launcher rather than a symlink, so resolving the
+  # physical parent directory is sufficient there.
+  SCRIPT_DIR="${SCRIPT_SOURCE%/*}"
+  [[ "$SCRIPT_DIR" == "$SCRIPT_SOURCE" ]] && SCRIPT_DIR=.
+  SCRIPT_PATH="$(cd -P "$SCRIPT_DIR" && pwd -P)/${SCRIPT_SOURCE##*/}"
+fi
+REPO="$(cd "${SCRIPT_PATH%/*}" && pwd -P)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 CONFIG_FILE="$CONFIG_HOME/dotctl/config"
 STOW_DIR="$REPO/stow"
