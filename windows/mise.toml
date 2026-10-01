@@ -1,5 +1,10 @@
 # Minimal, user-local toolset for native Windows machines.
 # Scoop bootstraps mise; mise manages everything below without admin rights.
+# The native Tree-sitter CLI otherwise defaults to the unavailable MSVC cl.exe.
+[env]
+CC = "gcc"
+CXX = "g++"
+
 [tools]
 node = "lts"
 neovim = "latest"
