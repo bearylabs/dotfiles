@@ -52,11 +52,33 @@ markers. `init` writes `/etc/nixos/configuration.nix` as a wrapper that imports
 
 ### Native Windows (Git Bash)
 
-Install Git for Windows, open Git Bash, clone the repository, and initialize it:
+Install Git for Windows, then start Git Bash from the already open Windows
+shell. This deliberately resolves Bash relative to the installed `git.exe`, so
+a WSL `bash` cannot be selected accidentally.
+
+From PowerShell:
+
+```powershell
+$gitRoot = Split-Path (Split-Path (Get-Command git.exe).Source)
+& "$gitRoot\bin\bash.exe" --login -i
+```
+
+Or from Command Prompt (`cmd.exe`):
+
+```bat
+powershell -NoProfile -Command "$g=Split-Path (Split-Path (Get-Command git.exe).Source); & ($g + '\bin\bash.exe') --login -i"
+```
+
+The prompt is now running Git Bash. Verify that `uname -s` starts with `MINGW`
+or `MSYS`, then clone into the Windows user profile explicitly and initialize
+the repository:
 
 ```bash
-git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
-bash ~/dotfiles/dotctl init --profile <profile>
+uname -s
+WINDOWS_HOME="$(cygpath -u "$USERPROFILE")"
+cd "$WINDOWS_HOME"
+git clone https://github.com/bearylabs/dotfiles.git dotfiles
+bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
 ```
 
 Windows setup is user-local and does not request administrator rights. `dotctl`
