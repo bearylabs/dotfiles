@@ -129,6 +129,16 @@ launcher on the Windows user `PATH`, so entering `gitbash` in PowerShell or
 Command Prompt opens an interactive Git Bash login shell with the expected
 `MINGW64` environment.
 
+When native Windows setup detects an installed WSL distribution, or when
+`dotctl` runs inside NixOS-WSL, it also installs an opt-in PowerShell prompt
+integration for Herdr. From Fish inside WSL, run `winps` instead of
+`powershell.exe`. The launcher marks only that
+PowerShell process and passes the calling distribution name; the Windows
+profile then reports drive paths such as `C:\\src` to the WSL Herdr server as
+`/mnt/c/src`. Native PowerShell sessions remain unchanged. Common drive and
+same-distribution UNC paths are converted without starting `wsl.exe`; unusual
+paths use `wslpath` only after the working directory changes.
+
 ## Profiles
 
 A profile selects machine- or context-specific configuration during `init`. The
