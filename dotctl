@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.8"
+VERSION="0.2.9"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -127,6 +127,36 @@ windows_dotctl_wrapper() {
   printf '#!/usr/bin/env bash\n# Managed by dotctl.\nexec bash %q "$@"\n' "$SCRIPT_PATH"
 }
 
+windows_git_bash_launcher() {
+  local bash_exe
+  bash_exe="$(cygpath -w /bin/bash.exe)"
+  printf '@echo off\r\nREM Managed by dotctl.\r\n"%s" --login -i\r\n' "$bash_exe"
+}
+
+install_windows_git_bash_launcher() {
+  local dir="$1" target="$1/gitbash.cmd"
+  if [[ -e "$target" ]] && ! grep -Fqx $'REM Managed by dotctl.\r' "$target" 2>/dev/null; then
+    die "$target exists and is not managed by dotctl; remove it manually"
+  fi
+  if $DRY_RUN; then
+    info "Would write Windows Git Bash launcher $target"
+  else
+    windows_git_bash_launcher > "$target"
+  fi
+  ok "Installed Windows gitbash command $target"
+}
+
+windows_add_to_user_path() {
+  local windows_dir
+  windows_dir="$(cygpath -w "$1")"
+  if $DRY_RUN; then
+    info "Would add $windows_dir to the Windows user PATH"
+    return
+  fi
+  DOTCTL_WINDOWS_PATH="$windows_dir" powershell.exe -NoProfile -NonInteractive -Command \
+    '$target = $env:DOTCTL_WINDOWS_PATH; $userPath = [Environment]::GetEnvironmentVariable("Path", "User"); if (($userPath -split ";") -notcontains $target) { $newPath = if ([string]::IsNullOrEmpty($userPath)) { $target } else { $target + ";" + $userPath }; [Environment]::SetEnvironmentVariable("Path", $newPath, "User") }'
+}
+
 link_is_correct() {
   local target="$HOME/.local/bin/dotctl" expected
   if [[ "$(platform)" == windows ]]; then
@@ -162,6 +192,10 @@ cmd_link() {
     run mkdir -p "$dir"
     run ln -sfn "$SCRIPT_PATH" "$target"
     ok "Linked $target -> $SCRIPT_PATH"
+  fi
+  if [[ "$(platform)" == windows ]]; then
+    install_windows_git_bash_launcher "$dir"
+    windows_add_to_user_path "$dir"
   fi
   case ":$PATH:" in *":$dir:"*) ;; *) warn "$dir is not on PATH; add it to your shell startup file, then start a new shell" ;; esac
 }
@@ -558,7 +592,9 @@ windows_dotfiles_layer() {
   copy_tree "$STOW_DIR/pi/.pi/agent" "$HOME/.pi/agent"
   copy_tree "$STOW_DIR/herdr/.config/herdr" "$HOME/.config/herdr"
   copy_tree "$STOW_DIR/nvim/.config/nvim" "$local_appdata/nvim"
-  run mkdir -p "$HOME/.claude" "$HOME/.codex" "$HOME/.copilot"
+  run mkdir -p "$HOME/.claude" "$HOME/.codex" "$HOME/.copilot" "$HOME/.local/bin"
+  install_windows_git_bash_launcher "$HOME/.local/bin"
+  windows_add_to_user_path "$HOME/.local/bin"
   ok "Copied Windows configuration"
 }
 
@@ -810,6 +846,11 @@ tree-sitter
 EOF
       fi
       check_cmd gcc
+      if [[ -f "$HOME/.local/bin/gitbash.cmd" ]] && grep -Fq 'REM Managed by dotctl.' "$HOME/.local/bin/gitbash.cmd"; then
+        check_ok "gitbash launcher is installed for PowerShell and Command Prompt"
+      else
+        check_fail "Windows gitbash launcher is missing"
+      fi
       [[ -d "$HOME/.agents" ]] && check_ok "agent skills are copied" || check_fail "$HOME/.agents is missing"
       [[ -d "$HOME/.pi/agent" ]] && check_ok "Pi configuration is copied" || check_fail "$HOME/.pi/agent is missing"
       [[ -f "$HOME/.config/herdr/config.toml" ]] && check_ok "Herdr configuration is copied" || check_fail "$HOME/.config/herdr/config.toml is missing"

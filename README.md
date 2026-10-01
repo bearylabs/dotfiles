@@ -120,7 +120,9 @@ Then start a new shell or add that export to the machine's login profile.
 `dotctl doctor` checks it. On Windows, `dotctl` activates mise in both Git Bash
 and the current user's Windows PowerShell profile and adds mise's shim directory
 to the Windows user `PATH`. New shells can therefore run managed commands such
-as `nvim`, `pi`, and `claude` directly.
+as `nvim`, `pi`, and `claude` directly. `dotctl` also installs a `gitbash.cmd`
+launcher on the Windows user `PATH`, so entering `gitbash` in PowerShell or
+Command Prompt opens an interactive Git Bash login shell.
 
 ## Profiles
 
