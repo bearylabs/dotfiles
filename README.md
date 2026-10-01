@@ -83,7 +83,7 @@ bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
 Windows setup is user-local and does not request administrator rights. `dotctl`
 installs Scoop when absent, updates it, installs mise through Scoop, and uses
 `windows/mise.toml` for the minimal Windows toolset: Node.js, Neovim, ripgrep,
-fd, Pi, Claude Code, Codex, GitHub Copilot CLI, and Herdr.
+fd, Lazygit, Pi, Claude Code, Codex, GitHub Copilot CLI, and Herdr.
 
 Windows does not use Stow or symlinks. The shared Agents, Pi, and Herdr trees are
 copied into the corresponding directories below the user profile; Neovim is

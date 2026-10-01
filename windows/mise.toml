@@ -5,6 +5,7 @@ node = "lts"
 neovim = "latest"
 ripgrep = "latest"
 fd = "latest"
+lazygit = "latest"
 
 claude = "latest"
 codex = "latest"

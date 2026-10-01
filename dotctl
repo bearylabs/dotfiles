@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.2"
+VERSION="0.2.3"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -707,6 +707,7 @@ node	node
 neovim	nvim
 ripgrep	rg
 fd	fd
+lazygit	lazygit
 claude	claude
 codex	codex
 copilot	copilot

@@ -30,7 +30,15 @@ local symbols = {
 local function buffer_path(bufnr)
   local url = vim.api.nvim_buf_get_name(bufnr)
   if not vim.startswith(url, 'oil:') then return nil end
-  return vim.uri_to_fname((url:gsub('^oil', 'file')))
+
+  local path = vim.uri_to_fname((url:gsub('^oil', 'file')))
+  if vim.fn.has 'win32' == 1 then
+    -- Oil represents a Windows drive as /C/path. Native Windows processes
+    -- launched by libuv require C:/path instead of the MSYS-style spelling.
+    local drive, rest = path:match '^/([A-Za-z])/(.*)$'
+    if drive then path = drive .. ':/' .. rest end
+  end
+  return path
 end
 
 local function status_style(status)
@@ -119,6 +127,8 @@ end
 local function refresh(bufnr)
   local path = buffer_path(bufnr)
   if not path then return end
+  local stat = vim.uv.fs_stat(path)
+  if not stat or stat.type ~= 'directory' then return end
 
   vim.system({
     'git',

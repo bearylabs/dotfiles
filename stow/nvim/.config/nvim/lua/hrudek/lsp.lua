@@ -68,6 +68,7 @@ local servers = {
   html = {},
   jsonls = {},
   pyright = {},
+  ruff = {},
   sqruff = {},
   svelte = {},
   tailwindcss = {},
@@ -113,7 +114,6 @@ local ensure_installed = vim.tbl_keys(servers)
 vim.list_extend(ensure_installed, {
   -- Terraform formatting is provided by the terraform CLI and is not installed through Mason.
   'prettierd',
-  'ruff',
   'shfmt',
   'stylua',
 })
