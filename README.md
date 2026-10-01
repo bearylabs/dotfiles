@@ -130,15 +130,16 @@ Command Prompt opens an interactive Git Bash login shell with the expected
 `MINGW64` environment.
 
 When native Windows setup detects an installed WSL distribution, or when
-`dotctl` runs inside NixOS-WSL, it also installs an opt-in PowerShell prompt
-integration for Herdr. From Fish inside WSL, run `winps` instead of
-`powershell.exe`. The launcher marks only that
-PowerShell process and passes the calling distribution name; the Windows
-profile then reports drive paths such as `C:\\src` to the WSL Herdr server as
-`/mnt/c/src`. Native PowerShell sessions remain unchanged. Common drive and
-same-distribution UNC paths are converted without starting `wsl.exe`; unusual
-paths use `wslpath` only after the working directory changes. Fish-specific
-WSL workarounds and interoperability helpers are kept together in
+`dotctl` runs inside NixOS-WSL, it installs opt-in PowerShell and Git Bash
+prompt integration for Herdr. From Fish inside WSL, both `powershell.exe` and
+its shorter alias `winps` start a marked interop session and pass the calling
+distribution name. The Windows prompts report drive paths such as `C:\\src` to
+the WSL Herdr server as `/mnt/c/src`. Running `gitbash` from that PowerShell
+keeps reporting directory changes because the marker is inherited by the child
+shell. Native PowerShell and Git Bash sessions remain unchanged. Common drive
+paths are converted without starting `wsl.exe`; unusual paths use `wslpath`
+only after the working directory changes. Fish-specific WSL workarounds and
+interoperability helpers are kept together in
 `~/.config/fish/conf.d/wsl.fish`; Fish loads that file automatically and its
 early guard leaves non-WSL systems unchanged.
 

@@ -13,9 +13,9 @@ if status is-interactive
     end
 end
 
-function winps --description 'Start Windows PowerShell with Herdr WSL cwd reporting'
+function __herdr_wsl_powershell
     if not command -q powershell.exe
-        echo 'winps: powershell.exe is not available through WSL interop' >&2
+        echo 'powershell.exe is not available through WSL interop' >&2
         return 1
     end
 
@@ -59,4 +59,14 @@ function winps --description 'Start Windows PowerShell with Herdr WSL cwd report
     end
 
     return $powershell_status
+end
+
+# Make the regular interop command behave like winps. `command` inside the
+# helper bypasses this function when it starts the Windows executable.
+function powershell.exe --description 'Start Windows PowerShell with Herdr WSL cwd reporting'
+    __herdr_wsl_powershell $argv
+end
+
+function winps --description 'Alias for Herdr-aware powershell.exe'
+    __herdr_wsl_powershell $argv
 end

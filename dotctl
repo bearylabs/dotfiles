@@ -693,32 +693,49 @@ windows_has_wsl_distribution() {
 }
 
 ensure_windows_herdr_wsl_prompt() {
-  local source="$REPO/windows/herdr-wsl-prompt.ps1"
+  local powershell_source="$REPO/windows/herdr-wsl-prompt.ps1"
+  local bash_source="$REPO/windows/herdr-wsl-bash.sh"
   local installer="$REPO/windows/install-herdr-wsl-prompt.ps1"
-  local target shell windows_home installer_windows
+  local target_dir bash_profile shell windows_home installer_windows
+  local marker='# Managed by dotctl: Herdr WSL cwd reporting'
 
   case "$(platform)" in
     windows)
       if ! windows_has_wsl_distribution; then
-        info "No installed WSL distribution detected; skipping Herdr WSL PowerShell integration"
+        info "No installed WSL distribution detected; skipping Herdr WSL shell integration"
         return
       fi
-      target="$HOME/.config/dotctl/herdr-wsl-prompt.ps1"
+      target_dir="$HOME/.config/dotctl"
+      bash_profile="$HOME/.bash_profile"
       installer_windows="$(cygpath -w "$installer")"
       ;;
     nixos-wsl)
       windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' | tr -d '\r')"
       [[ -n "$windows_home" ]] || die "could not resolve the Windows user profile from WSL"
-      target="$(wslpath -u "$windows_home")/.config/dotctl/herdr-wsl-prompt.ps1"
+      windows_home="$(wslpath -u "$windows_home")"
+      target_dir="$windows_home/.config/dotctl"
+      bash_profile="$windows_home/.bash_profile"
       installer_windows="$(wslpath -w "$installer")"
       ;;
     *) return ;;
   esac
 
-  [[ -f "$source" ]] || die "missing Herdr WSL PowerShell integration: $source"
+  [[ -f "$powershell_source" ]] || die "missing Herdr WSL PowerShell integration: $powershell_source"
+  [[ -f "$bash_source" ]] || die "missing Herdr WSL Git Bash integration: $bash_source"
   [[ -f "$installer" ]] || die "missing Herdr WSL PowerShell installer: $installer"
-  run mkdir -p "${target%/*}"
-  run cp "$source" "$target"
+  run mkdir -p "$target_dir"
+  run cp "$powershell_source" "$target_dir/herdr-wsl-prompt.ps1"
+  run cp "$bash_source" "$target_dir/herdr-wsl-bash.sh"
+  if ! grep -Fqx "$marker" "$bash_profile" 2>/dev/null; then
+    if $DRY_RUN; then
+      info "Would add Herdr WSL cwd reporting to $bash_profile"
+    else
+      {
+        printf '\n%s\n' "$marker"
+        printf 'if [ -f "$HOME/.config/dotctl/herdr-wsl-bash.sh" ]; then . "$HOME/.config/dotctl/herdr-wsl-bash.sh"; fi\n'
+      } >> "$bash_profile"
+    fi
+  fi
   for shell in powershell.exe pwsh.exe; do
     command -v "$shell" >/dev/null 2>&1 || continue
     if $DRY_RUN; then
@@ -727,7 +744,7 @@ ensure_windows_herdr_wsl_prompt() {
       "$shell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$installer_windows"
     fi
   done
-  ok "Configured Herdr WSL cwd reporting for future marked PowerShell sessions"
+  ok "Configured Herdr WSL cwd reporting for marked PowerShell and Git Bash sessions"
 }
 
 install_windows_mise_global_config() {
@@ -920,6 +937,7 @@ EOF
       [[ -f "$HOME/.config/herdr/config.toml" ]] && check_ok "Herdr configuration is copied" || check_fail "$HOME/.config/herdr/config.toml is missing"
       if windows_has_wsl_distribution; then
         [[ -f "$HOME/.config/dotctl/herdr-wsl-prompt.ps1" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
+        [[ -f "$HOME/.config/dotctl/herdr-wsl-bash.sh" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
       fi
       if [[ -n "${LOCALAPPDATA:-}" && -f "$(cygpath -u "$LOCALAPPDATA")/nvim/init.lua" ]]; then
         check_ok "Neovim configuration is copied"
@@ -947,11 +965,17 @@ EOF
       for package in git gh stow mise; do check_cmd "$package"; done
       check_cmd nixos-rebuild
       if [[ "$p" == nixos-wsl ]]; then
-        local windows_home herdr_wsl_prompt
+        local windows_home herdr_wsl_prompt herdr_wsl_bash
         windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' 2>/dev/null | tr -d '\r')"
         herdr_wsl_prompt=""
-        [[ -n "$windows_home" ]] && herdr_wsl_prompt="$(wslpath -u "$windows_home")/.config/dotctl/herdr-wsl-prompt.ps1"
+        herdr_wsl_bash=""
+        if [[ -n "$windows_home" ]]; then
+          windows_home="$(wslpath -u "$windows_home")/.config/dotctl"
+          herdr_wsl_prompt="$windows_home/herdr-wsl-prompt.ps1"
+          herdr_wsl_bash="$windows_home/herdr-wsl-bash.sh"
+        fi
         [[ -n "$herdr_wsl_prompt" && -f "$herdr_wsl_prompt" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
+        [[ -n "$herdr_wsl_bash" && -f "$herdr_wsl_bash" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
       fi
       local expected_nixos_entrypoint current_nixos_entrypoint
       expected_nixos_entrypoint="$(nixos_entrypoint_content "$p")"
