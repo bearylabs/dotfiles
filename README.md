@@ -104,18 +104,21 @@ Global flags may appear before or after the command:
 the repository. GitHub authentication may open an interactive login; for
 non-interactive use, authenticate beforehand or provide `GH_TOKEN`.
 
-`update` safely fast-forwards the repository, reapplies the setup, refreshes
-managed tools and integrations, and runs `doctor`. It refuses repository states
-that cannot be updated without ambiguity.
+`update` fast-forwards the repository when clean, reapplies the setup, refreshes
+managed tools and integrations, and runs `doctor`. If the repository has
+uncommitted changes, it warns and skips the pull, but updates software using
+the current checkout. A clean repository with a detached HEAD or no upstream
+still cannot be pulled.
 
 `doctor` performs read-only checks of the current installation.
 
 ## Managed tools and integrations
 
 Portable development tools are declared in
-`stow/mise/.config/mise/config.toml`. Platform prerequisites live under `nix/`
-and `packages/`; profile-specific prerequisites are installed by `dotctl` when
-needed.
+`stow/mise/.config/mise/config.toml`. `dotctl` installs mise itself from
+`mise.run` into `~/.local/bin` and runs `mise self-update` before updating
+mise-managed tools. Platform prerequisites live under `nix/` and `packages/`;
+profile-specific prerequisites are installed by `dotctl` when needed.
 
 Integration and plugin sources are also declared in `packages/`. `dotctl`
 installs and updates them idempotently as part of the normal apply flow.

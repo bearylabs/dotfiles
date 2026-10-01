@@ -99,6 +99,8 @@ in
   services.openssh.enable = true;
 
   virtualisation.docker.enable = true;
+  # Stable's default Docker 28 is marked insecure; use the maintained 29.x package.
+  virtualisation.docker.package = pkgs.docker_29;
 
   # Pi uses xclip to read text from WSLg's XWayland clipboard. Keep this as an
   # OS integration dependency rather than managing it through mise.

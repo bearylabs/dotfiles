@@ -45,7 +45,7 @@ Linux dotfiles bootstrap and update wrapper.
 Commands:
   init --profile personal|work  Save a profile, link dotctl, and apply all layers
   apply [--only LAYER]          Apply all layers, or system|dotfiles|tools|integrations
-  update                        Fast-forward the repo, update everything, then run doctor
+  update                        Pull if clean, update everything, then run doctor
   doctor                        Read-only installation checks
   stow                          Safely restow the selected dotfile packages
   link                          Link dotctl into ~/.local/bin
@@ -143,23 +143,6 @@ ubuntu_prerequisites() {
     run sudo apt-get install -y --no-install-recommends "${missing[@]}"
   else
     ok "Ubuntu essentials are installed"
-  fi
-  if ! command -v mise >/dev/null 2>&1; then
-    info "Installing mise with the official installer"
-    if $DRY_RUN; then
-      show_cmd curl -fsSL https://mise.run '|' sh
-    else
-      local installer
-      installer="$(mktemp)"
-      trap 'rm -f "${installer:-}"' RETURN
-      curl -fsSL https://mise.run -o "$installer"
-      sh "$installer"
-      rm -f "$installer"
-      trap - RETURN
-      export PATH="$HOME/.local/bin:$PATH"
-    fi
-  else
-    ok "mise is installed"
   fi
 }
 
@@ -411,20 +394,43 @@ stow_layer() {
   ok "Stow packages selected for '$profile'"
 }
 
+ensure_mise() {
+  local mode="${1:-apply}" binary="$HOME/.local/bin/mise" installer
+  export PATH="$HOME/.local/bin:$PATH"
+  if [[ ! -x "$binary" ]]; then
+    info "Installing mise from mise.run"
+    if $DRY_RUN; then
+      info "Would download and run the official mise installer"
+      return
+    fi
+    installer="$(mktemp)"
+    if ! curl -fsSL https://mise.run -o "$installer" || ! sh "$installer"; then
+      rm -f "$installer"
+      die "failed to install mise"
+    fi
+    rm -f "$installer"
+    [[ -x "$binary" ]] || die "mise installer did not create $binary"
+  elif [[ "$mode" == update ]]; then
+    info "Updating mise itself"
+    run "$binary" self-update --yes
+  fi
+}
+
 mise_env() {
   export PATH="$HOME/.local/bin:$PATH"
   if command -v mise >/dev/null 2>&1; then
-    eval "$(mise activate bash)"
+    # This is a non-interactive script: activation installs prompt hooks and
+    # assumes PROMPT_COMMAND exists, which fails with set -u.
+    eval "$(mise env --shell bash --cd "$REPO")"
   fi
 }
 
 tools_layer() {
-  export PATH="$HOME/.local/bin:$PATH"
+  ensure_mise "${1:-apply}"
   need mise
   [[ -e "$HOME/.config/mise/config.toml" ]] || $DRY_RUN || die "mise config is not stowed; run: dotctl apply --only dotfiles"
   info "Trusting the repository-managed mise configuration"
   run mise trust "$HOME/.config/mise/config.toml"
-  mise_env
   info "Installing mise-managed tools"
   run mise install --cd "$REPO"
 }
@@ -453,7 +459,7 @@ apply_layers() {
     profile_prerequisites
   fi
   if [[ -z "$only" || "$only" == dotfiles ]]; then stow_layer; fi
-  if [[ -z "$only" || "$only" == tools ]]; then tools_layer; fi
+  if [[ -z "$only" || "$only" == tools ]]; then tools_layer "$mode"; fi
   if [[ -z "$only" || "$only" == integrations ]]; then sync_integrations; fi
 }
 
@@ -489,19 +495,24 @@ cmd_apply() {
 
 update_repo() {
   need git
-  [[ -z "$(git -C "$REPO" status --porcelain)" ]] || die "refusing update: repository has uncommitted changes"
+  if [[ -n "$(git -C "$REPO" status --porcelain)" ]]; then
+    warn "repository has uncommitted changes; skipping git pull and updating installed software from the current checkout"
+    return 0
+  fi
   git -C "$REPO" symbolic-ref -q HEAD >/dev/null || die "refusing update: HEAD is detached"
   local upstream
   upstream="$(git -C "$REPO" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)" || die "refusing update: current branch has no upstream"
   info "Fast-forwarding from $upstream"
   run git -C "$REPO" pull --ff-only
+  REPO_PULLED=true
 }
 
 cmd_update() {
   (($# == 0)) || die "update takes no arguments"
   if [[ "${DOTCTL_UPDATE_REEXECED:-0}" != 1 ]]; then
+    REPO_PULLED=false
     update_repo
-    if ! $DRY_RUN; then
+    if $REPO_PULLED && ! $DRY_RUN; then
       export DOTCTL_UPDATE_REEXECED=1
       exec "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
     fi
@@ -510,7 +521,7 @@ cmd_update() {
   system_layer update
   github_auth
   stow_layer
-  tools_layer
+  tools_layer update
   mise_env
   run mise upgrade --cd "$REPO"
   sync_integrations

@@ -8,7 +8,6 @@ let
 
     # Core runtime/dependencies
     libsecret
-    mise
 
     # CLI tools
     git

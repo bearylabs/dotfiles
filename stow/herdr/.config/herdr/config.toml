@@ -180,8 +180,8 @@ description = "manage canonical worktrees"
 [[keys.command]]
 key = "prefix+shift+m"
 type = "plugin_action"
-command = "herdr-remote-picker.manage"
-description = "manage remote machines"
+command = "herdr-ssh-config-picker.manage"
+description = "manage SSH config machines"
 
 # vim-herdr-navigation forwards these chords into Vim/Neovim or Doom Emacs
 # when one is focused; otherwise it focuses the adjacent Herdr pane.
