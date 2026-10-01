@@ -1,0 +1,3 @@
+# Keep the native Windows plugin set deliberately small. Other configured
+# plugin actions may be unavailable; the shared Herdr config is copied as-is.
+plannotator/herdr-annotate

@@ -1,0 +1,13 @@
+# Minimal, user-local toolset for native Windows machines.
+# Scoop bootstraps mise; mise manages everything below without admin rights.
+[tools]
+node = "lts"
+neovim = "latest"
+ripgrep = "latest"
+fd = "latest"
+
+claude = "latest"
+codex = "latest"
+copilot = "latest"
+herdr = "latest"
+pi = "latest"

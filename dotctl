@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 REPO="$(cd "$(dirname "$SCRIPT_PATH")" && pwd -P)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -13,6 +13,7 @@ VERBOSE=false
 COLOR=true
 ORIGINAL_ARGS=("$@")
 SELECTED_PROFILE=""
+SCOOP_READY=false
 
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then COLOR=false; fi
 red='\033[31m'; green='\033[32m'; yellow='\033[33m'; blue='\033[34m'; reset='\033[0m'
@@ -40,15 +41,15 @@ usage() {
   cat <<EOF
 Usage: dotctl [global flags] <command> [options]
 
-Linux dotfiles bootstrap and update wrapper.
+Linux and native Windows dotfiles bootstrap and update wrapper.
 
 Commands:
   init --profile personal|work  Save a profile, link dotctl, and apply all layers
   apply [--only LAYER]          Apply all layers, or system|dotfiles|tools|integrations
   update                        Pull if clean, update everything, then run doctor
   doctor                        Read-only installation checks
-  stow                          Safely restow the selected dotfile packages
-  link                          Link dotctl into ~/.local/bin
+  stow                          Apply dotfiles (Stow on Linux, copy on Windows)
+  link                          Install dotctl into ~/.local/bin
   help                          Show this help
   version                       Show the version
 
@@ -63,7 +64,11 @@ EOF
 }
 
 platform() {
-  local id=""
+  local kernel id=""
+  kernel="$(uname -s)"
+  case "$kernel" in
+    MINGW*|MSYS*|CYGWIN*) printf 'windows\n'; return ;;
+  esac
   [[ -r /etc/os-release ]] && id="$(. /etc/os-release; printf '%s' "${ID:-}")"
   case "$id" in
     nixos)
@@ -108,15 +113,42 @@ load_list() {
   done < "$file"
 }
 
+windows_dotctl_wrapper() {
+  printf '#!/usr/bin/env bash\n# Managed by dotctl.\nexec bash %q "$@"\n' "$SCRIPT_PATH"
+}
+
+link_is_correct() {
+  local target="$HOME/.local/bin/dotctl" expected
+  if [[ "$(platform)" == windows ]]; then
+    [[ -f "$target" ]] || return 1
+    expected="$(windows_dotctl_wrapper)"
+    [[ "$(<"$target")" == "$expected" ]]
+  else
+    [[ -L "$target" && "$(readlink -f "$target")" == "$SCRIPT_PATH" ]]
+  fi
+}
+
 cmd_link() {
   (($# == 0)) || die "link takes no arguments"
   local dir="$HOME/.local/bin" target="$HOME/.local/bin/dotctl"
-  if [[ -e "$target" && ! -L "$target" ]]; then
-    die "$target exists and is not a symlink; remove it manually"
-  fi
-  if [[ -L "$target" && "$(readlink -f "$target")" == "$SCRIPT_PATH" ]]; then
-    ok "$target already points to $SCRIPT_PATH"
+  if link_is_correct; then
+    ok "$target already launches $SCRIPT_PATH"
+  elif [[ "$(platform)" == windows ]]; then
+    if [[ -e "$target" ]] && ! grep -Fqx '# Managed by dotctl.' "$target" 2>/dev/null; then
+      die "$target exists and is not managed by dotctl; remove it manually"
+    fi
+    run mkdir -p "$dir"
+    if $DRY_RUN; then
+      info "Would write Git Bash launcher $target"
+    else
+      windows_dotctl_wrapper > "$target"
+      chmod +x "$target"
+    fi
+    ok "Installed Git Bash launcher $target"
   else
+    if [[ -e "$target" && ! -L "$target" ]]; then
+      die "$target exists and is not a symlink; remove it manually"
+    fi
     run mkdir -p "$dir"
     run ln -sfn "$SCRIPT_PATH" "$target"
     ok "Linked $target -> $SCRIPT_PATH"
@@ -197,17 +229,52 @@ nixos_rebuild() {
   run sudo nixos-rebuild switch
 }
 
+windows_refresh_scoop_path() {
+  local scoop_command="" scoop_dir=""
+  scoop_command="$(powershell.exe -NoProfile -NonInteractive -Command '(Get-Command scoop -ErrorAction SilentlyContinue).Source' 2>/dev/null | tr -d '\r' || true)"
+  if [[ -n "$scoop_command" ]]; then
+    scoop_dir="$(dirname "$(cygpath -u "$scoop_command")")"
+  elif [[ -n "${SCOOP:-}" ]]; then
+    scoop_dir="$(cygpath -u "$SCOOP")/shims"
+  else
+    scoop_dir="$HOME/scoop/shims"
+  fi
+  case ":$PATH:" in *":$scoop_dir:"*) ;; *) export PATH="$scoop_dir:$PATH" ;; esac
+}
+
+ensure_scoop() {
+  $SCOOP_READY && return
+  need powershell.exe
+  need cygpath
+  windows_refresh_scoop_path
+  if ! command -v scoop >/dev/null 2>&1; then
+    info "Installing Scoop for the current Windows user"
+    if $DRY_RUN; then
+      show_cmd powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression"
+      return
+    fi
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \
+      '$ErrorActionPreference = "Stop"; Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression'
+    windows_refresh_scoop_path
+    command -v scoop >/dev/null 2>&1 || die "Scoop was installed but is not available in Git Bash; start a new shell and retry"
+  fi
+  info "Updating Scoop"
+  run scoop update
+  SCOOP_READY=true
+}
+
 system_layer() {
   local mode="${1:-apply}" p
   p="$(platform)"
   info "System prerequisites ($p)"
   case "$p" in
+    windows) ensure_scoop ;;
     ubuntu) ubuntu_prerequisites ;;
     nixos|nixos-wsl)
       if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
       nixos_rebuild "$p"
       ;;
-    *) die "unsupported Linux distribution (supported: NixOS, NixOS-WSL, Ubuntu)" ;;
+    *) die "unsupported platform (supported: NixOS, NixOS-WSL, Ubuntu, Windows via Git Bash)" ;;
   esac
 }
 
@@ -394,9 +461,55 @@ stow_layer() {
   ok "Stow packages selected for '$profile'"
 }
 
+copy_tree() {
+  local source="$1" target="$2"
+  [[ -d "$source" ]] || die "missing configuration directory: $source"
+  run mkdir -p "$target"
+  run cp -R "$source/." "$target/"
+}
+
+windows_dotfiles_layer() {
+  need cygpath
+  local local_appdata
+  [[ -n "${LOCALAPPDATA:-}" ]] || die "LOCALAPPDATA is not set"
+  local_appdata="$(cygpath -u "$LOCALAPPDATA")"
+  info "Copying shared configuration for native Windows"
+  copy_tree "$STOW_DIR/agents/.agents" "$HOME/.agents"
+  copy_tree "$STOW_DIR/pi/.pi/agent" "$HOME/.pi/agent"
+  copy_tree "$STOW_DIR/herdr/.config/herdr" "$HOME/.config/herdr"
+  copy_tree "$STOW_DIR/nvim/.config/nvim" "$local_appdata/nvim"
+  ok "Copied Windows configuration"
+}
+
+dotfiles_layer() {
+  if [[ "$(platform)" == windows ]]; then windows_dotfiles_layer; else stow_layer; fi
+}
+
+mise_workdir() {
+  if [[ "$(platform)" == windows ]]; then printf '%s/windows\n' "$REPO"; else printf '%s\n' "$REPO"; fi
+}
+
+mise_config() {
+  if [[ "$(platform)" == windows ]]; then printf '%s/windows/mise.toml\n' "$REPO"; else printf '%s/.config/mise/config.toml\n' "$HOME"; fi
+}
+
 ensure_mise() {
   local mode="${1:-apply}" binary="$HOME/.local/bin/mise" installer
   export PATH="$HOME/.local/bin:$PATH"
+  if [[ "$(platform)" == windows ]]; then
+    ensure_scoop
+    windows_refresh_scoop_path
+    if ! command -v mise >/dev/null 2>&1; then
+      info "Installing mise with Scoop"
+      run scoop install mise
+      windows_refresh_scoop_path
+    elif [[ "$mode" == update ]]; then
+      info "Updating mise with Scoop"
+      run scoop update mise
+    fi
+    return
+  fi
+
   if [[ ! -x "$binary" ]]; then
     info "Installing mise from mise.run"
     if $DRY_RUN; then
@@ -417,36 +530,53 @@ ensure_mise() {
 }
 
 mise_env() {
+  local workdir
+  workdir="$(mise_workdir)"
   export PATH="$HOME/.local/bin:$PATH"
+  [[ "$(platform)" == windows ]] && windows_refresh_scoop_path
   if command -v mise >/dev/null 2>&1; then
     # This is a non-interactive script: activation installs prompt hooks and
     # assumes PROMPT_COMMAND exists, which fails with set -u.
-    eval "$(mise env --shell bash --cd "$REPO")"
+    eval "$(mise env --shell bash --cd "$workdir")"
   fi
 }
 
 tools_layer() {
+  local config workdir
   ensure_mise "${1:-apply}"
   need mise
-  [[ -e "$HOME/.config/mise/config.toml" ]] || $DRY_RUN || die "mise config is not stowed; run: dotctl apply --only dotfiles"
+  config="$(mise_config)"
+  workdir="$(mise_workdir)"
+  [[ -e "$config" ]] || $DRY_RUN || die "mise configuration is missing: $config"
   info "Trusting the repository-managed mise configuration"
-  run mise trust "$HOME/.config/mise/config.toml"
+  run mise trust "$config"
   info "Installing mise-managed tools"
-  run mise install --cd "$REPO"
+  run mise install --cd "$workdir"
+}
+
+herdr_plugins_file() {
+  if [[ "$(platform)" == windows ]]; then
+    printf '%s/packages/herdr-plugins-windows.txt\n' "$REPO"
+  else
+    printf '%s/packages/herdr-plugins.txt\n' "$REPO"
+  fi
 }
 
 sync_integrations() {
-  local source integration
+  local source integration plugin_file
   mise_env
   need herdr
+  plugin_file="$(herdr_plugins_file)"
   info "Syncing Herdr plugins"
-  while IFS= read -r source; do run herdr plugin install "$source" --yes; done < <(load_list "$REPO/packages/herdr-plugins.txt")
+  while IFS= read -r source; do run herdr plugin install "$source" --yes; done < <(load_list "$plugin_file")
   info "Syncing Herdr agent integrations"
   while IFS= read -r integration; do run herdr integration install "$integration"; done < <(load_list "$REPO/packages/herdr-integrations.txt")
-  if command -v az >/dev/null 2>&1 || $DRY_RUN; then
-    run mise run --cd "$REPO" azure:extensions
-  else
-    die "Azure CLI is missing after mise install"
+  if [[ "$(platform)" != windows ]]; then
+    if command -v az >/dev/null 2>&1 || $DRY_RUN; then
+      run mise run --cd "$REPO" azure:extensions
+    else
+      die "Azure CLI is missing after mise install"
+    fi
   fi
 }
 
@@ -454,11 +584,11 @@ apply_layers() {
   local only="${1:-}" mode="${2:-apply}"
   case "$only" in ''|system|dotfiles|tools|integrations) ;; *) die "--only must be system, dotfiles, tools, or integrations" ;; esac
   if [[ -z "$only" || "$only" == system ]]; then system_layer "$mode"; fi
-  if [[ -z "$only" || "$only" == tools ]]; then
+  if [[ -z "$only" || "$only" == tools ]] && [[ "$(platform)" != windows ]]; then
     github_auth
     profile_prerequisites
   fi
-  if [[ -z "$only" || "$only" == dotfiles ]]; then stow_layer; fi
+  if [[ -z "$only" || "$only" == dotfiles ]]; then dotfiles_layer; fi
   if [[ -z "$only" || "$only" == tools ]]; then tools_layer "$mode"; fi
   if [[ -z "$only" || "$only" == integrations ]]; then sync_integrations; fi
 }
@@ -514,16 +644,20 @@ cmd_update() {
     update_repo
     if $REPO_PULLED && ! $DRY_RUN; then
       export DOTCTL_UPDATE_REEXECED=1
-      exec "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
+      if [[ "$(platform)" == windows ]]; then
+        exec bash "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
+      else
+        exec "$REPO/dotctl" "${ORIGINAL_ARGS[@]}"
+      fi
     fi
   fi
   read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
   system_layer update
-  github_auth
-  stow_layer
+  if [[ "$(platform)" != windows ]]; then github_auth; fi
+  dotfiles_layer
   tools_layer update
   mise_env
-  run mise upgrade --cd "$REPO"
+  run mise upgrade --cd "$(mise_workdir)"
   sync_integrations
   cmd_doctor
 }
@@ -548,6 +682,19 @@ cmd_doctor() {
   [[ -z "$(git -C "$REPO" status --porcelain 2>/dev/null)" ]] && check_ok "repository is clean" || warn "repository has uncommitted changes (update will refuse)"
 
   case "$p" in
+    windows)
+      windows_refresh_scoop_path
+      mise_env
+      for package in git powershell.exe scoop mise node nvim rg fd claude codex copilot herdr; do check_cmd "$package"; done
+      [[ -d "$HOME/.agents" ]] && check_ok "agent skills are copied" || check_fail "$HOME/.agents is missing"
+      [[ -d "$HOME/.pi/agent" ]] && check_ok "Pi configuration is copied" || check_fail "$HOME/.pi/agent is missing"
+      [[ -f "$HOME/.config/herdr/config.toml" ]] && check_ok "Herdr configuration is copied" || check_fail "$HOME/.config/herdr/config.toml is missing"
+      if [[ -n "${LOCALAPPDATA:-}" && -f "$(cygpath -u "$LOCALAPPDATA")/nvim/init.lua" ]]; then
+        check_ok "Neovim configuration is copied"
+      else
+        check_fail "Windows Neovim configuration is missing"
+      fi
+      ;;
     ubuntu)
       local file
       shopt -s nullglob
@@ -581,7 +728,7 @@ cmd_doctor() {
       fi
       ;;
   esac
-  if [[ "$profile" == work ]]; then
+  if [[ "$p" != windows && "$profile" == work ]]; then
     check_cmd git-credential-manager
     check_cmd gpg
     check_cmd pass
@@ -590,7 +737,7 @@ cmd_doctor() {
     gcm_store="$(git config --global --includes credential.credentialStore 2>/dev/null || true)"
     [[ "$gcm_store" == gpg ]] && check_ok "Git Credential Manager uses gpg store" || check_fail "Git Credential Manager credentialStore is not gpg"
   fi
-  if [[ -n "$profile" ]]; then
+  if [[ "$p" != windows && -n "$profile" ]]; then
     local expected_name expected_email
     IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
     if [[ "$(git config --global --includes user.name 2>/dev/null || true)" == "$expected_name" && "$(git config --global --includes user.email 2>/dev/null || true)" == "$expected_email" ]]; then
@@ -606,12 +753,12 @@ cmd_doctor() {
   fi
 
   target="$HOME/.local/bin/dotctl"
-  [[ -L "$target" && "$(readlink -f "$target")" == "$SCRIPT_PATH" ]] && check_ok "dotctl link is correct" || check_fail "$target does not point to $SCRIPT_PATH"
+  link_is_correct && check_ok "dotctl launcher is correct" || check_fail "$target does not launch $SCRIPT_PATH"
   case ":$PATH:" in *":$HOME/.local/bin:"*) check_ok "~/.local/bin is on PATH" ;; *) check_fail "~/.local/bin is not on PATH" ;; esac
   [[ -x "${SHELL:-}" ]] && check_ok "login shell: ${SHELL:-unknown}" || check_fail "SHELL does not name an executable"
 
-  check_cmd stow
-  if [[ -n "$profile" ]] && command -v stow >/dev/null 2>&1; then
+  if [[ "$p" != windows ]]; then check_cmd stow; fi
+  if [[ "$p" != windows && -n "$profile" ]] && command -v stow >/dev/null 2>&1; then
     local -a packages=()
     while IFS= read -r package; do packages+=("$package"); done < <(stow_packages "$profile")
     if stow -n -d "$STOW_DIR" -t "$HOME" "${packages[@]}" >/dev/null 2>&1; then check_ok "Stow package tree has no conflicts"; else check_fail "Stow reports conflicts"; fi
@@ -633,12 +780,14 @@ cmd_doctor() {
   fi
 
   check_cmd mise
-  [[ -e "$HOME/.config/mise/config.toml" ]] && check_ok "mise configuration is present" || check_fail "mise configuration is not stowed"
+  [[ -e "$(mise_config)" ]] && check_ok "mise configuration is present" || check_fail "mise configuration is missing"
   if command -v mise >/dev/null 2>&1; then
-    if [[ -z "$(mise ls --cd "$REPO" --missing 2>/dev/null)" ]]; then check_ok "mise tools are installed"; else check_fail "mise reports missing tools"; fi
+    if [[ -z "$(mise ls --cd "$(mise_workdir)" --missing 2>/dev/null)" ]]; then check_ok "mise tools are installed"; else check_fail "mise reports missing tools"; fi
   fi
-  check_cmd gh
-  if command -v gh >/dev/null 2>&1 && gh auth token --hostname github.com >/dev/null 2>&1; then check_ok "github.com token is available through gh"; else check_fail "github.com authentication/token is unavailable"; fi
+  if [[ "$p" != windows ]]; then
+    check_cmd gh
+    if command -v gh >/dev/null 2>&1 && gh auth token --hostname github.com >/dev/null 2>&1; then check_ok "github.com token is available through gh"; else check_fail "github.com authentication/token is unavailable"; fi
+  fi
 
   if command -v herdr >/dev/null 2>&1; then
     check_ok "herdr is available"
@@ -648,7 +797,7 @@ cmd_doctor() {
     while IFS= read -r source; do
       repo_name="${source#*/}"; repo_name="${repo_name%%/*}"
       grep -q "$repo_name" <<< "$plugins" || missing_plugins+=("$repo_name")
-    done < <(load_list "$REPO/packages/herdr-plugins.txt")
+    done < <(load_list "$(herdr_plugins_file)")
     if ((${#missing_plugins[@]} == 0)); then
       check_ok "all Herdr plugins are available"
     else
@@ -667,10 +816,12 @@ cmd_doctor() {
   else
     check_fail "herdr is missing"
   fi
-  if command -v az >/dev/null 2>&1 && az extension show --name virtual-network-manager >/dev/null 2>&1; then
-    check_ok "Azure virtual-network-manager extension is installed"
-  else
-    check_fail "Azure virtual-network-manager extension is missing"
+  if [[ "$p" != windows ]]; then
+    if command -v az >/dev/null 2>&1 && az extension show --name virtual-network-manager >/dev/null 2>&1; then
+      check_ok "Azure virtual-network-manager extension is installed"
+    else
+      check_fail "Azure virtual-network-manager extension is missing"
+    fi
   fi
 
   if ((DOCTOR_FAILURES)); then warn "doctor found $DOCTOR_FAILURES problem(s)"; return 1; fi
@@ -698,7 +849,7 @@ case "$command_name" in
   apply) cmd_apply "$@" ;;
   update) cmd_update "$@" ;;
   doctor) cmd_doctor "$@" ;;
-  stow) (($# == 0)) || die "stow takes no arguments"; stow_layer ;;
+  stow) (($# == 0)) || die "stow takes no arguments"; dotfiles_layer ;;
   link) cmd_link "$@" ;;
   help) usage ;;
   version) printf 'dotctl %s\n' "$VERSION" ;;

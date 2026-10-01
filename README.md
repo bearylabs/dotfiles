@@ -1,7 +1,8 @@
 # dotfiles
 
-Linux dotfiles for NixOS, NixOS-WSL, and Ubuntu. `dotctl` detects the platform;
-there is no Nix installation path on Ubuntu.
+Dotfiles for NixOS, NixOS-WSL, Ubuntu, and a minimal native Windows setup.
+`dotctl` detects the platform; there is no Nix installation path on Ubuntu or
+Windows.
 
 ## Bootstrap
 
@@ -49,10 +50,37 @@ markers. `init` writes `/etc/nixos/configuration.nix` as a wrapper that imports
 `~/dotfiles/nix/configuration.wsl.nix`, then runs `nixos-rebuild switch`; no
 `/etc/nixos` symlink is needed.
 
+### Native Windows (Git Bash)
+
+Install Git for Windows, open Git Bash, clone the repository, and initialize it:
+
+```bash
+git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
+bash ~/dotfiles/dotctl init --profile <profile>
+```
+
+Windows setup is user-local and does not request administrator rights. `dotctl`
+installs Scoop when absent, updates it, installs mise through Scoop, and uses
+`windows/mise.toml` for the minimal Windows toolset: Node.js, Neovim, ripgrep,
+fd, Pi, Claude Code, Codex, GitHub Copilot CLI, and Herdr.
+
+Windows does not use Stow or symlinks. The shared Agents, Pi, and Herdr trees are
+copied into the corresponding directories below the user profile; Neovim is
+copied to `%LOCALAPPDATA%/nvim`. Repository files overwrite older copies, while
+unmanaged authentication and session files remain in place. The shared Herdr
+configuration is copied unchanged. Bindings and scheduled commands belonging to
+Linux-only plugins may therefore fail on Windows; only the Windows plugin list
+in `packages/herdr-plugins-windows.txt` is installed.
+
+Scoop installation can still be blocked by corporate PowerShell policy, proxy,
+or application-control rules. In that case `dotctl` stops without attempting to
+elevate privileges.
+
 ### PATH after bootstrap
 
-`init` creates `~/.local/bin/dotctl`. Fish configuration in this repository adds
-that directory automatically. For the current Bash/Zsh session, or if your
+`init` creates `~/.local/bin/dotctl`. On Linux this is a symlink; on Windows it
+is a Git Bash launcher. Fish configuration in this repository adds that
+directory automatically. For the current Bash/Zsh/Git Bash session, or if your
 login profile does not already add it, run:
 
 ```bash
@@ -114,11 +142,13 @@ still cannot be pulled.
 
 ## Managed tools and integrations
 
-Portable development tools are declared in
-`stow/mise/.config/mise/config.toml`. `dotctl` installs mise itself from
-`mise.run` into `~/.local/bin` and runs `mise self-update` before updating
-mise-managed tools. Platform prerequisites live under `nix/` and `packages/`;
-profile-specific prerequisites are installed by `dotctl` when needed.
+Portable Linux development tools are declared in
+`stow/mise/.config/mise/config.toml`; the minimal native Windows toolset is in
+`windows/mise.toml`. On Linux, `dotctl` installs mise from `mise.run` into
+`~/.local/bin` and uses `mise self-update`. On Windows, Scoop installs and
+updates mise. Platform prerequisites live under `nix/`, `windows/`, and
+`packages/`; profile-specific prerequisites are installed by `dotctl` when
+needed.
 
 Integration and plugin sources are also declared in `packages/`. `dotctl`
 installs and updates them idempotently as part of the normal apply flow.
