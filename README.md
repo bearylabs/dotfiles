@@ -59,8 +59,7 @@ a WSL `bash` cannot be selected accidentally.
 From PowerShell:
 
 ```powershell
-$gitRoot = Split-Path (Split-Path (Get-Command git.exe).Source)
-& "$gitRoot\bin\bash.exe" --login -i
+& (Join-Path (Split-Path (Split-Path (Get-Command git.exe).Source)) 'bin\bash.exe') --login -i
 ```
 
 Or from Command Prompt (`cmd.exe`):

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.1"
+VERSION="0.2.2"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -539,16 +539,19 @@ ensure_mise() {
   fi
 }
 
-mise_env() {
-  local workdir
-  workdir="$(mise_workdir)"
-  export PATH="$HOME/.local/bin:$PATH"
-  [[ "$(platform)" == windows ]] && windows_refresh_scoop_path
-  if command -v mise >/dev/null 2>&1; then
-    # This is a non-interactive script: activation installs prompt hooks and
-    # assumes PROMPT_COMMAND exists, which fails with set -u.
-    eval "$(mise env --shell bash --cd "$workdir")"
+ensure_windows_bash_environment() {
+  local profile="$HOME/.bash_profile" marker='# Managed by dotctl: Windows environment'
+  grep -Fqx "$marker" "$profile" 2>/dev/null && return
+  if $DRY_RUN; then
+    info "Would add mise activation to $profile"
+    return
   fi
+  {
+    printf '\n%s\n' "$marker"
+    printf 'export PATH="$HOME/.local/bin:$PATH"\n'
+    printf 'if command -v mise >/dev/null 2>&1; then eval "$(mise activate bash)"; fi\n'
+  } >> "$profile"
+  ok "Configured mise for future Git Bash sessions"
 }
 
 tools_layer() {
@@ -562,6 +565,7 @@ tools_layer() {
   run mise trust "$config"
   info "Installing mise-managed tools"
   run mise install --cd "$workdir"
+  if [[ "$(platform)" == windows ]]; then ensure_windows_bash_environment; fi
 }
 
 herdr_plugins_file() {
@@ -573,14 +577,14 @@ herdr_plugins_file() {
 }
 
 sync_integrations() {
-  local source integration plugin_file
-  mise_env
-  need herdr
+  local source integration plugin_file workdir
+  need mise
   plugin_file="$(herdr_plugins_file)"
+  workdir="$(mise_workdir)"
   info "Syncing Herdr plugins"
-  while IFS= read -r source; do run herdr plugin install "$source" --yes; done < <(load_list "$plugin_file")
+  while IFS= read -r source; do run mise exec --cd "$workdir" -- herdr plugin install "$source" --yes; done < <(load_list "$plugin_file")
   info "Syncing Herdr agent integrations"
-  while IFS= read -r integration; do run herdr integration install "$integration"; done < <(load_list "$REPO/packages/herdr-integrations.txt")
+  while IFS= read -r integration; do run mise exec --cd "$workdir" -- herdr integration install "$integration"; done < <(load_list "$REPO/packages/herdr-integrations.txt")
   if [[ "$(platform)" != windows ]]; then
     if command -v az >/dev/null 2>&1 || $DRY_RUN; then
       run mise run --cd "$REPO" azure:extensions
@@ -666,7 +670,6 @@ cmd_update() {
   if [[ "$(platform)" != windows ]]; then github_auth; fi
   dotfiles_layer
   tools_layer update
-  mise_env
   run mise upgrade --cd "$(mise_workdir)"
   sync_integrations
   cmd_doctor
@@ -694,8 +697,23 @@ cmd_doctor() {
   case "$p" in
     windows)
       windows_refresh_scoop_path
-      mise_env
-      for package in git powershell.exe scoop mise node nvim rg fd claude codex copilot herdr; do check_cmd "$package"; done
+      for package in git powershell.exe scoop mise; do check_cmd "$package"; done
+      if command -v mise >/dev/null 2>&1; then
+        local tool executable
+        while IFS=$'\t' read -r tool executable; do
+          if mise which --cd "$(mise_workdir)" "$tool" >/dev/null 2>&1; then check_ok "$executable is installed by mise"; else check_fail "$executable is missing from mise"; fi
+        done <<'EOF'
+node	node
+neovim	nvim
+ripgrep	rg
+fd	fd
+claude	claude
+codex	codex
+copilot	copilot
+herdr	herdr
+pi	pi
+EOF
+      fi
       [[ -d "$HOME/.agents" ]] && check_ok "agent skills are copied" || check_fail "$HOME/.agents is missing"
       [[ -d "$HOME/.pi/agent" ]] && check_ok "Pi configuration is copied" || check_fail "$HOME/.pi/agent is missing"
       [[ -f "$HOME/.config/herdr/config.toml" ]] && check_ok "Herdr configuration is copied" || check_fail "$HOME/.config/herdr/config.toml is missing"
@@ -799,11 +817,11 @@ cmd_doctor() {
     if command -v gh >/dev/null 2>&1 && gh auth token --hostname github.com >/dev/null 2>&1; then check_ok "github.com token is available through gh"; else check_fail "github.com authentication/token is unavailable"; fi
   fi
 
-  if command -v herdr >/dev/null 2>&1; then
+  if command -v mise >/dev/null 2>&1 && mise which --cd "$(mise_workdir)" herdr >/dev/null 2>&1; then
     check_ok "herdr is available"
     local plugins repo_name statuses
     local -a missing_plugins=() missing_integrations=()
-    plugins="$(herdr plugin list 2>/dev/null || true)"
+    plugins="$(mise exec --cd "$(mise_workdir)" -- herdr plugin list 2>/dev/null || true)"
     while IFS= read -r source; do
       repo_name="${source#*/}"; repo_name="${repo_name%%/*}"
       grep -q "$repo_name" <<< "$plugins" || missing_plugins+=("$repo_name")
@@ -814,7 +832,7 @@ cmd_doctor() {
       check_fail "missing Herdr plugins: ${missing_plugins[*]}"
     fi
 
-    statuses="$(herdr integration status 2>/dev/null || true)"
+    statuses="$(mise exec --cd "$(mise_workdir)" -- herdr integration status 2>/dev/null || true)"
     while IFS= read -r integration; do
       grep -Eq "^${integration}: current" <<< "$statuses" || missing_integrations+=("$integration")
     done < <(load_list "$REPO/packages/herdr-integrations.txt")
