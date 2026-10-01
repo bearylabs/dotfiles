@@ -352,29 +352,39 @@ gpg_secret_key_for_email() {
   { gpg --list-secret-keys --with-colons "$email" 2>/dev/null || true; } | awk -F: '$1 == "sec" { print $5; exit }'
 }
 
-ensure_gpg_pinentry() {
-  local pinentry config
+ensure_gpg_agent_config() {
+  local pinentry config cache_ttl=86400
   pinentry="$(command -v pinentry-curses || command -v pinentry || true)"
   [[ -n "$pinentry" ]] || die "required command not found: pinentry-curses"
   config="$HOME/.gnupg/gpg-agent.conf"
   export GPG_TTY="${GPG_TTY:-$(tty 2>/dev/null || true)}"
-  if [[ -r "$config" ]] && grep -Fxq "pinentry-program $pinentry" "$config"; then
+  if [[ -r "$config" ]] \
+    && grep -Fxq "pinentry-program $pinentry" "$config" \
+    && grep -Fxq "default-cache-ttl $cache_ttl" "$config" \
+    && grep -Fxq "max-cache-ttl $cache_ttl" "$config" \
+    && grep -Fxq "default-cache-ttl-ssh $cache_ttl" "$config" \
+    && grep -Fxq "max-cache-ttl-ssh $cache_ttl" "$config"; then
     return
   fi
   if $DRY_RUN; then
-    info "Would configure gpg-agent pinentry: $pinentry"
+    info "Would configure gpg-agent pinentry and cache TTL: $cache_ttl seconds"
     return
   fi
   mkdir -p "$HOME/.gnupg"
   chmod 700 "$HOME/.gnupg"
   if [[ -e "$config" ]]; then
-    grep -v '^pinentry-program ' "$config" > "$config.tmp"
+    awk '$1 != "pinentry-program" && $1 != "default-cache-ttl" && $1 != "max-cache-ttl" && $1 != "default-cache-ttl-ssh" && $1 != "max-cache-ttl-ssh"' "$config" > "$config.tmp"
     mv "$config.tmp" "$config"
   fi
-  printf 'pinentry-program %s\n' "$pinentry" >> "$config"
+  printf '%s\n' \
+    "pinentry-program $pinentry" \
+    "default-cache-ttl $cache_ttl" \
+    "max-cache-ttl $cache_ttl" \
+    "default-cache-ttl-ssh $cache_ttl" \
+    "max-cache-ttl-ssh $cache_ttl" >> "$config"
   chmod 600 "$config"
   gpgconf --kill gpg-agent 2>/dev/null || true
-  ok "Configured gpg-agent pinentry: $pinentry"
+  ok "Configured gpg-agent pinentry and cache TTL: $cache_ttl seconds"
 }
 
 ensure_git_credential_gpg_store() {
@@ -395,7 +405,7 @@ ensure_git_credential_gpg_store() {
     die "required command(s) not found: ${missing[*]}"
   fi
   IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
-  ensure_gpg_pinentry
+  ensure_gpg_agent_config
 
   key="$(gpg_secret_key_for_email "$expected_email")"
   if [[ -z "$key" ]]; then
