@@ -86,12 +86,14 @@ Bash is already running elevated, `dotctl` explicitly permits Scoop's
 under `%USERPROFILE%`. `dotctl` installs Scoop when absent, updates it, installs
 mise through Scoop, installs native prerequisites such as GCC from
 `packages/windows-scoop.txt`, and uses `windows/mise.toml` for the minimal
-Windows toolset: Node.js, Neovim, Tree-sitter, ripgrep, fd, Lazygit, Pi, Claude
-Code, Codex, GitHub Copilot CLI, and Herdr. This tool configuration is copied to
-mise's global user config so its shims resolve the managed tools outside the
-repository as well. The Windows mise environment selects Scoop's GCC toolchain
-for native builds, including Tree-sitter parsers, instead of unavailable MSVC
-Build Tools.
+Windows toolset: Node.js, Neovim, Tree-sitter, ripgrep, fd, fzf, zoxide,
+Lazygit, Pi, Claude Code, Codex, GitHub Copilot CLI, and Herdr. This
+tool configuration is copied to mise's global user config so its shims resolve
+the managed tools outside the repository as well. `dotctl` activates zoxide in
+Git Bash and PowerShell, making its `z` navigation command available in new
+shell sessions. The Windows mise environment selects Scoop's GCC toolchain for
+native builds, including Tree-sitter parsers, instead of unavailable MSVC Build
+Tools.
 
 Windows does not use Stow or symlinks. The shared Agents, Pi, and Herdr trees are
 copied into the corresponding directories below the user profile; Neovim is

@@ -10,6 +10,8 @@ node = "lts"
 neovim = "latest"
 ripgrep = "latest"
 fd = "latest"
+fzf = "latest"
+zoxide = "latest"
 lazygit = "latest"
 tree-sitter = "latest"
 

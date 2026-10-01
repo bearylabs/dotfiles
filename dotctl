@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.11"
+VERSION="0.2.12"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -647,28 +647,41 @@ ensure_mise() {
 }
 
 ensure_windows_bash_environment() {
-  local profile="$HOME/.bash_profile" marker='# Managed by dotctl: Windows environment'
-  grep -Fqx "$marker" "$profile" 2>/dev/null && return
-  if $DRY_RUN; then
-    info "Would add mise activation to $profile"
-    return
+  local profile="$HOME/.bash_profile"
+  local mise_marker='# Managed by dotctl: Windows environment'
+  local zoxide_marker='# Managed by dotctl: zoxide activation'
+  if ! grep -Fqx "$mise_marker" "$profile" 2>/dev/null; then
+    if $DRY_RUN; then
+      info "Would add mise activation to $profile"
+    else
+      {
+        printf '\n%s\n' "$mise_marker"
+        printf 'export PATH="$HOME/.local/bin:$PATH"\n'
+        printf 'if command -v mise >/dev/null 2>&1; then eval "$(mise activate bash)"; fi\n'
+      } >> "$profile"
+    fi
   fi
-  {
-    printf '\n%s\n' "$marker"
-    printf 'export PATH="$HOME/.local/bin:$PATH"\n'
-    printf 'if command -v mise >/dev/null 2>&1; then eval "$(mise activate bash)"; fi\n'
-  } >> "$profile"
-  ok "Configured mise for future Git Bash sessions"
+  if ! grep -Fqx "$zoxide_marker" "$profile" 2>/dev/null; then
+    if $DRY_RUN; then
+      info "Would add zoxide activation to $profile"
+    else
+      {
+        printf '\n%s\n' "$zoxide_marker"
+        printf 'if command -v zoxide >/dev/null 2>&1; then eval "$(zoxide init bash)"; fi\n'
+      } >> "$profile"
+    fi
+  fi
+  ok "Configured mise and zoxide for future Git Bash sessions"
 }
 
 ensure_windows_powershell_environment() {
-  local shell marker='# Managed by dotctl: mise activation'
-  local command='$marker = "# Managed by dotctl: mise activation"; $profilePath = $PROFILE.CurrentUserAllHosts; $content = if (Test-Path -LiteralPath $profilePath) { Get-Content -LiteralPath $profilePath -Raw } else { "" }; if (-not $content.Contains($marker)) { New-Item -ItemType Directory -Path (Split-Path -Parent $profilePath) -Force | Out-Null; $block = "`r`n$marker`r`nif (Get-Command mise -ErrorAction SilentlyContinue) { (&mise activate pwsh) | Out-String | Invoke-Expression }`r`n"; Add-Content -LiteralPath $profilePath -Value $block -Encoding UTF8 }; $shims = ((& mise doctor --json | Out-String | ConvertFrom-Json).dirs.shims); $userPath = [Environment]::GetEnvironmentVariable("Path", "User"); if (($userPath -split ";") -notcontains $shims) { $newPath = if ([string]::IsNullOrEmpty($userPath)) { $shims } else { $shims + ";" + $userPath }; [Environment]::SetEnvironmentVariable("Path", $newPath, "User") }'
+  local shell
+  local command='$miseMarker = "# Managed by dotctl: mise activation"; $zoxideMarker = "# Managed by dotctl: zoxide activation"; $profilePath = $PROFILE.CurrentUserAllHosts; $content = if (Test-Path -LiteralPath $profilePath) { Get-Content -LiteralPath $profilePath -Raw } else { "" }; if (-not $content.Contains($miseMarker)) { New-Item -ItemType Directory -Path (Split-Path -Parent $profilePath) -Force | Out-Null; $block = "`r`n$miseMarker`r`nif (Get-Command mise -ErrorAction SilentlyContinue) { (&mise activate pwsh) | Out-String | Invoke-Expression }`r`n"; Add-Content -LiteralPath $profilePath -Value $block -Encoding UTF8 }; if (-not $content.Contains($zoxideMarker)) { New-Item -ItemType Directory -Path (Split-Path -Parent $profilePath) -Force | Out-Null; $block = "`r`n$zoxideMarker`r`nif (Get-Command zoxide -ErrorAction SilentlyContinue) { (zoxide init powershell | Out-String) | Invoke-Expression }`r`n"; Add-Content -LiteralPath $profilePath -Value $block -Encoding UTF8 }; $shims = ((& mise doctor --json | Out-String | ConvertFrom-Json).dirs.shims); $userPath = [Environment]::GetEnvironmentVariable("Path", "User"); if (($userPath -split ";") -notcontains $shims) { $newPath = if ([string]::IsNullOrEmpty($userPath)) { $shims } else { $shims + ";" + $userPath }; [Environment]::SetEnvironmentVariable("Path", $newPath, "User") }'
   for shell in powershell.exe pwsh.exe; do
     command -v "$shell" >/dev/null 2>&1 || continue
     if $DRY_RUN; then show_cmd "$shell" -NoProfile -NonInteractive -Command "$command"; else "$shell" -NoProfile -NonInteractive -Command "$command"; fi
   done
-  ok "Configured mise for future PowerShell sessions"
+  ok "Configured mise and zoxide for future PowerShell sessions"
 }
 
 install_windows_mise_global_config() {
@@ -836,6 +849,8 @@ node
 nvim
 rg
 fd
+fzf
+zoxide
 lazygit
 claude
 codex
