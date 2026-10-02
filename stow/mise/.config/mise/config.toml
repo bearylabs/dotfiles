@@ -5,11 +5,13 @@
 # precompiled binaries instead of compiling Node.js and Python from source.
 node.compile = false
 python.compile = false
+minimum_release_age = "0s"
 [tools]
 # Editors and runtimes
 neovim = "latest"
 node = "lts"
 python = "3.13"
+uv = "latest"
 pipx = "latest"
 rust = "stable"
 powershell-core = "latest"
