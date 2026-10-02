@@ -2,5 +2,6 @@
 plannotator/herdr-annotate
 bearylabs/herdr-autofetch
 bearylabs/herdr-better-worktrees
+bearylabs/herdr-ssh-config-dash
 bearylabs/herdr-simple-tab-names
 paulbkim-dev/vim-herdr-navigation
