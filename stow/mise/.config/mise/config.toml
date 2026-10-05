@@ -55,6 +55,7 @@ starship = "latest"
 # AI/development agents
 claude = "latest"
 codex = "latest"
+copilot = "latest"
 herdr = "latest"
 pi = "latest"
 

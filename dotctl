@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.16"
+VERSION="0.2.18"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -246,6 +246,29 @@ omarchy_prerequisites() {
   fi
 }
 
+ensure_fish_login_shell() {
+  local user fish_shell passwd_entry current_shell
+  user="$(id -un)"
+  fish_shell="$(command -v fish 2>/dev/null || true)"
+  if [[ -z "$fish_shell" ]]; then
+    $DRY_RUN || die "fish is missing after installing system prerequisites"
+    fish_shell=/usr/bin/fish
+  fi
+  passwd_entry="$(getent passwd "$user" 2>/dev/null || true)"
+  [[ -n "$passwd_entry" ]] || die "cannot determine the passwd entry for $user"
+  current_shell="${passwd_entry##*:}"
+  if [[ "$current_shell" == "$fish_shell" ]]; then
+    ok "Fish is the default login shell"
+    return
+  fi
+  if ! grep -Fxq "$fish_shell" /etc/shells 2>/dev/null; then
+    $DRY_RUN || die "$fish_shell is not listed in /etc/shells"
+  fi
+  info "Setting Fish as the default login shell for $user"
+  run sudo chsh -s "$fish_shell" "$user"
+  ok "Fish is configured as the default login shell; log out and back in to activate it"
+}
+
 nixos_config_for_platform() {
   case "$1" in
     nixos) printf '%s/nix/configuration.nix\n' "$REPO" ;;
@@ -398,7 +421,10 @@ system_layer() {
   case "$p" in
     windows) windows_prerequisites "$mode" ;;
     ubuntu) ubuntu_prerequisites ;;
-    omarchy) omarchy_prerequisites ;;
+    omarchy)
+      omarchy_prerequisites
+      ensure_fish_login_shell
+      ;;
     nixos|nixos-wsl)
       if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
       nixos_rebuild "$p"
@@ -586,8 +612,10 @@ stow_packages() {
 remove_omarchy_default_dotfiles() {
   local path
   local -a paths=(
+    "$HOME/.config/ghostty"
     "$HOME/.config/git/config"
     "$HOME/.config/herdr/config.toml"
+    "$HOME/.config/hypr"
     "$HOME/.config/mise/config.toml"
     "$HOME/.config/nvim"
     "$HOME/.config/starship.toml"
@@ -841,7 +869,12 @@ sync_integrations() {
   info "Syncing Herdr plugins"
   while IFS= read -r source; do run mise exec --cd "$workdir" -- herdr plugin install "$source" --yes; done < <(load_list "$plugin_file")
   info "Syncing Herdr agent integrations"
-  while IFS= read -r integration; do run mise exec --cd "$workdir" -- herdr integration install "$integration"; done < <(load_list "$REPO/packages/herdr-integrations.txt")
+  while IFS= read -r integration; do
+    # Herdr requires Copilot's config directory, but a fresh CLI installation
+    # does not create it until Copilot has been run interactively.
+    [[ "$integration" == copilot ]] && run mkdir -p "$HOME/.copilot"
+    run mise exec --cd "$workdir" -- herdr integration install "$integration"
+  done < <(load_list "$REPO/packages/herdr-integrations.txt")
   if [[ "$(platform)" != windows ]]; then
     if command -v az >/dev/null 2>&1 || $DRY_RUN; then
       run mise run --cd "$REPO" azure:extensions
@@ -1016,6 +1049,14 @@ EOF
         if pacman -Q "$package" >/dev/null 2>&1; then check_ok "Omarchy package: $package"; else check_fail "Omarchy package missing: $package"; fi
       done < <(load_list "$REPO/packages/omarchy-essential.txt")
       check_cmd mise
+      local login_shell
+      login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
+      login_shell="${login_shell##*:}"
+      if [[ "$login_shell" == "$(command -v fish 2>/dev/null || true)" ]]; then
+        check_ok "Fish is the default login shell"
+      else
+        check_fail "Fish is not the default login shell"
+      fi
       ;;
     nixos|nixos-wsl)
       for package in git gh stow mise; do check_cmd "$package"; done

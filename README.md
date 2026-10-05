@@ -30,14 +30,17 @@ bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
 Only missing packages from `packages/omarchy-essential.txt` are installed with
-Omarchy's package command. The existing system `mise` is reused, and the shared
-mise declaration installs the complete development toolset, including Pi.
-Omarchy keeps ownership of the Wayland desktop configuration: X-oriented Stow
-packages such as i3, i3status, Polybar, Rofi, and Flameshot are not selected,
-and neither is the repository's Ghostty configuration. Before Stow runs,
-`dotctl` removes the superseded stock Git, Herdr, mise, Neovim, Starship, and
-tmux configuration paths; managed symlinks and Herdr state files are preserved
-on subsequent runs.
+Omarchy's package command. Fish is set as the user's default login shell; the
+new shell takes effect after logging out and back in. The existing system
+`mise` is reused, and the shared mise declaration installs the complete
+development toolset, including Pi. The Omarchy profile installs Ghostty and
+applies the repository's Ghostty and Hyprland configurations. The Hyprland setup keeps Omarchy's Wayland services
+and shell while replacing its bindings and look-and-feel with the converted i3
+workflow. X-oriented Stow packages such as i3, i3status, Polybar, Rofi, and
+Flameshot are not selected. Before Stow runs, `dotctl` removes the superseded
+stock Ghostty, Git, Herdr, Hyprland, mise, Neovim, Starship, and tmux
+configuration paths; managed symlinks and Herdr state files are preserved on
+subsequent runs.
 
 ### NixOS
 

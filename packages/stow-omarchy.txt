@@ -2,7 +2,9 @@
 agents
 doom
 fish
+ghostty
 gitconfig
+hypr
 herdr
 mise
 nvim

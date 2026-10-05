@@ -62,5 +62,7 @@ function export
     end
 end
 
-# load per-directory env vars via .envrc files
-direnv hook fish | source
+# Load per-directory env vars via .envrc files when direnv is installed.
+if command -q direnv
+    direnv hook fish | source
+end

@@ -5,6 +5,7 @@ curl
 fish
 git
 github-cli
+ghostty
 gnupg
 jq
 libsecret
