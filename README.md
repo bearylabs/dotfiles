@@ -21,6 +21,8 @@ bash ~/dotfiles/dotctl init --profile <profile>
 
 Only missing packages listed in `packages/ubuntu-*.txt` are installed. mise is
 installed with its official installer when absent. Nix is never installed.
+Zoxide is installed as a system package, and the managed Fish and Zsh configs
+activate its `z` command automatically in new shell sessions.
 
 ### Omarchy
 
@@ -36,8 +38,10 @@ new shell takes effect after logging out and back in. The existing system
 development toolset, including Pi. The Omarchy profile installs Ghostty and
 applies the repository's Ghostty and Hyprland configurations. The Hyprland setup keeps Omarchy's Wayland services
 and shell while replacing its bindings and look-and-feel with the converted i3
-workflow. X-oriented Stow packages such as i3, i3status, Polybar, Rofi, and
-Flameshot are not selected. Before Stow runs, `dotctl` removes the superseded
+workflow. Zoxide is installed as a system package, and the managed Fish and
+Zsh configs activate its `z` command automatically in new shell sessions.
+X-oriented Stow packages such as i3, i3status, Polybar, Rofi, and Flameshot are
+not selected. Before Stow runs, `dotctl` removes the superseded
 stock Ghostty, Git, Herdr, Hyprland, mise, Neovim, Starship, and tmux
 configuration paths; managed symlinks and Herdr state files are preserved on
 subsequent runs.

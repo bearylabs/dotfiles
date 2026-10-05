@@ -62,6 +62,12 @@ function export
     end
 end
 
+# Enable zoxide's `z` directory-jump command. NixOS may have initialized it
+# already through programs.zoxide, so avoid defining its functions twice.
+if command -q zoxide; and not functions -q __zoxide_z
+    zoxide init fish | source
+end
+
 # Load per-directory env vars via .envrc files when direnv is installed.
 if command -q direnv
     direnv hook fish | source

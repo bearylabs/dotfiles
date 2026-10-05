@@ -10,6 +10,12 @@ if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
 fi
 
+# Enable zoxide's `z` directory-jump command unless the system configuration
+# (for example NixOS programs.zoxide) has already initialized it.
+if command -v zoxide >/dev/null 2>&1 && (( ! $+functions[__zoxide_z] )); then
+  eval "$(zoxide init zsh)"
+fi
+
 # Set up the prompt
 
 autoload -Uz promptinit
