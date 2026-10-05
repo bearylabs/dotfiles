@@ -90,6 +90,7 @@ bind("XF86MonBrightnessUp", "Brightness up", "brightnessctl set 5%+", { locked =
 bind("PRINT", "Region screenshot", "omarchy capture screenshot region")
 bind("SUPER + PRINT", "Fullscreen screenshot", "omarchy capture screenshot fullscreen")
 bind("SUPER + SHIFT + X", "Lock screen", "omarchy system lock")
+bind("SUPER + CTRL + ESCAPE", "Toggle laptop display", "omarchy hyprland monitor internal toggle")
 
 -- Mouse behavior from i3's floating_modifier.
 bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
