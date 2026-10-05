@@ -1,8 +1,8 @@
 # dotfiles
 
-Dotfiles for NixOS, NixOS-WSL, Ubuntu, and a minimal native Windows setup.
-`dotctl` detects the platform; there is no Nix installation path on Ubuntu or
-Windows.
+Dotfiles for NixOS, NixOS-WSL, Ubuntu, Omarchy, and a minimal native Windows
+setup. `dotctl` detects the platform; there is no Nix installation path on
+Ubuntu, Omarchy, or Windows.
 
 ## Bootstrap
 
@@ -21,6 +21,23 @@ bash ~/dotfiles/dotctl init --profile <profile>
 
 Only missing packages listed in `packages/ubuntu-*.txt` are installed. mise is
 installed with its official installer when absent. Nix is never installed.
+
+### Omarchy
+
+```bash
+git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
+bash ~/dotfiles/dotctl init --profile <profile>
+```
+
+Only missing packages from `packages/omarchy-essential.txt` are installed with
+Omarchy's package command. The existing system `mise` is reused, and the shared
+mise declaration installs the complete development toolset, including Pi.
+Omarchy keeps ownership of the Wayland desktop configuration: X-oriented Stow
+packages such as i3, i3status, Polybar, Rofi, and Flameshot are not selected,
+and neither is the repository's Ghostty configuration. Before Stow runs,
+`dotctl` removes the superseded stock Git, Herdr, mise, Neovim, Starship, and
+tmux configuration paths; managed symlinks and Herdr state files are preserved
+on subsequent runs.
 
 ### NixOS
 
@@ -200,10 +217,10 @@ Portable Linux development tools are declared in
 `~/.local/bin` and uses `mise self-update`. On Windows, Scoop installs and
 updates mise and native Windows prerequisites such as GCC, while `dotctl`
 copies the Windows mise declaration to the global config shared by Git Bash and
-PowerShell. Platform prerequisites live under
-`nix/`, `windows/`, and
-`packages/`; profile-specific prerequisites are installed by `dotctl` when
-needed.
+PowerShell. Platform prerequisites live under `nix/`, `windows/`, and `packages/`;
+profile-specific prerequisites are installed by `dotctl` when needed. Omarchy
+uses `packages/stow-omarchy.txt` instead of the desktop-oriented common Stow
+selection.
 
 Integration and plugin sources are also declared in `packages/`. `dotctl`
 installs and updates them idempotently as part of the normal apply flow.

@@ -1,0 +1,12 @@
+# Development dotfiles only. Omarchy continues to own the Wayland desktop.
+agents
+doom
+fish
+gitconfig
+herdr
+mise
+nvim
+pi
+starship
+tmux
+zsh

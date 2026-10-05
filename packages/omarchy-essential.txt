@@ -1,0 +1,17 @@
+# Minimal system prerequisites for the portable development environment.
+base-devel
+ca-certificates
+curl
+fish
+git
+github-cli
+gnupg
+jq
+libsecret
+pass
+pinentry
+stow
+tmux
+tree
+unzip
+wget

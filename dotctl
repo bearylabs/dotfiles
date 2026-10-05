@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.15"
+VERSION="0.2.16"
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -89,6 +89,7 @@ platform() {
       fi
       ;;
     ubuntu) printf 'ubuntu\n' ;;
+    omarchy) printf 'omarchy\n' ;;
     *) printf 'unsupported\n' ;;
   esac
 }
@@ -221,6 +222,27 @@ ubuntu_prerequisites() {
     run sudo apt-get install -y --no-install-recommends "${missing[@]}"
   else
     ok "Ubuntu essentials are installed"
+  fi
+}
+
+omarchy_prerequisites() {
+  local package
+  local -a wanted=() missing=()
+  need omarchy
+  while IFS= read -r package; do wanted+=("$package"); done < <(load_list "$REPO/packages/omarchy-essential.txt")
+  for package in "${wanted[@]}"; do pacman -Q "$package" >/dev/null 2>&1 || missing+=("$package"); done
+  if ((${#missing[@]})); then
+    info "Installing missing Omarchy essentials: ${missing[*]}"
+    if [[ ! -s /var/lib/pacman/sync/core.db || ! -s /var/lib/pacman/sync/extra.db ]]; then
+      # Fresh Omarchy installs can contain only offline.db. Refresh and install
+      # in one full-upgrade transaction to avoid an unsupported partial upgrade.
+      info "Initializing package databases with a full system upgrade"
+      run sudo env OMARCHY_ALLOW_DIRECT_PACMAN=1 pacman -Syu --noconfirm --needed "${missing[@]}"
+    else
+      run omarchy pkg add "${missing[@]}"
+    fi
+  else
+    ok "Omarchy essentials are installed"
   fi
 }
 
@@ -376,11 +398,12 @@ system_layer() {
   case "$p" in
     windows) windows_prerequisites "$mode" ;;
     ubuntu) ubuntu_prerequisites ;;
+    omarchy) omarchy_prerequisites ;;
     nixos|nixos-wsl)
       if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
       nixos_rebuild "$p"
       ;;
-    *) die "unsupported platform (supported: NixOS, NixOS-WSL, Ubuntu, Windows via Git Bash)" ;;
+    *) die "unsupported platform (supported: NixOS, NixOS-WSL, Ubuntu, Omarchy, Windows via Git Bash)" ;;
   esac
 }
 
@@ -544,22 +567,45 @@ profile_prerequisites() {
   p="$(platform)"
   if [[ "$profile" == work && "$p" == ubuntu ]]; then
     ubuntu_git_credential_manager
+  elif [[ "$profile" == work && "$p" == omarchy ]] && ! command -v git-credential-manager >/dev/null 2>&1; then
+    info "Installing Git Credential Manager from the AUR"
+    run omarchy pkg aur add git-credential-manager-bin
   fi
   ensure_git_credential_gpg_store "$profile"
 }
 
 stow_packages() {
-  local profile="$1" package
+  local profile="$1" package list="$REPO/packages/stow-common.txt"
   local -a packages=()
-  while IFS= read -r package; do packages+=("$package"); done < <(load_list "$REPO/packages/stow-common.txt")
+  [[ "$(platform)" == omarchy ]] && list="$REPO/packages/stow-omarchy.txt"
+  while IFS= read -r package; do packages+=("$package"); done < <(load_list "$list")
   packages+=("git-$profile")
   printf '%s\n' "${packages[@]}"
+}
+
+remove_omarchy_default_dotfiles() {
+  local path
+  local -a paths=(
+    "$HOME/.config/git/config"
+    "$HOME/.config/herdr/config.toml"
+    "$HOME/.config/mise/config.toml"
+    "$HOME/.config/nvim"
+    "$HOME/.config/starship.toml"
+    "$HOME/.config/tmux"
+  )
+  for path in "${paths[@]}"; do
+    [[ -e "$path" || -L "$path" ]] || continue
+    [[ -L "$path" ]] && continue
+    info "Removing obsolete Omarchy default: $path"
+    run rm -rf -- "$path"
+  done
 }
 
 stow_layer() {
   local profile inactive package
   profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
   [[ "$profile" == personal ]] && inactive=work || inactive=personal
+  [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
   need stow
   local -a packages=()
   while IFS= read -r package; do
@@ -615,6 +661,10 @@ mise_config() {
 ensure_mise() {
   local mode="${1:-apply}" binary="$HOME/.local/bin/mise" installer
   export PATH="$HOME/.local/bin:$PATH"
+  if [[ "$(platform)" == omarchy ]] && command -v mise >/dev/null 2>&1; then
+    ok "Using Omarchy's mise installation"
+    return
+  fi
   if [[ "$(platform)" == windows ]]; then
     ensure_scoop
     windows_refresh_scoop_path
@@ -959,6 +1009,12 @@ EOF
           fi
         done < <(load_list "$file")
       done
+      check_cmd mise
+      ;;
+    omarchy)
+      while IFS= read -r package; do
+        if pacman -Q "$package" >/dev/null 2>&1; then check_ok "Omarchy package: $package"; else check_fail "Omarchy package missing: $package"; fi
+      done < <(load_list "$REPO/packages/omarchy-essential.txt")
       check_cmd mise
       ;;
     nixos|nixos-wsl)
