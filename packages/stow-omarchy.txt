@@ -8,6 +8,7 @@ hypr
 herdr
 mise
 nvim
+omarchy-shell
 pi
 starship
 tmux

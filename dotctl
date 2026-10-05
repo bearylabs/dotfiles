@@ -618,6 +618,7 @@ remove_omarchy_default_dotfiles() {
     "$HOME/.config/hypr"
     "$HOME/.config/mise/config.toml"
     "$HOME/.config/nvim"
+    "$HOME/.config/omarchy/shell.json"
     "$HOME/.config/starship.toml"
     "$HOME/.config/tmux"
   )
@@ -627,6 +628,17 @@ remove_omarchy_default_dotfiles() {
     info "Removing obsolete Omarchy default: $path"
     run rm -rf -- "$path"
   done
+}
+
+install_omarchy_shell_plugins() {
+  local source="$REPO/omarchy/plugins/hrudek.workspaces"
+  local target="$HOME/.config/omarchy/plugins/hrudek.workspaces"
+  [[ -d "$source" ]] || die "missing Omarchy workspace plugin: $source"
+
+  info "Installing managed Omarchy workspace plugin"
+  run rm -rf -- "$target"
+  run mkdir -p "$target"
+  run cp -a "$source/." "$target/"
 }
 
 stow_layer() {
@@ -648,6 +660,7 @@ stow_layer() {
   else
     run stow -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
   fi
+  [[ "$(platform)" == omarchy ]] && install_omarchy_shell_plugins
   ok "Stow packages selected for '$profile'"
 }
 
@@ -1049,6 +1062,11 @@ EOF
         if pacman -Q "$package" >/dev/null 2>&1; then check_ok "Omarchy package: $package"; else check_fail "Omarchy package missing: $package"; fi
       done < <(load_list "$REPO/packages/omarchy-essential.txt")
       check_cmd mise
+      if diff -qr "$REPO/omarchy/plugins/hrudek.workspaces" "$HOME/.config/omarchy/plugins/hrudek.workspaces" >/dev/null 2>&1; then
+        check_ok "Omarchy workspace plugin matches the repository"
+      else
+        check_fail "Omarchy workspace plugin differs from the repository"
+      fi
       local login_shell
       login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
       login_shell="${login_shell##*:}"

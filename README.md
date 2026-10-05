@@ -36,15 +36,18 @@ Omarchy's package command. Fish is set as the user's default login shell; the
 new shell takes effect after logging out and back in. The existing system
 `mise` is reused, and the shared mise declaration installs the complete
 development toolset, including Pi. The Omarchy profile installs Ghostty and
-applies the repository's Ghostty and Hyprland configurations. The Hyprland setup keeps Omarchy's Wayland services
-and shell while replacing its bindings and look-and-feel with the converted i3
-workflow. Zoxide is installed as a system package, and the managed Fish and
+applies the repository's Ghostty, Hyprland, and Omarchy shell configurations.
+The shell configuration includes the custom workspace widget and top-bar
+layout. `shell.json` is linked with Stow; the plugin is copied into Omarchy's
+plugin directory because Omarchy plugin validation rejects symlinks. The
+Hyprland setup keeps Omarchy's Wayland services and shell while
+replacing its bindings and look-and-feel with the converted i3 workflow. Zoxide is installed as a system package, and the managed Fish and
 Zsh configs activate its `z` command automatically in new shell sessions.
 X-oriented Stow packages such as i3, i3status, Polybar, Rofi, and Flameshot are
 not selected. Before Stow runs, `dotctl` removes the superseded
-stock Ghostty, Git, Herdr, Hyprland, mise, Neovim, Starship, and tmux
-configuration paths; managed symlinks and Herdr state files are preserved on
-subsequent runs.
+stock Ghostty, Git, Herdr, Hyprland, mise, Neovim, Omarchy shell, Starship,
+and tmux configuration paths; managed symlinks and Herdr state files are
+preserved on subsequent runs.
 
 ### NixOS
 
