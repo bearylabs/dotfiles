@@ -1,6 +1,7 @@
 require 'hrudek.plugins.snacks'
 require 'hrudek.plugins.which-key'
 require 'hrudek.plugins.colorscheme'
+require 'hrudek.plugins.render-markdown'
 require 'hrudek.plugins.telescope'
 require 'hrudek.plugins.oil'
 require 'hrudek.plugins.gitsigns'

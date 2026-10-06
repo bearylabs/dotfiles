@@ -7,6 +7,10 @@ vim.pack.add {
 
 require('catppuccin').setup {
   flavour = 'macchiato',
+  integrations = {
+    render_markdown = true,
+    treesitter = true,
+  },
 }
 
 vim.cmd.colorscheme 'catppuccin'
