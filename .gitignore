@@ -1,8 +1,9 @@
 # Codex
 .codex
 
-# Machine-local Pi settings
+# Machine-local and generated Pi files
 /stow/pi/.pi/agent/settings.json
+/stow/pi/.pi/agent/extensions/herdr-agent-state.ts
 
 # Nix OS
 hardware-configuration.nix
