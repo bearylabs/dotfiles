@@ -79,14 +79,14 @@ end)
 bind("SUPER + R", "Resize mode", hl.dsp.submap("resize"))
 
 -- Multimedia keys and utilities.
-bind("XF86AudioMute", "Mute audio", "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle", { locked = true })
-bind("XF86AudioLowerVolume", "Volume down", "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-",
+bind("XF86AudioMute", "Mute audio", "omarchy-audio-output-volume mute-toggle", { locked = true })
+bind("XF86AudioLowerVolume", "Volume down", "omarchy-audio-output-volume lower",
   { locked = true, repeating = true })
-bind("XF86AudioRaiseVolume", "Volume up", "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+",
+bind("XF86AudioRaiseVolume", "Volume up", "omarchy-audio-output-volume raise",
   { locked = true, repeating = true })
-bind("XF86AudioMicMute", "Mute microphone", "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle", { locked = true })
-bind("XF86MonBrightnessDown", "Brightness down", "brightnessctl set 5%-", { locked = true, repeating = true })
-bind("XF86MonBrightnessUp", "Brightness up", "brightnessctl set 5%+", { locked = true, repeating = true })
+bind("XF86AudioMicMute", "Mute microphone", "omarchy-audio-input-mute", { locked = true })
+bind("XF86MonBrightnessDown", "Brightness down", "omarchy-brightness-display 5%-", { locked = true, repeating = true })
+bind("XF86MonBrightnessUp", "Brightness up", "omarchy-brightness-display +5%", { locked = true, repeating = true })
 bind("PRINT", "Region screenshot", "omarchy capture screenshot region")
 bind("SUPER + PRINT", "Fullscreen screenshot", "omarchy capture screenshot fullscreen")
 bind("SUPER + SHIFT + X", "Lock screen", "omarchy system lock")
