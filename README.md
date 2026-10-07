@@ -107,6 +107,20 @@ git clone https://github.com/bearylabs/dotfiles.git dotfiles
 bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
 ```
 
+On native Windows, `dotctl` exports `HOME="$(cygpath -u "$USERPROFILE")"`
+before resolving its configuration paths. This also gives child processes,
+including integration tools, the same home. If the inherited `HOME` differs,
+`dotctl` reports the home it uses. An explicit `XDG_CONFIG_HOME` is still
+respected. Linux and WSL are unaffected.
+
+On native Windows, `init`, `apply`, and `update` also check the persistent
+Windows user variable `HOME` and set it to `USERPROFILE` if needed (not
+system-wide). Any change is reported. `--dry-run` only previews this step;
+read-only commands such as `doctor` never persist it. Sign out of Windows and
+back in, or reboot, so new shells inherit the setting. Existing shells are
+unchanged. No files are migrated from the old home; copy any needed SSH keys
+or configuration yourself before switching.
+
 Windows setup is user-local and does not request administrator rights. If Git
 Bash is already running elevated, `dotctl` explicitly permits Scoop's
 `-RunAsAdmin` mode while retaining the current user's default Scoop directory

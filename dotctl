@@ -2,6 +2,23 @@
 set -euo pipefail
 
 VERSION="0.2.19"
+# Native Windows tools use USERPROFILE. Align this process and its children
+# before deriving any HOME-based paths; Linux (including WSL) stays untouched.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    [[ -n "${USERPROFILE:-}" ]] || { printf 'error: USERPROFILE is required on native Windows\n' >&2; exit 1; }
+    command -v cygpath >/dev/null 2>&1 || { printf 'error: required command not found: cygpath\n' >&2; exit 1; }
+    if ! WINDOWS_HOME="$(cygpath -u "$USERPROFILE")" || [[ -z "$WINDOWS_HOME" ]]; then
+      printf 'error: could not convert USERPROFILE to a Unix home path\n' >&2
+      exit 1
+    fi
+    if [[ "${HOME:-}" != "$WINDOWS_HOME" ]]; then
+      printf 'warning: HOME was "%s"; dotctl uses "%s" (from USERPROFILE) for this process and its child tools\n' "${HOME:-<unset>}" "$WINDOWS_HOME" >&2
+    fi
+    export HOME="$WINDOWS_HOME"
+    unset WINDOWS_HOME
+    ;;
+esac
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 if command -v readlink >/dev/null 2>&1; then
   SCRIPT_PATH="$(readlink -f "$SCRIPT_SOURCE")"
@@ -92,6 +109,23 @@ platform() {
     omarchy) printf 'omarchy\n' ;;
     *) printf 'unsupported\n' ;;
   esac
+}
+
+ensure_windows_home() {
+  [[ "$(platform)" == windows ]] || return 0
+  if $DRY_RUN; then
+    info "Would check Windows user HOME and permanently set it to $USERPROFILE if needed"
+    return
+  fi
+  need powershell.exe
+  local changed
+  changed="$(powershell.exe -NoProfile -NonInteractive -Command \
+    '$ErrorActionPreference = "Stop"; if ([Environment]::GetEnvironmentVariable("HOME", "User") -ne $env:USERPROFILE) { [Environment]::SetEnvironmentVariable("HOME", $env:USERPROFILE, "User"); Write-Output "changed" }')" \
+    || die "could not check or set the Windows user HOME environment variable"
+  if [[ "${changed//$'\r'/}" == changed ]]; then
+    ok "Windows user HOME permanently set to $USERPROFILE"
+    info "Sign out of Windows and back in (or reboot) so new shells inherit it. Existing shells are unchanged."
+  fi
 }
 
 read_profile() {
@@ -920,6 +954,8 @@ cmd_init() {
     esac
   done
   [[ -n "$profile" ]] || die "init requires --profile personal|work"
+  case "$profile" in personal|work) ;; *) die "profile must be 'personal' or 'work'" ;; esac
+  ensure_windows_home
   save_profile "$profile"
   cmd_link
   apply_layers
@@ -937,6 +973,8 @@ cmd_apply() {
   if [[ -z "$only" || "$only" == dotfiles ]]; then
     read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
   fi
+  case "$only" in ''|system|dotfiles|tools|integrations) ;; *) die "--only must be system, dotfiles, tools, or integrations" ;; esac
+  ensure_windows_home
   apply_layers "$only"
 }
 
@@ -969,6 +1007,7 @@ cmd_update() {
     fi
   fi
   read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
+  ensure_windows_home
   system_layer update
   if [[ "$(platform)" != windows ]]; then github_auth; fi
   dotfiles_layer
