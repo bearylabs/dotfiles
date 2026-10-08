@@ -30,13 +30,31 @@ for key, direction in pairs(directions) do
   bind("SUPER + SHIFT + " .. key, "Move window " .. direction, hl.dsp.window.swap({ direction = direction }))
 end
 
--- Workspaces 1-10 (the zero key selects workspace 10).
-for workspace = 1, 10 do
+-- Workspaces 1-9 are always available.
+for workspace = 1, 9 do
   local key = "code:" .. tostring(workspace + 9)
   bind("SUPER + " .. key, "Switch to workspace " .. workspace, hl.dsp.focus({ workspace = tostring(workspace) }))
   bind("SUPER + SHIFT + " .. key, "Move window to workspace " .. workspace,
     hl.dsp.window.move({ workspace = tostring(workspace) }))
 end
+
+-- The zero key selects the laptop's secondary workspace only while docked.
+local function has_external_monitor()
+  for _, monitor in ipairs(hl.get_monitors()) do
+    if monitor.name ~= "eDP-1" then return true end
+  end
+  return false
+end
+bind("SUPER + code:19", "Switch to workspace 10 (docked only)", function()
+  if has_external_monitor() then
+    hl.dispatch(hl.dsp.focus({ workspace = "10" }))
+  end
+end)
+bind("SUPER + SHIFT + code:19", "Move window to workspace 10 (docked only)", function()
+  if has_external_monitor() then
+    hl.dispatch(hl.dsp.window.move({ workspace = "10" }))
+  end
+end)
 
 -- i3 layout concepts mapped to their closest Hyprland equivalents.
 bind("SUPER + B", "Next window splits horizontally", hl.dsp.layout("preselect r"))

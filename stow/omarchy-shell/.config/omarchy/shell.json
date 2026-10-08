@@ -1,7 +1,6 @@
 {
   "version": 1,
   "idle": {
-    "screensaver": 150,
     "lock": 300
   },
   "bar": {
@@ -40,6 +39,9 @@
       "right": [
         {
           "id": "omarchy.tray"
+        },
+        {
+          "id": "omarchy.tailscale"
         },
         {
           "id": "omarchy.agents"
