@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.19"
+VERSION="0.2.20"
 # Native Windows tools use USERPROFILE. Align this process and its children
 # before deriving any HOME-based paths; Linux (including WSL) stays untouched.
 case "$(uname -s)" in
@@ -280,6 +280,43 @@ omarchy_prerequisites() {
   fi
 }
 
+ensure_omarchy_power_settings() {
+  local helper="$REPO/omarchy/power-settings.py"
+  local template="$REPO/omarchy/power-settings.conf" differences
+  need python3
+  need omarchy
+  info "Comparing Omarchy energy settings"
+  differences="$(python3 "$helper" check "$template")" || die "could not compare UPower settings"
+  if [[ -z "$differences" ]]; then
+    ok "UPower settings match the repository"
+  else
+    info "UPower differences (current -> repository):"
+    printf '%s\n' "$differences"
+    if $DRY_RUN; then
+      info "Would ask before applying UPower settings (with backup and service restart)"
+    elif confirm "Overwrite these UPower settings with the repository values?"; then
+      run sudo python3 "$helper" apply "$template"
+      ok "UPower settings applied"
+    else
+      warn "Keeping current UPower settings"
+    fi
+  fi
+
+  if omarchy toggle enabled screensaver-off; then
+    ok "Screensaver is disabled, as configured in the repository"
+  else
+    info "Screensaver: enabled -> disabled"
+    if $DRY_RUN; then
+      info "Would ask before disabling the screensaver"
+    elif confirm "Disable the screensaver as configured in the repository?"; then
+      run omarchy toggle screensaver-off on
+      ok "Screensaver disabled (automatic locking is unchanged)"
+    else
+      warn "Keeping current screensaver setting"
+    fi
+  fi
+}
+
 ensure_fish_login_shell() {
   local user fish_shell passwd_entry current_shell
   user="$(id -un)"
@@ -457,6 +494,7 @@ system_layer() {
     ubuntu) ubuntu_prerequisites ;;
     omarchy)
       omarchy_prerequisites
+      ensure_omarchy_power_settings
       ensure_fish_login_shell
       ;;
     nixos|nixos-wsl)

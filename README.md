@@ -49,6 +49,21 @@ stock Ghostty, Git, Herdr, Hyprland, mise, Neovim, Omarchy shell, Starship,
 and tmux configuration paths; managed symlinks and Herdr state files are
 preserved on subsequent runs.
 
+The Omarchy system layer also compares energy settings before changing them:
+`omarchy/power-settings.conf` declares the UPower policy (20% low, 7% critical,
+5% automatic protection, `CriticalPowerAction=Auto`), and `dotctl` requests that
+the screensaver be disabled. Each group of differences is displayed as
+current → repository and requires confirmation; declining or running without
+an interactive terminal preserves the existing settings. `--yes` accepts these
+prompts, while `--dry-run` only displays differences without prompting or writing.
+Matching settings cause no writes or service restarts. Confirmed UPower changes
+use `sudo`, create a timestamped backup of `/etc/UPower/UPower.conf`, preserve
+unrelated settings, and restart UPower. The screensaver setting uses Omarchy's
+persistent toggle; the five-minute lock in the Stow-managed `shell.json` is
+unchanged. Run `dotctl apply --only system` to compare/apply these settings;
+they also run during `init`, full `apply`, and `update`. This confirmation
+behavior is specific to these energy settings, not a change to Stow handling.
+
 ### NixOS
 
 Git may be obtained temporarily before the declarative configuration has been
