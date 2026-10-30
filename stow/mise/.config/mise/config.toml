@@ -10,6 +10,7 @@ minimum_release_age = "0s"
 # Editors and runtimes
 neovim = "latest"
 node = "lts"
+bun = "latest"
 python = "3.13"
 uv = "latest"
 pipx = "latest"
