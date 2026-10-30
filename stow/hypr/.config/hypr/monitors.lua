@@ -47,6 +47,8 @@ local function sync_workspaces()
   end
 
   if external and laptop then
+    -- Rules only place newly created workspaces; move an existing 10 as well.
+    hl.dispatch(hl.dsp.workspace.move({ workspace = "10", monitor = laptop.name }))
     hl.dispatch(hl.dsp.focus({ workspace = "10" }))
     if restore and restore ~= "10" then
       hl.dispatch(hl.dsp.focus({ workspace = restore }))
@@ -65,12 +67,21 @@ local function sync_workspaces()
 end
 
 -- Defer reconciliation until Hyprland has finished changing its monitor layout.
-local sync_timer = hl.timer(sync_workspaces, { timeout = 300, type = "oneshot" })
+-- A oneshot timer expires after firing; only rearm it while it is still pending.
+local sync_timer
 local function schedule_sync()
-  sync_timer:set_timeout(300)
-  sync_timer:set_enabled(true)
+  if sync_timer then
+    sync_timer:set_timeout(300)
+    return
+  end
+  sync_timer = hl.timer(function()
+    sync_timer = nil
+    sync_workspaces()
+  end, { timeout = 300, type = "oneshot" })
 end
 hl.on("monitor.added", schedule_sync)
 hl.on("monitor.removed", schedule_sync)
 hl.on("monitor.layout_changed", schedule_sync)
 hl.on("hyprland.start", schedule_sync)
+hl.on("config.reloaded", schedule_sync)
+schedule_sync()
