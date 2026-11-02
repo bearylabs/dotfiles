@@ -206,7 +206,8 @@ selection is stored as one line in `~/.config/dotctl/config` and reused by later
 commands. The available profiles are:
 
 - `personal` for personal settings
-- `work` for work settings
+- `work` for work settings, including the work-only agent skills in
+  `stow/agents-work` (e.g. `ad-query`)
 
 Switching profiles is safe and idempotent:
 

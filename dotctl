@@ -717,6 +717,8 @@ stow_layer() {
   local profile inactive package
   profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
   [[ "$profile" == personal ]] && inactive=work || inactive=personal
+  local -a unstow=("git-$inactive")
+  [[ "$profile" == personal ]] && unstow+=(agents-work)
   [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
   need stow
   local -a packages=()
@@ -726,11 +728,18 @@ stow_layer() {
   done < <(stow_packages "$profile")
 
   info "Simulating Stow changes for profile '$profile'"
-  stow -n -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+  stow -n -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
   if $DRY_RUN; then
-    show_cmd stow -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+    show_cmd stow -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
   else
-    run stow -d "$STOW_DIR" -t "$HOME" -D "git-$inactive" -R "${packages[@]}"
+    run stow -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
+  fi
+  # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
+  # agents and agents-work together.
+  if [[ "$profile" == work ]]; then
+    stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
+    if $DRY_RUN; then show_cmd stow -d "$STOW_DIR" -t "$HOME" -R agents-work
+    else run stow -d "$STOW_DIR" -t "$HOME" -R agents-work; fi
   fi
   [[ "$(platform)" == omarchy ]] && install_omarchy_shell_plugins
   ok "Stow packages selected for '$profile'"
@@ -750,6 +759,7 @@ windows_dotfiles_layer() {
   local_appdata="$(cygpath -u "$LOCALAPPDATA")"
   info "Copying shared configuration for native Windows"
   copy_tree "$STOW_DIR/agents/.agents" "$HOME/.agents"
+  [[ "$(read_profile)" == work ]] && copy_tree "$STOW_DIR/agents-work/.agents" "$HOME/.agents"
   copy_tree "$STOW_DIR/pi/.pi/agent" "$HOME/.pi/agent"
   copy_tree "$STOW_DIR/herdr/.config/herdr" "$HOME/.config/herdr"
   copy_tree "$STOW_DIR/nvim/.config/nvim" "$local_appdata/nvim"
