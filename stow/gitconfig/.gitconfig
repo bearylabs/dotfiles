@@ -22,12 +22,12 @@
 [credential "https://siempelkamp.ghe.com"]
 	provider = github
 	helper = 
-	helper = !/nix/store/8q6jczz4f4llbzn3ji6cfp7z4bhny5za-gh-2.100.0/bin/.gh-wrapped auth git-credential
+	helper = !gh auth git-credential
 [core]
 	excludesfile = ~/.gitignore_global
 [credential "https://gist.siempelkamp.ghe.com"]
 	helper = 
-	helper = !/nix/store/8q6jczz4f4llbzn3ji6cfp7z4bhny5za-gh-2.100.0/bin/.gh-wrapped auth git-credential
+	helper = !gh auth git-credential
 [credential "https://github.com"]
 	helper = 
 	helper = !gh auth git-credential
