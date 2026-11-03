@@ -63,3 +63,30 @@ pi = "latest"
 [tasks."azure:extensions"]
 description = "Install the Azure CLI extensions used by this setup"
 run = "az extension add --name virtual-network-manager --upgrade"
+
+# Run through `mise run --cd ~/dotfiles` so paths resolve against the repository.
+[tasks."pi:extensions"]
+description = "Install locked dev dependencies for the Pi extensions in this repository"
+dir = "{{cwd}}"
+run = """
+set -eu
+for manifest in stow/pi/.pi/agent/extensions/*/package.json; do
+  [ -e "$manifest" ] || { echo "no Pi extension manifests below $PWD" >&2; exit 1; }
+  extension="${manifest%/package.json}"
+  echo "npm ci: $extension"
+  npm ci --prefix "$extension" --ignore-scripts --no-audit --no-fund --loglevel=error
+done
+"""
+
+[tasks."pi:extensions:check"]
+description = "Typecheck and test the Pi extensions in this repository"
+depends = ["pi:extensions"]
+dir = "{{cwd}}"
+run = """
+set -eu
+for manifest in stow/pi/.pi/agent/extensions/*/package.json; do
+  extension="${manifest%/package.json}"
+  echo "npm run check: $extension"
+  npm run --prefix "$extension" check
+done
+"""

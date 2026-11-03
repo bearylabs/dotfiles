@@ -264,3 +264,14 @@ selection.
 
 Integration and plugin sources are also declared in `packages/`. `dotctl`
 installs and updates them idempotently as part of the normal apply flow.
+
+Pi extensions with a `package.json` under `stow/pi/.pi/agent/extensions/`
+carry a committed `package-lock.json`. On Linux, the integrations layer runs
+the mise task `pi:extensions`, which uses mise's Node.js to run `npm ci` in
+each of these extensions. Their `node_modules` directories are gitignored.
+`dotctl doctor` reports extensions whose dependencies are missing. To typecheck
+and test all extensions, run:
+
+```bash
+mise run --cd ~/dotfiles pi:extensions:check
+```

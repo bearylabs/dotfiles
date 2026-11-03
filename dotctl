@@ -976,6 +976,8 @@ sync_integrations() {
     else
       die "Azure CLI is missing after mise install"
     fi
+    info "Installing Pi extension dev dependencies"
+    run mise run --cd "$REPO" pi:extensions
   fi
 }
 
@@ -1238,7 +1240,7 @@ EOF
           warn "not linked to the repository: $target"
           unmanaged=$((unmanaged + 1))
         fi
-      done < <(find "$STOW_DIR/$package" -type f -print0)
+      done < <(find "$STOW_DIR/$package" -name node_modules -prune -o -type f -print0)
     done
     if ((broken == 0)); then check_ok "no broken managed links"; else check_fail "$broken broken managed link(s)"; fi
     if ((unmanaged == 0)); then check_ok "all selected files are managed by Stow"; else check_fail "$unmanaged file(s) are not stowed"; fi
@@ -1252,6 +1254,17 @@ EOF
   if [[ "$p" != windows ]]; then
     check_cmd gh
     if command -v gh >/dev/null 2>&1 && gh auth token --hostname github.com >/dev/null 2>&1; then check_ok "github.com token is available through gh"; else check_fail "github.com authentication/token is unavailable"; fi
+    local manifest
+    local -a missing_extension_deps=()
+    for manifest in "$STOW_DIR"/pi/.pi/agent/extensions/*/package.json; do
+      [[ -e "$manifest" ]] || continue
+      [[ -d "${manifest%/package.json}/node_modules" ]] || missing_extension_deps+=("$(basename "${manifest%/package.json}")")
+    done
+    if ((${#missing_extension_deps[@]} == 0)); then
+      check_ok "Pi extension dev dependencies are installed"
+    else
+      check_fail "Pi extension dev dependencies missing: ${missing_extension_deps[*]} (run: mise run --cd $REPO pi:extensions)"
+    fi
   fi
 
   if command -v mise >/dev/null 2>&1 && mise which --cd "$(mise_workdir)" herdr >/dev/null 2>&1; then

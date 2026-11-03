@@ -4,6 +4,7 @@
 # Machine-local and generated Pi files
 /stow/pi/.pi/agent/settings.json
 /stow/pi/.pi/agent/extensions/herdr-agent-state.ts
+/stow/pi/.pi/agent/extensions/*/node_modules/
 
 # Nix OS
 hardware-configuration.nix
