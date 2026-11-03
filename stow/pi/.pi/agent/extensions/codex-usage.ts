@@ -1,28 +1,33 @@
 /**
  * Show OpenAI Codex rate-limit usage in Pi's footer.
  *
- * Uses the OAuth credential already stored by `/login openai-codex`.
+ * Uses the Codex CLI's own login (`codex login`) by asking `codex app-server`
+ * for the account rate limits. Codex handles credential storage and refresh.
  */
 
+import { spawn } from "node:child_process";
+import { createInterface } from "node:readline";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const STATUS_KEY = "codex-usage";
 const STATUS_EVENT = "usage-status:update";
-const REQUEST_TIMEOUT_MS = 8_000;
-const USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
+const REQUEST_TIMEOUT_MS = 15_000;
+const CODEX_BIN = process.env.CODEX_BIN ?? "codex";
 
-interface UsageWindow {
-	used_percent?: number;
-	limit_window_seconds?: number;
-	reset_at?: number;
+interface RateLimitWindow {
+	usedPercent?: number;
+	windowDurationMins?: number | null;
+	resetsAt?: number | null;
+}
+
+interface RateLimitSnapshot {
+	primary?: RateLimitWindow | null;
+	secondary?: RateLimitWindow | null;
+	planType?: string | null;
 }
 
 interface CodexUsage {
-	plan_type?: string;
-	rate_limit?: {
-		primary_window?: UsageWindow;
-		secondary_window?: UsageWindow;
-	};
+	rateLimits?: RateLimitSnapshot;
 }
 
 interface UsageResult {
@@ -31,25 +36,67 @@ interface UsageResult {
 	renderStatus?: () => string;
 }
 
-function accountIdFromToken(token: string): string | undefined {
-	try {
-		const payload = token.split(".")[1];
-		if (!payload) return undefined;
-		const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<string, unknown>;
-		const auth = decoded["https://api.openai.com/auth"];
-		if (!auth || typeof auth !== "object") return undefined;
-		const accountId = (auth as Record<string, unknown>).chatgpt_account_id;
-		return typeof accountId === "string" && accountId !== "" ? accountId : undefined;
-	} catch {
-		return undefined;
-	}
+class CodexAuthError extends Error {}
+
+function readRateLimits(): Promise<CodexUsage> {
+	return new Promise((resolve, reject) => {
+		const child = spawn(CODEX_BIN, ["app-server"], { stdio: ["pipe", "pipe", "pipe"] });
+		let settled = false;
+		let stderr = "";
+
+		const finish = (error: Error | undefined, value?: CodexUsage) => {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			lines.close();
+			child.stdin.end();
+			child.kill();
+			if (error) reject(error);
+			else resolve(value as CodexUsage);
+		};
+
+		const timer = setTimeout(() => finish(new Error("codex app-server timed out")), REQUEST_TIMEOUT_MS);
+		const send = (message: unknown) => child.stdin.write(`${JSON.stringify(message)}\n`);
+
+		child.on("error", (error) => finish(new Error(`cannot start codex: ${error.message}`)));
+		child.on("exit", (code) => finish(new Error(`codex app-server exited (${code})${stderr ? `: ${stderr.trim()}` : ""}`)));
+		child.stderr.on("data", (chunk) => { stderr = (stderr + chunk).slice(-1_000); });
+		child.stdin.on("error", () => {});
+
+		const lines = createInterface({ input: child.stdout });
+		lines.on("line", (line) => {
+			let message: { id?: number; result?: unknown; error?: { message?: string } };
+			try {
+				message = JSON.parse(line);
+			} catch {
+				return;
+			}
+			if (message.id === 1) {
+				if (message.error) return finish(new Error(message.error.message ?? "initialize failed"));
+				send({ method: "initialized" });
+				send({ id: 2, method: "account/rateLimits/read", params: { excludeResetCreditDetails: true } });
+			} else if (message.id === 2) {
+				if (message.error) {
+					const text = message.error.message ?? "rate limit request failed";
+					return finish(/auth/i.test(text) ? new CodexAuthError(text) : new Error(text));
+				}
+				finish(undefined, message.result as CodexUsage);
+			}
+		});
+
+		send({
+			id: 1,
+			method: "initialize",
+			params: { clientInfo: { name: "pi-codex-usage", title: null, version: "1.0.0" }, capabilities: null },
+		});
+	});
 }
 
-function windowLabel(window: UsageWindow, fallback: string): string {
-	const seconds = window.limit_window_seconds;
-	if (typeof seconds !== "number") return fallback;
-	if (seconds >= 6 * 24 * 60 * 60) return "7d";
-	if (seconds % (60 * 60) === 0) return `${seconds / (60 * 60)}h`;
+function windowLabel(window: RateLimitWindow, fallback: string): string {
+	const minutes = window.windowDurationMins;
+	if (typeof minutes !== "number") return fallback;
+	if (minutes >= 6 * 24 * 60) return "7d";
+	if (minutes % 60 === 0) return `${minutes / 60}h`;
 	return fallback;
 }
 
@@ -76,14 +123,14 @@ function formatUsage(
 	muted: (text: string) => string,
 	prominent: (text: string) => string,
 ): UsageResult {
-	const primary = usage.rate_limit?.primary_window;
-	const secondary = usage.rate_limit?.secondary_window;
+	const primary = usage.rateLimits?.primary;
+	const secondary = usage.rateLimits?.secondary;
 	const windows = [
-		primary && typeof primary.used_percent === "number"
-			? { label: windowLabel(primary, "short"), used: primary.used_percent, resetAt: primary.reset_at }
+		primary && typeof primary.usedPercent === "number"
+			? { label: windowLabel(primary, "short"), used: primary.usedPercent, resetAt: primary.resetsAt ?? undefined }
 			: undefined,
-		secondary && typeof secondary.used_percent === "number"
-			? { label: windowLabel(secondary, "long"), used: secondary.used_percent, resetAt: secondary.reset_at }
+		secondary && typeof secondary.usedPercent === "number"
+			? { label: windowLabel(secondary, "long"), used: secondary.usedPercent, resetAt: secondary.resetsAt ?? undefined }
 			: undefined,
 	].filter((window): window is { label: string; used: number; resetAt: number | undefined } => window !== undefined);
 
@@ -96,7 +143,8 @@ function formatUsage(
 		const reset = remaining ? ` ${muted(`(${remaining})`)}` : "";
 		return `${window.label} ${prominent(`${Math.round(window.used)}%`)}${reset}`;
 	}).join(" · ")}`;
-	const plan = usage.plan_type ? ` (${usage.plan_type})` : "";
+	const planType = usage.rateLimits?.planType;
+	const plan = planType ? ` (${planType})` : "";
 	return {
 		status: renderStatus(),
 		details: `Codex usage${plan}: ${windows.map((window) => `${window.label} ${Math.round(window.used)}% used, ${resetDescription(window.resetAt)}`).join("; ")}`,
@@ -105,28 +153,17 @@ function formatUsage(
 }
 
 async function fetchUsage(ctx: ExtensionContext): Promise<UsageResult> {
-	const resolved = await ctx.modelRegistry.getProviderAuth("openai-codex");
-	const accessToken = resolved?.auth.apiKey;
-	if (!accessToken) {
-		return { details: "No OpenAI Codex login found; run /login openai-codex" };
+	let usage: CodexUsage;
+	try {
+		usage = await readRateLimits();
+	} catch (error) {
+		if (error instanceof CodexAuthError) {
+			return { status: undefined, details: "No Codex CLI login found; run `codex login`" };
+		}
+		throw error;
 	}
-
-	const accountId = accountIdFromToken(accessToken);
-	if (!accountId) throw new Error("OpenAI OAuth token has no account ID");
-
-	const response = await fetch(USAGE_URL, {
-		headers: {
-			Accept: "application/json",
-			Authorization: `Bearer ${accessToken}`,
-			"ChatGPT-Account-Id": accountId,
-			"User-Agent": "pi-coding-agent",
-		},
-		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-	});
-
-	if (!response.ok) throw new Error(`OpenAI API returned ${response.status}`);
 	return formatUsage(
-		(await response.json()) as CodexUsage,
+		usage,
 		(text) => ctx.ui.theme.fg("dim", text),
 		(text) => ctx.ui.theme.fg("accent", ctx.ui.theme.bold(text)),
 	);
