@@ -113,3 +113,8 @@ bind("SUPER + CTRL + ESCAPE", "Toggle laptop display", "omarchy hyprland monitor
 -- Mouse behavior from i3's floating_modifier.
 bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
 bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
+
+-- Hex dictation: Hex registers its shortcuts through the GlobalShortcuts portal;
+-- Hyprland only fires them once a key is bound to them (see `hyprctl globalshortcuts`).
+hl.bind("F5", hl.dsp.global("anomaly.hex:dictation-F5"), { transparent = true })
+hl.bind("F9", hl.dsp.global("anomaly.hex:capture-F9"), { transparent = true })
