@@ -565,12 +565,18 @@ ubuntu_git_credential_manager() {
   ok "Git Credential Manager $version is installed"
 }
 
+GIT_CONFIG_DIR="$STOW_DIR/gitconfig/.config/git"
+
+# Git identity ("name<TAB>email") of a profile, read from the repository's
+# Git config so the identities are defined in one place.
 git_profile_identity() {
+  local file
   case "$1" in
-    personal) printf 'bearylabs\tinfo@beary.cloud\n' ;;
-    work) printf 'hendrik-rudek\thendrik.rudek@siempelkamp.com\n' ;;
+    personal) file="$GIT_CONFIG_DIR/config" ;;
+    work) file="$GIT_CONFIG_DIR/work_config" ;;
     *) return 1 ;;
   esac
+  printf '%s\t%s\n' "$(git config --file "$file" user.name)" "$(git config --file "$file" user.email)"
 }
 
 gpg_secret_key_for_email() {
@@ -681,6 +687,24 @@ profile_prerequisites() {
   ensure_git_credential_gpg_store "$profile"
 }
 
+# Before both Git profiles lived in stow/gitconfig, Stow linked ~/.gitconfig
+# and a profile-specific ~/.gitconfig.profile. Remove only those links; a real
+# ~/.gitconfig is left alone (doctor reports it because it overrides
+# ~/.config/git/config).
+remove_legacy_git_links() {
+  local path target
+  for path in "$HOME/.gitconfig" "$HOME/.gitconfig.profile"; do
+    [[ -L "$path" ]] || continue
+    target="$(readlink "$path")"
+    case "$target" in
+      *stow/gitconfig/.gitconfig|*stow/git-personal/.gitconfig.profile|*stow/git-work/.gitconfig.profile)
+        info "Removing legacy Git config link: $path"
+        run rm -f -- "$path"
+        ;;
+    esac
+  done
+}
+
 stow_packages() {
   local profile="$1" package list="$REPO/packages/stow-common.txt"
   local -a packages=()
@@ -689,7 +713,6 @@ stow_packages() {
     ubuntu-wsl) list="$REPO/packages/stow-ubuntu-wsl.txt" ;;
   esac
   while IFS= read -r package; do packages+=("$package"); done < <(load_list "$list")
-  packages+=("git-$profile")
   printf '%s\n' "${packages[@]}"
 }
 
@@ -726,32 +749,35 @@ install_omarchy_shell_plugins() {
 }
 
 stow_layer() {
-  local profile inactive package
+  local profile package
   profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
-  [[ "$profile" == personal ]] && inactive=work || inactive=personal
-  local -a unstow=("git-$inactive")
+  local -a unstow=()
   [[ "$profile" == personal ]] && unstow+=(agents-work)
   [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
+  remove_legacy_git_links
   need stow
   local -a packages=()
   while IFS= read -r package; do
     [[ -d "$STOW_DIR/$package" ]] || die "unknown Stow package in package data: $package"
     packages+=("$package")
   done < <(stow_packages "$profile")
+  # Unlink shared packages that this platform does not select (e.g. desktop
+  # configs on WSL). Unstowing a package that is not linked is a no-op.
+  while IFS= read -r package; do
+    [[ " ${packages[*]} " == *" $package "* ]] || unstow+=("$package")
+  done < <(load_list "$REPO/packages/stow-common.txt")
 
+  local -a stow_args=()
+  ((${#unstow[@]})) && stow_args+=(-D "${unstow[@]}")
+  stow_args+=(-R "${packages[@]}")
   info "Simulating Stow changes for profile '$profile'"
-  stow -n -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
-  if $DRY_RUN; then
-    show_cmd stow -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
-  else
-    run stow -d "$STOW_DIR" -t "$HOME" -D "${unstow[@]}" -R "${packages[@]}"
-  fi
+  stow -n -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
   # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
   # agents and agents-work together.
   if [[ "$profile" == work ]]; then
     stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
-    if $DRY_RUN; then show_cmd stow -d "$STOW_DIR" -t "$HOME" -R agents-work
-    else run stow -d "$STOW_DIR" -t "$HOME" -R agents-work; fi
+    run stow -d "$STOW_DIR" -t "$HOME" -R agents-work
   fi
   [[ "$(platform)" == omarchy ]] && install_omarchy_shell_plugins
   ok "Stow packages selected for '$profile'"
@@ -761,11 +787,6 @@ copy_tree() {
   local source="$1" target="$2"
   [[ -d "$source" ]] || die "missing configuration directory: $source"
   run mkdir -p "$target"
-  # Unlink shared packages that this platform does not select (e.g. desktop
-  # configs on WSL). Unstowing a package that is not linked is a no-op.
-  while IFS= read -r package; do
-    [[ " ${packages[*]} " == *" $package "* ]] || unstow+=("$package")
-  done < <(load_list "$REPO/packages/stow-common.txt")
   run cp -R "$source/." "$target/"
 }
 
@@ -882,6 +903,14 @@ windows_has_wsl_distribution() {
     >/dev/null 2>&1
 }
 
+# Windows user profile as a WSL path, resolved through WSL interop.
+wsl_windows_home() {
+  local windows_home
+  windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' 2>/dev/null | tr -d '\r')"
+  [[ -n "$windows_home" ]] || return 1
+  wslpath -u "$windows_home"
+}
+
 ensure_windows_herdr_wsl_prompt() {
   local powershell_source="$REPO/windows/herdr-wsl-prompt.ps1"
   local bash_source="$REPO/windows/herdr-wsl-bash.sh"
@@ -903,14 +932,6 @@ ensure_windows_herdr_wsl_prompt() {
       need powershell.exe
       need wslpath
       windows_home="$(wsl_windows_home)" || die "could not resolve the Windows user profile from WSL"
-# Windows user profile as a WSL path, resolved through WSL interop.
-wsl_windows_home() {
-  local windows_home
-  windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' 2>/dev/null | tr -d '\r')"
-  [[ -n "$windows_home" ]] || return 1
-  wslpath -u "$windows_home"
-}
-
       target_dir="$windows_home/.config/dotctl"
       bash_profile="$windows_home/.bash_profile"
       installer_windows="$(wslpath -w "$installer")"
@@ -1098,6 +1119,50 @@ check_cmd() {
   if command -v "$1" >/dev/null 2>&1; then check_ok "$1 is available"; else check_fail "$1 is missing"; fi
 }
 
+doctor_git_identities() {
+  local personal_name personal_email work_email includes
+  IFS=$'\t' read -r personal_name personal_email < <(git_profile_identity personal)
+  IFS=$'\t' read -r _ work_email < <(git_profile_identity work)
+  # Run outside any repository so conditional includes do not apply.
+  if [[ "$(git -C / config --global --includes user.name 2>/dev/null || true)" == "$personal_name" \
+    && "$(git -C / config --global --includes user.email 2>/dev/null || true)" == "$personal_email" ]]; then
+    check_ok "default Git identity is personal ($personal_email)"
+  else
+    check_fail "default Git identity is not $personal_name <$personal_email>"
+  fi
+  # Include paths are compared literally; Git expands the tilde itself.
+  includes="$(git -C / config --global --get-regexp '^includeif\..*\.path$' 2>/dev/null || true)"
+  if grep -Fqx 'includeif.gitdir:~/code/work/.path ~/.config/git/work_config' <<< "$includes" \
+    && [[ "$(git config --file "$HOME/.config/git/work_config" user.email 2>/dev/null || true)" == "$work_email" ]]; then
+    check_ok "repositories below ~/code/work/ use the work Git identity ($work_email)"
+  else
+    check_fail "work Git identity is not configured for ~/code/work/"
+  fi
+  if [[ -f "$HOME/.gitconfig" && ! -L "$HOME/.gitconfig" ]]; then
+    warn "$HOME/.gitconfig exists and overrides ~/.config/git/config; move its settings to ~/.gitconfig.local"
+  fi
+}
+
+doctor_fish_login_shell() {
+  local login_shell
+  login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
+  login_shell="${login_shell##*:}"
+  if [[ "$login_shell" == "$(command -v fish 2>/dev/null || true)" ]]; then
+    check_ok "Fish is the default login shell"
+  else
+    check_fail "Fish is not the default login shell"
+  fi
+}
+
+doctor_herdr_wsl_bridge() {
+  local dir=""
+  if command -v powershell.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+    if dir="$(wsl_windows_home)"; then dir="$dir/.config/dotctl"; else dir=""; fi
+  fi
+  [[ -n "$dir" && -f "$dir/herdr-wsl-prompt.ps1" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
+  [[ -n "$dir" && -f "$dir/herdr-wsl-bash.sh" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
+}
+
 cmd_doctor() {
   (($# == 0)) || die "doctor takes no arguments"
   DOCTOR_FAILURES=0
@@ -1119,26 +1184,6 @@ cmd_doctor() {
       if command -v mise >/dev/null 2>&1; then
         local executable
         while IFS= read -r executable; do
-doctor_fish_login_shell() {
-  local login_shell
-  login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
-  login_shell="${login_shell##*:}"
-  if [[ "$login_shell" == "$(command -v fish 2>/dev/null || true)" ]]; then
-    check_ok "Fish is the default login shell"
-  else
-    check_fail "Fish is not the default login shell"
-  fi
-}
-
-doctor_herdr_wsl_bridge() {
-  local dir=""
-  if command -v powershell.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
-    if dir="$(wsl_windows_home)"; then dir="$dir/.config/dotctl"; else dir=""; fi
-  fi
-  [[ -n "$dir" && -f "$dir/herdr-wsl-prompt.ps1" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
-  [[ -n "$dir" && -f "$dir/herdr-wsl-bash.sh" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
-}
-
           if mise which --cd "$(mise_workdir)" "$executable" >/dev/null 2>&1; then check_ok "$executable is installed by mise"; else check_fail "$executable is missing from mise"; fi
         done <<'EOF'
 node
@@ -1187,6 +1232,10 @@ EOF
         done < <(load_list "$file")
       done < <(ubuntu_package_files)
       check_cmd mise
+      if [[ "$p" == ubuntu-wsl ]]; then
+        doctor_fish_login_shell
+        doctor_herdr_wsl_bridge
+      fi
       ;;
     omarchy)
       while IFS= read -r package; do
@@ -1213,10 +1262,6 @@ EOF
         else
           check_fail "/etc/nixos/configuration.nix does not import the repository config"
         fi
-      if [[ "$p" == ubuntu-wsl ]]; then
-        doctor_fish_login_shell
-        doctor_herdr_wsl_bridge
-      fi
       else
         check_fail "/etc/nixos/configuration.nix is missing or is a symlink"
       fi
@@ -1228,22 +1273,18 @@ EOF
     check_cmd pass
     if command -v pinentry-curses >/dev/null 2>&1 || command -v pinentry >/dev/null 2>&1; then check_ok "pinentry is available"; else check_fail "pinentry-curses is missing"; fi
     local gcm_store
-    gcm_store="$(git config --global --includes credential.credentialStore 2>/dev/null || true)"
-    [[ "$gcm_store" == gpg ]] && check_ok "Git Credential Manager uses gpg store" || check_fail "Git Credential Manager credentialStore is not gpg"
+    gcm_store="$(git config --file "$HOME/.config/git/work_config" credential.credentialStore 2>/dev/null || true)"
+    [[ "$gcm_store" == gpg ]] && check_ok "Git Credential Manager uses gpg store for work repositories" || check_fail "Git Credential Manager credentialStore is not gpg in ~/.config/git/work_config"
   fi
-  if [[ "$p" != windows && -n "$profile" ]]; then
-    local expected_name expected_email
-    IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
-    if [[ "$(git config --global --includes user.name 2>/dev/null || true)" == "$expected_name" && "$(git config --global --includes user.email 2>/dev/null || true)" == "$expected_email" ]]; then
-      check_ok "Git identity matches the '$profile' profile"
-    else
-      check_fail "Git identity does not match the '$profile' profile"
-    fi
-    if [[ "$profile" == work ]] && command -v gpg >/dev/null 2>&1; then
-      if [[ -n "$(gpg_secret_key_for_email "$expected_email")" ]]; then check_ok "GPG secret key for Git credentials is available"; else check_fail "GPG secret key for $expected_email is missing"; fi
-      [[ -r "$HOME/.password-store/.gpg-id" ]] && check_ok "pass password store is initialized" || check_fail "pass password store is not initialized"
-      [[ ! -f "$HOME/.git-credentials" ]] && check_ok "no plaintext ~/.git-credentials file" || check_fail "plaintext ~/.git-credentials file exists"
-    fi
+  if [[ "$p" != windows ]] && command -v git >/dev/null 2>&1; then
+    doctor_git_identities
+  fi
+  if [[ "$p" != windows && "$profile" == work ]] && command -v gpg >/dev/null 2>&1; then
+    local work_email
+    IFS=$'\t' read -r _ work_email < <(git_profile_identity work)
+    if [[ -n "$(gpg_secret_key_for_email "$work_email")" ]]; then check_ok "GPG secret key for Git credentials is available"; else check_fail "GPG secret key for $work_email is missing"; fi
+    [[ -r "$HOME/.password-store/.gpg-id" ]] && check_ok "pass password store is initialized" || check_fail "pass password store is not initialized"
+    [[ ! -f "$HOME/.git-credentials" ]] && check_ok "no plaintext ~/.git-credentials file" || check_fail "plaintext ~/.git-credentials file exists"
   fi
 
   target="$HOME/.local/bin/dotctl"

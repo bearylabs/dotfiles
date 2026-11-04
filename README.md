@@ -224,8 +224,24 @@ selection is stored as one line in `~/.config/dotctl/config` and reused by later
 commands. The available profiles are:
 
 - `personal` for personal settings
-- `work` for work settings, including the work-only agent skills in
-  `stow/agents-work` (e.g. `ad-query`)
+- `work` for work settings: the work-only agent skills in `stow/agents-work`
+  (e.g. `ad-query`) and the prerequisites for work Git credentials (Git
+  Credential Manager with a GPG/`pass` store)
+
+The Git identity does not depend on the profile. Both identities are always
+linked from `stow/gitconfig/.config/git/`:
+
+- `config` holds the shared settings and the personal identity, which is the
+  default everywhere
+- `work_config` holds the work identity and Git Credential Manager settings and
+  is included via `includeIf "gitdir:~/code/work/"`, so it applies
+  automatically to every repository (and worktree) below `~/code/work/`
+
+GitHub hosts always authenticate through `gh`. Machine-local Git settings
+belong in `~/.gitconfig.local`, which is included last. Do not keep a regular
+`~/.gitconfig`: Git reads it after `~/.config/git/config`, so it would override
+the identities (`dotctl doctor` warns about it). Links from the former
+`~/.gitconfig`/`~/.gitconfig.profile` layout are removed automatically.
 
 Switching profiles is safe and idempotent:
 

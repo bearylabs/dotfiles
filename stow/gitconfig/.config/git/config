@@ -1,0 +1,49 @@
+[branch]
+	sort = -committerdate
+[column]
+	ui = auto
+[core]
+	editor = nvim
+	excludesfile = ~/.gitignore_global
+[fetch]
+	prune = true
+	writeCommitGraph = true
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[rebase]
+	updateRefs = true
+[rerere]
+	enabled = true
+
+# Personal identity is the default.
+[user]
+	name = bearylabs
+	email = info@beary.cloud
+
+# Repositories below ~/code/work/ use the work identity and credentials.
+# Must follow [user] so its values take precedence.
+[includeIf "gitdir:~/code/work/"]
+	path = ~/.config/git/work_config
+
+# GitHub hosts authenticate through gh. The empty helper resets the helper
+# list (including work_config's manager), so these must follow the include.
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://siempelkamp.ghe.com"]
+	provider = github
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.siempelkamp.ghe.com"]
+	helper =
+	helper = !gh auth git-credential
+
+# Optional machine-local overrides (not managed by the repository), last so
+# they win over everything above.
+[include]
+	path = ~/.gitconfig.local

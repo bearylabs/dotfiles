@@ -1,3 +1,4 @@
+# Included by ~/.config/git/config for repositories below ~/code/work/.
 [user]
 	name = hendrik-rudek
 	email = hendrik.rudek@siempelkamp.com
