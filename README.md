@@ -6,9 +6,10 @@ Ubuntu, Omarchy, or Windows.
 
 ## Bootstrap
 
-Install Git, clone this repository as `~/dotfiles`, then run `dotctl init` with
-the desired profile. The command records the selection and applies the required
-system, dotfile, tool, and integration configuration.
+Install Git, clone this repository as `~/dotfiles`, then run `dotctl init`. It
+links `dotctl` into `~/.local/bin` and applies the required system, dotfile,
+tool, and integration configuration. Every machine gets the same setup; there
+are no personal/work profiles (see [Git identities](#git-identities)).
 
 ### Ubuntu
 
@@ -16,7 +17,7 @@ system, dotfile, tool, and integration configuration.
 sudo apt-get update
 sudo apt-get install -y git
 git clone https://github.com/hrudek/dotfiles.git ~/dotfiles
-bash ~/dotfiles/dotctl init --profile <profile>
+bash ~/dotfiles/dotctl init
 ```
 
 Only missing packages listed in `packages/ubuntu-essential.txt` are installed. mise is
@@ -46,14 +47,14 @@ NixOS-only machine settings (Docker, locale, `GH_HOST`, ...) are not replicated.
 
 ```bash
 git clone https://github.com/hrudek/dotfiles.git ~/dotfiles
-bash ~/dotfiles/dotctl init --profile <profile>
+bash ~/dotfiles/dotctl init
 ```
 
 Only missing packages from `packages/omarchy-essential.txt` are installed with
 Omarchy's package command. Fish is set as the user's default login shell; the
 new shell takes effect after logging out and back in. The existing system
 `mise` is reused, and the shared mise declaration installs the complete
-development toolset, including Pi. The Omarchy profile installs Ghostty and
+development toolset, including Pi. The Omarchy setup installs Ghostty and
 applies the repository's Ghostty, Hyprland, and Omarchy shell configurations.
 The shell configuration includes the custom workspace widget and top-bar
 layout. `shell.json` is linked with Stow; the plugin is copied into Omarchy's
@@ -89,7 +90,7 @@ applied:
 
 ```bash
 nix-shell -p git --run 'git clone https://github.com/hrudek/dotfiles.git ~/dotfiles'
-bash ~/dotfiles/dotctl init --profile <profile>
+bash ~/dotfiles/dotctl init
 ```
 
 `init` writes `/etc/nixos/configuration.nix` as a small wrapper that imports
@@ -102,7 +103,7 @@ and the normal generated hardware file remains at
 
 ```bash
 nix-shell -p git --run 'git clone https://github.com/hrudek/dotfiles.git ~/dotfiles'
-bash ~/dotfiles/dotctl init --profile <profile>
+bash ~/dotfiles/dotctl init
 ```
 
 NixOS-WSL is detected from the NixOS identity plus the same WSL runtime
@@ -137,7 +138,7 @@ uname -s
 WINDOWS_HOME="$(cygpath -u "$USERPROFILE")"
 cd "$WINDOWS_HOME"
 git clone https://github.com/hrudek/dotfiles.git dotfiles
-bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
+bash "$WINDOWS_HOME/dotfiles/dotctl" init
 ```
 
 On native Windows, `dotctl` exports `HOME="$(cygpath -u "$USERPROFILE")"`
@@ -217,44 +218,55 @@ interoperability helpers are kept together in
 `~/.config/fish/conf.d/wsl.fish`; Fish loads that file automatically and its
 early guard leaves non-WSL systems unchanged.
 
-## Profiles
+## Git identities
 
-A profile selects machine- or context-specific configuration during `init`. The
-selection is stored as one line in `~/.config/dotctl/config` and reused by later
-commands. The available profiles are:
-
-- `personal` for personal settings
-- `work` for work settings: the work-only agent skills in `stow/agents-work`
-  (e.g. `ad-query`) and the prerequisites for work Git credentials (Git
-  Credential Manager with a GPG/`pass` store)
-
-The Git identity does not depend on the profile. Both identities are always
-linked from `stow/gitconfig/.config/git/`:
+Both Git identities are linked on every machine from
+`stow/gitconfig/.config/git/`:
 
 - `config` holds the shared settings and the personal identity, which is the
   default everywhere
-- `work_config` holds the work identity and Git Credential Manager settings and
-  is included via `includeIf "gitdir:~/code/work/"`, so it applies
-  automatically to every repository (and worktree) below `~/code/work/`
+- `work_config` holds the work identity and is included via
+  `includeIf "gitdir:~/code/work/"`, so it applies automatically to every
+  repository (and worktree) below `~/code/work/`
 
-GitHub hosts always authenticate through `gh`. Machine-local Git settings
-belong in `~/.gitconfig.local`, which is included last. Do not keep a regular
-`~/.gitconfig`: Git reads it after `~/.config/git/config`, so it would override
-the identities (`dotctl doctor` warns about it). Links from the former
-`~/.gitconfig`/`~/.gitconfig.profile` layout are removed automatically.
+Keep work repositories below `~/code/work/` and everything else elsewhere (e.g.
+`~/code/`). GitHub and the company GitHub Enterprise authenticate through `gh`
+on every machine, so no credential manager or password store is needed.
+Machine-local Git settings belong in `~/.gitconfig.local`, which is included
+last. Do not keep a regular `~/.gitconfig`: Git reads it after
+`~/.config/git/config`, so it would override the identities (`dotctl doctor`
+warns about it). Links from the former `~/.gitconfig`/`~/.gitconfig.profile`
+layout are removed automatically.
 
-Switching profiles is safe and idempotent:
+The work-only agent skills in `stow/agents-work` (e.g. `ad-query`) are linked
+on every machine as well; they fail cleanly where the company network is not
+reachable.
+
+Azure DevOps over HTTPS is not configured. In the rare case it is still needed
+from WSL, use Windows Git, which ships Git Credential Manager and signs in with
+the company SSO in the browser:
 
 ```bash
-bash ~/dotfiles/dotctl init --profile <profile>
+git.exe clone https://dev.azure.com/<org>/<project>/_git/<repo>
 ```
+
+### Migrating from dotctl < 0.4
+
+Earlier versions selected a `personal` or `work` profile. `dotctl init
+--profile ...` still works but ignores the option, and
+`~/.config/dotctl/config` is no longer read (`dotctl doctor` points it out; it
+can be deleted). On former work machines, dotctl no longer manages Git
+Credential Manager, the GPG key, or `pass`; nothing is removed automatically.
+If they are not used otherwise, clean up manually: `pass rm -r git` removes the
+stored Git credentials, and on Ubuntu `sudo apt-get remove gcm` removes the Git
+Credential Manager package.
 
 Stow simulates changes before applying them and never uses `--adopt`.
 
 ## Commands
 
 ```text
-dotctl init --profile personal|work
+dotctl init
 dotctl apply [--only system|dotfiles|tools|integrations]
 dotctl update
 dotctl doctor
@@ -291,8 +303,8 @@ Portable Linux development tools are declared in
 `~/.local/bin` and uses `mise self-update`. On Windows, Scoop installs and
 updates mise and native Windows prerequisites such as GCC, while `dotctl`
 copies the Windows mise declaration to the global config shared by Git Bash and
-PowerShell. Platform prerequisites live under `nix/`, `windows/`, and `packages/`;
-profile-specific prerequisites are installed by `dotctl` when needed. Omarchy
+PowerShell. Platform prerequisites live under `nix/`, `windows/`, and `packages/`.
+Omarchy
 uses `packages/stow-omarchy.txt` instead of the desktop-oriented common Stow
 selection.
 

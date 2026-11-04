@@ -22,13 +22,13 @@
 	name = hrudek
 	email = dev@beary.cloud
 
-# Repositories below ~/code/work/ use the work identity and credentials.
+# Repositories below ~/code/work/ use the work identity.
 # Must follow [user] so its values take precedence.
 [includeIf "gitdir:~/code/work/"]
 	path = ~/.config/git/work_config
 
-# GitHub hosts authenticate through gh. The empty helper resets the helper
-# list (including work_config's manager), so these must follow the include.
+# GitHub hosts authenticate through gh. The empty helper first resets any
+# helper configured earlier (e.g. a system-wide credential.helper).
 [credential "https://github.com"]
 	helper =
 	helper = !gh auth git-credential
@@ -36,7 +36,6 @@
 	helper =
 	helper = !gh auth git-credential
 [credential "https://siempelkamp.ghe.com"]
-	provider = github
 	helper =
 	helper = !gh auth git-credential
 [credential "https://gist.siempelkamp.ghe.com"]

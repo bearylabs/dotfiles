@@ -11,7 +11,10 @@ let
 
     # CLI tools
     git
-    git-credential-manager
+    # Kept only for the former Git Credential Manager gpg store (dotctl < 0.4).
+    # TODO: remove gnupg, pass, and pinentry together with the GPG_TTY lines in
+    # stow/fish/.config/fish/config.fish and stow/zsh/.zshrc once dropping the
+    # profiles has proven itself.
     gnupg
     pass
     pinentry-curses

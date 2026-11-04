@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 # Native Windows tools use USERPROFILE. Align this process and its children
 # before deriving any HOME-based paths; Linux (including WSL) stays untouched.
 case "$(uname -s)" in
@@ -32,14 +32,14 @@ else
 fi
 REPO="$(cd "${SCRIPT_PATH%/*}" && pwd -P)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-CONFIG_FILE="$CONFIG_HOME/dotctl/config"
+# Written by dotctl < 0.4 to select a personal/work profile; no longer read.
+LEGACY_PROFILE_FILE="$CONFIG_HOME/dotctl/config"
 STOW_DIR="$REPO/stow"
 DRY_RUN=false
 YES=false
 VERBOSE=false
 COLOR=true
 ORIGINAL_ARGS=("$@")
-SELECTED_PROFILE=""
 SCOOP_READY=false
 
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then COLOR=false; fi
@@ -71,7 +71,7 @@ Usage: dotctl [global flags] <command> [options]
 Linux and native Windows dotfiles bootstrap and update wrapper.
 
 Commands:
-  init --profile personal|work  Save a profile, link dotctl, and apply all layers
+  init                          Link dotctl and apply all layers
   apply [--only LAYER]          Apply all layers, or system|dotfiles|tools|integrations
   update                        Pull if clean, update everything, then run doctor
   doctor                        Read-only installation checks
@@ -125,25 +125,6 @@ ensure_windows_home() {
   if [[ "${changed//$'\r'/}" == changed ]]; then
     ok "Windows user HOME permanently set to $USERPROFILE"
     info "Sign out of Windows and back in (or reboot) so new shells inherit it. Existing shells are unchanged."
-  fi
-}
-
-read_profile() {
-  local value="$SELECTED_PROFILE"
-  [[ -z "$value" && -r "$CONFIG_FILE" ]] && IFS= read -r value < "$CONFIG_FILE"
-  case "$value" in personal|work) printf '%s\n' "$value" ;; *) return 1 ;; esac
-}
-
-save_profile() {
-  local profile="$1"
-  case "$profile" in personal|work) ;; *) die "profile must be 'personal' or 'work'" ;; esac
-  SELECTED_PROFILE="$profile"
-  if $DRY_RUN; then
-    info "Would write profile '$profile' to $CONFIG_FILE"
-  else
-    mkdir -p "$(dirname "$CONFIG_FILE")"
-    printf '%s\n' "$profile" > "$CONFIG_FILE"
-    chmod 600 "$CONFIG_FILE"
   fi
 }
 
@@ -530,46 +511,12 @@ github_auth() {
   ok "GitHub authentication validated"
 }
 
-ubuntu_git_credential_manager() {
-  command -v git-credential-manager >/dev/null 2>&1 && {
-    ok "Git Credential Manager is installed"
-    return
-  }
-
-  local machine asset_arch tag version url package
-  machine="$(uname -m)"
-  case "$machine" in
-    x86_64) asset_arch=x64 ;;
-    aarch64|arm64) asset_arch=arm64 ;;
-    *) die "Git Credential Manager does not support Ubuntu architecture: $machine" ;;
-  esac
-
-  if $DRY_RUN; then
-    info "Would install the latest Git Credential Manager release for linux-$asset_arch"
-    return
-  fi
-
-  tag="$(gh api repos/git-ecosystem/git-credential-manager/releases/latest --jq .tag_name)"
-  version="${tag#v}"
-  url="https://github.com/git-ecosystem/git-credential-manager/releases/download/$tag/gcm-linux-$asset_arch-$version.deb"
-  package="$(mktemp --suffix=.deb)"
-  if ! curl -fsSL "$url" -o "$package"; then
-    rm -f "$package"
-    die "failed to download Git Credential Manager $tag"
-  fi
-  if ! sudo apt-get install -y "$package"; then
-    rm -f "$package"
-    die "failed to install Git Credential Manager $tag"
-  fi
-  rm -f "$package"
-  ok "Git Credential Manager $version is installed"
-}
-
 GIT_CONFIG_DIR="$STOW_DIR/gitconfig/.config/git"
 
-# Git identity ("name<TAB>email") of a profile, read from the repository's
-# Git config so the identities are defined in one place.
-git_profile_identity() {
+# Git identity ("name<TAB>email"), read from the repository's Git config so
+# the identities are defined in one place. The personal identity is the
+# default; work applies below ~/code/work/.
+git_identity() {
   local file
   case "$1" in
     personal) file="$GIT_CONFIG_DIR/config" ;;
@@ -577,114 +524,6 @@ git_profile_identity() {
     *) return 1 ;;
   esac
   printf '%s\t%s\n' "$(git config --file "$file" user.name)" "$(git config --file "$file" user.email)"
-}
-
-gpg_secret_key_for_email() {
-  local email="$1"
-  { gpg --list-secret-keys --with-colons "$email" 2>/dev/null || true; } | awk -F: '$1 == "sec" { print $5; exit }'
-}
-
-ensure_gpg_agent_config() {
-  local pinentry config cache_ttl=86400
-  pinentry="$(command -v pinentry-curses || command -v pinentry || true)"
-  [[ -n "$pinentry" ]] || die "required command not found: pinentry-curses"
-  config="$HOME/.gnupg/gpg-agent.conf"
-  export GPG_TTY="${GPG_TTY:-$(tty 2>/dev/null || true)}"
-  if [[ -r "$config" ]] \
-    && grep -Fxq "pinentry-program $pinentry" "$config" \
-    && grep -Fxq "default-cache-ttl $cache_ttl" "$config" \
-    && grep -Fxq "max-cache-ttl $cache_ttl" "$config" \
-    && grep -Fxq "default-cache-ttl-ssh $cache_ttl" "$config" \
-    && grep -Fxq "max-cache-ttl-ssh $cache_ttl" "$config"; then
-    return
-  fi
-  if $DRY_RUN; then
-    info "Would configure gpg-agent pinentry and cache TTL: $cache_ttl seconds"
-    return
-  fi
-  mkdir -p "$HOME/.gnupg"
-  chmod 700 "$HOME/.gnupg"
-  if [[ -e "$config" ]]; then
-    awk '$1 != "pinentry-program" && $1 != "default-cache-ttl" && $1 != "max-cache-ttl" && $1 != "default-cache-ttl-ssh" && $1 != "max-cache-ttl-ssh"' "$config" > "$config.tmp"
-    mv "$config.tmp" "$config"
-  fi
-  printf '%s\n' \
-    "pinentry-program $pinentry" \
-    "default-cache-ttl $cache_ttl" \
-    "max-cache-ttl $cache_ttl" \
-    "default-cache-ttl-ssh $cache_ttl" \
-    "max-cache-ttl-ssh $cache_ttl" >> "$config"
-  chmod 600 "$config"
-  gpgconf --kill gpg-agent 2>/dev/null || true
-  ok "Configured gpg-agent pinentry and cache TTL: $cache_ttl seconds"
-}
-
-ensure_git_credential_gpg_store() {
-  local profile="$1" expected_name expected_email key cmd
-  [[ "$profile" == work ]] || return 0
-  local -a missing=()
-  for cmd in gpg pass git-credential-manager; do
-    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
-  done
-  if ! command -v pinentry-curses >/dev/null 2>&1 && ! command -v pinentry >/dev/null 2>&1; then
-    missing+=("pinentry-curses")
-  fi
-  if ((${#missing[@]})); then
-    if $DRY_RUN; then
-      info "Would require commands for gpg-backed Git credentials: ${missing[*]}"
-      return
-    fi
-    die "required command(s) not found: ${missing[*]}"
-  fi
-  IFS=$'\t' read -r expected_name expected_email < <(git_profile_identity "$profile")
-  ensure_gpg_agent_config
-
-  key="$(gpg_secret_key_for_email "$expected_email")"
-  if [[ -z "$key" ]]; then
-    if $DRY_RUN; then
-      info "Would generate a local GPG key for Git credentials: $expected_name <$expected_email>"
-      key="<new-gpg-key>"
-    else
-      if [[ ! -t 0 || ! -t 1 ]]; then
-        die "GPG key for $expected_email is missing. Run interactively: gpg --quick-generate-key '$expected_name <$expected_email>' default default never && pass init <key-id>"
-      fi
-      confirm "Generate a local GPG key for Git credentials ($expected_name <$expected_email>)?" || die "GPG key is required for credentialStore=gpg"
-      run gpg --quick-generate-key "$expected_name <$expected_email>" default default never
-      key="$(gpg_secret_key_for_email "$expected_email")"
-      [[ -n "$key" ]] || die "failed to find the generated GPG key for $expected_email"
-    fi
-  else
-    ok "GPG secret key for $expected_email is available"
-  fi
-
-  if [[ -r "$HOME/.password-store/.gpg-id" ]]; then
-    ok "pass password store is initialized"
-  else
-    info "Initializing pass for Git Credential Manager"
-    run pass init "$key"
-  fi
-
-  if [[ -f "$HOME/.git-credentials" ]]; then
-    if confirm "Remove plaintext Git credential file $HOME/.git-credentials?"; then
-      run rm -f "$HOME/.git-credentials"
-      ok "Removed plaintext Git credential file"
-    else
-      warn "plaintext Git credential file remains: $HOME/.git-credentials"
-    fi
-  fi
-}
-
-profile_prerequisites() {
-  local profile p
-  profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
-  p="$(platform)"
-  if [[ "$profile" == work && ( "$p" == ubuntu || "$p" == ubuntu-wsl ) ]]; then
-    ubuntu_git_credential_manager
-  elif [[ "$profile" == work && "$p" == omarchy ]] && ! command -v git-credential-manager >/dev/null 2>&1; then
-    info "Installing Git Credential Manager from the AUR"
-    run omarchy pkg aur add git-credential-manager-bin
-  fi
-  ensure_git_credential_gpg_store "$profile"
 }
 
 # Before both Git profiles lived in stow/gitconfig, Stow linked ~/.gitconfig
@@ -705,8 +544,9 @@ remove_legacy_git_links() {
   done
 }
 
+# Platform Stow selection. agents-work is stowed separately (see stow_layer).
 stow_packages() {
-  local profile="$1" package list="$REPO/packages/stow-common.txt"
+  local package list="$REPO/packages/stow-common.txt"
   local -a packages=()
   case "$(platform)" in
     omarchy) list="$REPO/packages/stow-omarchy.txt" ;;
@@ -749,10 +589,8 @@ install_omarchy_shell_plugins() {
 }
 
 stow_layer() {
-  local profile package
-  profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
+  local package
   local -a unstow=()
-  [[ "$profile" == personal ]] && unstow+=(agents-work)
   [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
   remove_legacy_git_links
   need stow
@@ -760,7 +598,7 @@ stow_layer() {
   while IFS= read -r package; do
     [[ -d "$STOW_DIR/$package" ]] || die "unknown Stow package in package data: $package"
     packages+=("$package")
-  done < <(stow_packages "$profile")
+  done < <(stow_packages)
   # Unlink shared packages that this platform does not select (e.g. desktop
   # configs on WSL). Unstowing a package that is not linked is a no-op.
   while IFS= read -r package; do
@@ -770,17 +608,15 @@ stow_layer() {
   local -a stow_args=()
   ((${#unstow[@]})) && stow_args+=(-D "${unstow[@]}")
   stow_args+=(-R "${packages[@]}")
-  info "Simulating Stow changes for profile '$profile'"
+  info "Simulating Stow changes"
   stow -n -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
   run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
   # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
   # agents and agents-work together.
-  if [[ "$profile" == work ]]; then
-    stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
-    run stow -d "$STOW_DIR" -t "$HOME" -R agents-work
-  fi
+  stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
+  run stow -d "$STOW_DIR" -t "$HOME" -R agents-work
   [[ "$(platform)" == omarchy ]] && install_omarchy_shell_plugins
-  ok "Stow packages selected for '$profile'"
+  ok "Dotfiles are linked"
 }
 
 copy_tree() {
@@ -797,7 +633,7 @@ windows_dotfiles_layer() {
   local_appdata="$(cygpath -u "$LOCALAPPDATA")"
   info "Copying shared configuration for native Windows"
   copy_tree "$STOW_DIR/agents/.agents" "$HOME/.agents"
-  [[ "$(read_profile)" == work ]] && copy_tree "$STOW_DIR/agents-work/.agents" "$HOME/.agents"
+  copy_tree "$STOW_DIR/agents-work/.agents" "$HOME/.agents"
   copy_tree "$STOW_DIR/pi/.pi/agent" "$HOME/.pi/agent"
   copy_tree "$STOW_DIR/herdr/.config/herdr" "$HOME/.config/herdr"
   copy_tree "$STOW_DIR/nvim/.config/nvim" "$local_appdata/nvim"
@@ -1033,7 +869,6 @@ apply_layers() {
   if [[ -z "$only" || "$only" == system ]]; then system_layer "$mode"; fi
   if [[ -z "$only" || "$only" == tools ]] && [[ "$(platform)" != windows ]]; then
     github_auth
-    profile_prerequisites
   fi
   if [[ -z "$only" || "$only" == dotfiles ]]; then dotfiles_layer; fi
   if [[ -z "$only" || "$only" == tools ]]; then tools_layer "$mode"; fi
@@ -1041,18 +876,15 @@ apply_layers() {
 }
 
 cmd_init() {
-  local profile=""
   while (($#)); do
     case "$1" in
-      --profile) (($# > 1)) || die "--profile requires a value"; profile="$2"; shift 2 ;;
-      --profile=*) profile="${1#*=}"; shift ;;
+      # Accepted for compatibility with dotctl < 0.4 bootstrap commands.
+      --profile) (($# > 1)) || die "--profile requires a value"; warn "--profile is obsolete and ignored"; shift 2 ;;
+      --profile=*) warn "--profile is obsolete and ignored"; shift ;;
       *) die "unknown init option: $1" ;;
     esac
   done
-  [[ -n "$profile" ]] || die "init requires --profile personal|work"
-  case "$profile" in personal|work) ;; *) die "profile must be 'personal' or 'work'" ;; esac
   ensure_windows_home
-  save_profile "$profile"
   cmd_link
   apply_layers
 }
@@ -1066,9 +898,6 @@ cmd_apply() {
       *) die "unknown apply option: $1" ;;
     esac
   done
-  if [[ -z "$only" || "$only" == dotfiles ]]; then
-    read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
-  fi
   case "$only" in ''|system|dotfiles|tools|integrations) ;; *) die "--only must be system, dotfiles, tools, or integrations" ;; esac
   ensure_windows_home
   apply_layers "$only"
@@ -1102,7 +931,6 @@ cmd_update() {
       fi
     fi
   fi
-  read_profile >/dev/null || die "no valid profile; run: dotctl init --profile personal|work"
   ensure_windows_home
   system_layer update
   if [[ "$(platform)" != windows ]]; then github_auth; fi
@@ -1121,8 +949,8 @@ check_cmd() {
 
 doctor_git_identities() {
   local personal_name personal_email work_email includes
-  IFS=$'\t' read -r personal_name personal_email < <(git_profile_identity personal)
-  IFS=$'\t' read -r _ work_email < <(git_profile_identity work)
+  IFS=$'\t' read -r personal_name personal_email < <(git_identity personal)
+  IFS=$'\t' read -r _ work_email < <(git_identity work)
   # Run outside any repository so conditional includes do not apply.
   if [[ "$(git -C / config --global --includes user.name 2>/dev/null || true)" == "$personal_name" \
     && "$(git -C / config --global --includes user.email 2>/dev/null || true)" == "$personal_email" ]]; then
@@ -1166,10 +994,10 @@ doctor_herdr_wsl_bridge() {
 cmd_doctor() {
   (($# == 0)) || die "doctor takes no arguments"
   DOCTOR_FAILURES=0
-  local p profile upstream target package source integration
+  local p upstream target package source integration
   p="$(platform)"
   [[ "$p" != unsupported ]] && check_ok "platform: $p" || check_fail "unsupported platform"
-  if profile="$(read_profile)"; then check_ok "profile: $profile"; else check_fail "profile is missing or invalid in $CONFIG_FILE"; profile=""; fi
+  [[ -e "$LEGACY_PROFILE_FILE" ]] && warn "$LEGACY_PROFILE_FILE is no longer used (profiles were removed); you can delete it"
 
   if git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then check_ok "repository: $REPO"; else check_fail "$REPO is not a Git work tree"; fi
   git -C "$REPO" symbolic-ref -q HEAD >/dev/null 2>&1 && check_ok "repository HEAD is attached" || check_fail "repository HEAD is detached"
@@ -1267,24 +1095,8 @@ EOF
       fi
       ;;
   esac
-  if [[ "$p" != windows && "$profile" == work ]]; then
-    check_cmd git-credential-manager
-    check_cmd gpg
-    check_cmd pass
-    if command -v pinentry-curses >/dev/null 2>&1 || command -v pinentry >/dev/null 2>&1; then check_ok "pinentry is available"; else check_fail "pinentry-curses is missing"; fi
-    local gcm_store
-    gcm_store="$(git config --file "$HOME/.config/git/work_config" credential.credentialStore 2>/dev/null || true)"
-    [[ "$gcm_store" == gpg ]] && check_ok "Git Credential Manager uses gpg store for work repositories" || check_fail "Git Credential Manager credentialStore is not gpg in ~/.config/git/work_config"
-  fi
   if [[ "$p" != windows ]] && command -v git >/dev/null 2>&1; then
     doctor_git_identities
-  fi
-  if [[ "$p" != windows && "$profile" == work ]] && command -v gpg >/dev/null 2>&1; then
-    local work_email
-    IFS=$'\t' read -r _ work_email < <(git_profile_identity work)
-    if [[ -n "$(gpg_secret_key_for_email "$work_email")" ]]; then check_ok "GPG secret key for Git credentials is available"; else check_fail "GPG secret key for $work_email is missing"; fi
-    [[ -r "$HOME/.password-store/.gpg-id" ]] && check_ok "pass password store is initialized" || check_fail "pass password store is not initialized"
-    [[ ! -f "$HOME/.git-credentials" ]] && check_ok "no plaintext ~/.git-credentials file" || check_fail "plaintext ~/.git-credentials file exists"
   fi
 
   target="$HOME/.local/bin/dotctl"
@@ -1293,12 +1105,18 @@ EOF
   [[ -x "${SHELL:-}" ]] && check_ok "login shell: ${SHELL:-unknown}" || check_fail "SHELL does not name an executable"
 
   if [[ "$p" != windows ]]; then check_cmd stow; fi
-  if [[ "$p" != windows && -n "$profile" ]] && command -v stow >/dev/null 2>&1; then
+  if [[ "$p" != windows ]] && command -v stow >/dev/null 2>&1; then
     local -a packages=()
-    while IFS= read -r package; do packages+=("$package"); done < <(stow_packages "$profile")
-    if stow -n -d "$STOW_DIR" -t "$HOME" "${packages[@]}" >/dev/null 2>&1; then check_ok "Stow package tree has no conflicts"; else check_fail "Stow reports conflicts"; fi
+    while IFS= read -r package; do packages+=("$package"); done < <(stow_packages)
+    # agents-work is simulated separately, as in stow_layer.
+    if stow -n -d "$STOW_DIR" -t "$HOME" "${packages[@]}" >/dev/null 2>&1 \
+      && stow -n -d "$STOW_DIR" -t "$HOME" agents-work >/dev/null 2>&1; then
+      check_ok "Stow package tree has no conflicts"
+    else
+      check_fail "Stow reports conflicts"
+    fi
     local broken=0 unmanaged=0 rel
-    for package in "${packages[@]}"; do
+    for package in "${packages[@]}" agents-work; do
       while IFS= read -r -d '' source; do
         rel="${source#"$STOW_DIR/$package/"}"; target="$HOME/$rel"
         if [[ -L "$target" && ! -e "$target" ]]; then
