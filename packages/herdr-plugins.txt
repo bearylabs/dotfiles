@@ -1,7 +1,7 @@
 # Derived from the installed Herdr plugin registry. No credentials are stored.
 plannotator/herdr-annotate
-bearylabs/herdr-autofetch
-bearylabs/herdr-better-worktrees
-bearylabs/herdr-ssh-config-dash
-bearylabs/herdr-simple-tab-names
+hrudek/herdr-autofetch
+hrudek/herdr-better-worktrees
+hrudek/herdr-ssh-config-dash
+hrudek/herdr-simple-tab-names
 paulbkim-dev/vim-herdr-navigation

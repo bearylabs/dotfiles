@@ -19,8 +19,8 @@
 
 # Personal identity is the default.
 [user]
-	name = bearylabs
-	email = info@beary.cloud
+	name = hrudek
+	email = dev@beary.cloud
 
 # Repositories below ~/code/work/ use the work identity and credentials.
 # Must follow [user] so its values take precedence.

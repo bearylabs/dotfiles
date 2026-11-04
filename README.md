@@ -15,7 +15,7 @@ system, dotfile, tool, and integration configuration.
 ```bash
 sudo apt-get update
 sudo apt-get install -y git
-git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
+git clone https://github.com/hrudek/dotfiles.git ~/dotfiles
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
@@ -45,7 +45,7 @@ NixOS-only machine settings (Docker, locale, `GH_HOST`, ...) are not replicated.
 ### Omarchy
 
 ```bash
-git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
+git clone https://github.com/hrudek/dotfiles.git ~/dotfiles
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
@@ -88,7 +88,7 @@ Git may be obtained temporarily before the declarative configuration has been
 applied:
 
 ```bash
-nix-shell -p git --run 'git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles'
+nix-shell -p git --run 'git clone https://github.com/hrudek/dotfiles.git ~/dotfiles'
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
@@ -101,7 +101,7 @@ and the normal generated hardware file remains at
 ### NixOS-WSL
 
 ```bash
-nix-shell -p git --run 'git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles'
+nix-shell -p git --run 'git clone https://github.com/hrudek/dotfiles.git ~/dotfiles'
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
@@ -136,7 +136,7 @@ the repository:
 uname -s
 WINDOWS_HOME="$(cygpath -u "$USERPROFILE")"
 cd "$WINDOWS_HOME"
-git clone https://github.com/bearylabs/dotfiles.git dotfiles
+git clone https://github.com/hrudek/dotfiles.git dotfiles
 bash "$WINDOWS_HOME/dotfiles/dotctl" init --profile <profile>
 ```
 
