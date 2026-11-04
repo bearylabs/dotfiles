@@ -1,6 +1,6 @@
 # dotfiles
 
-Dotfiles for NixOS, NixOS-WSL, Ubuntu, Omarchy, and a minimal native Windows
+Dotfiles for NixOS, NixOS-WSL, Ubuntu, Ubuntu-WSL, Omarchy, and a minimal native Windows
 setup. `dotctl` detects the platform; there is no Nix installation path on
 Ubuntu, Omarchy, or Windows.
 
@@ -19,10 +19,28 @@ git clone https://github.com/bearylabs/dotfiles.git ~/dotfiles
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
-Only missing packages listed in `packages/ubuntu-*.txt` are installed. mise is
+Only missing packages listed in `packages/ubuntu-essential.txt` are installed. mise is
 installed with its official installer when absent. Nix is never installed.
 Zoxide is installed as a system package, and the managed Fish and Zsh configs
 activate its `z` command automatically in new shell sessions.
+
+### Ubuntu-WSL
+
+Bootstrap exactly as on Ubuntu. Ubuntu-WSL is detected from the Ubuntu
+identity plus WSL runtime markers (`WSL_DISTRO_NAME`, `/run/WSL`, or WSL
+interop); Docker containers on a WSL2 host count as plain Ubuntu. It adds only
+what WSL needs on top of the Ubuntu setup:
+
+- `packages/ubuntu-wsl.txt` (currently only `xclip`, which Pi and Doom use to
+  read the Windows clipboard through WSLg)
+- Fish as the default login shell (takes effect in the next WSL session)
+- `packages/stow-ubuntu-wsl.txt` instead of the common selection, so desktop
+  configs (i3, i3status, Polybar, Rofi, Flameshot, Ghostty) are not linked;
+  previously linked ones are unstowed
+- the Herdr PowerShell/Git Bash cwd integration on the Windows side (see below),
+  which requires WSL interop (`powershell.exe`, `wslpath`)
+
+NixOS-only machine settings (Docker, locale, `GH_HOST`, ...) are not replicated.
 
 ### Omarchy
 
@@ -87,8 +105,8 @@ nix-shell -p git --run 'git clone https://github.com/bearylabs/dotfiles.git ~/do
 bash ~/dotfiles/dotctl init --profile <profile>
 ```
 
-NixOS-WSL is detected from the NixOS identity plus WSL kernel/environment
-markers. `init` writes `/etc/nixos/configuration.nix` as a wrapper that imports
+NixOS-WSL is detected from the NixOS identity plus the same WSL runtime
+markers as Ubuntu-WSL. `init` writes `/etc/nixos/configuration.nix` as a wrapper that imports
 `~/dotfiles/nix/configuration.wsl.nix`, then runs `nixos-rebuild switch`; no
 `/etc/nixos` symlink is needed.
 
@@ -186,7 +204,7 @@ Command Prompt opens an interactive Git Bash login shell with the expected
 `MINGW64` environment.
 
 When native Windows setup detects an installed WSL distribution, or when
-`dotctl` runs inside NixOS-WSL, it installs opt-in PowerShell and Git Bash
+`dotctl` runs inside NixOS-WSL or Ubuntu-WSL, it installs opt-in PowerShell and Git Bash
 prompt integration for Herdr. From Fish inside WSL, both `powershell.exe` and
 its shorter alias `winps` start a marked interop session and pass the calling
 distribution name. The Windows prompts report drive paths such as `C:\\src` to

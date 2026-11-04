@@ -1,0 +1,14 @@
+# Ubuntu on WSL: development dotfiles only. Windows owns the desktop, so
+# X11/desktop packages (i3, i3status, polybar, rofi, flameshot, ghostty) are
+# not linked.
+agents
+doom
+fish
+gitconfig
+herdr
+mise
+nvim
+pi
+starship
+tmux
+zsh

@@ -1,0 +1,3 @@
+# Ubuntu on WSL only, in addition to ubuntu-essential.txt.
+# Pi and Doom read the Windows clipboard through WSLg's XWayland selection.
+xclip

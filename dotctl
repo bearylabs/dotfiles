@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.2.20"
+VERSION="0.3.0"
 # Native Windows tools use USERPROFILE. Align this process and its children
 # before deriving any HOME-based paths; Linux (including WSL) stays untouched.
 case "$(uname -s)" in
@@ -90,6 +90,12 @@ Global flags:
 EOF
 }
 
+# A WSL distribution, not merely the WSL kernel: Docker containers on a WSL2
+# host share the kernel but have neither the WSL runtime directory nor interop.
+is_wsl() {
+  [[ -n "${WSL_DISTRO_NAME:-}" || -d /run/WSL || -e /proc/sys/fs/binfmt_misc/WSLInterop ]]
+}
+
 platform() {
   local kernel id=""
   kernel="$(uname -s)"
@@ -98,14 +104,8 @@ platform() {
   esac
   [[ -r /etc/os-release ]] && id="$(. /etc/os-release; printf '%s' "${ID:-}")"
   case "$id" in
-    nixos)
-      if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/sys/kernel/osrelease /proc/version 2>/dev/null; then
-        printf 'nixos-wsl\n'
-      else
-        printf 'nixos\n'
-      fi
-      ;;
-    ubuntu) printf 'ubuntu\n' ;;
+    nixos) if is_wsl; then printf 'nixos-wsl\n'; else printf 'nixos\n'; fi ;;
+    ubuntu) if is_wsl; then printf 'ubuntu-wsl\n'; else printf 'ubuntu\n'; fi ;;
     omarchy) printf 'omarchy\n' ;;
     *) printf 'unsupported\n' ;;
   esac
@@ -237,13 +237,18 @@ cmd_link() {
   case ":$PATH:" in *":$dir:"*) ;; *) warn "$dir is not on PATH; add it to your shell startup file, then start a new shell" ;; esac
 }
 
+# Ubuntu package lists for the current platform. WSL-only integration
+# packages are kept separate so bare-metal Ubuntu does not install them.
+ubuntu_package_files() {
+  printf '%s/packages/ubuntu-essential.txt\n' "$REPO"
+  [[ "$(platform)" == ubuntu-wsl ]] && printf '%s/packages/ubuntu-wsl.txt\n' "$REPO"
+  return 0
+}
+
 ubuntu_prerequisites() {
   local package file
-  local -a wanted=() missing=()
-  shopt -s nullglob
-  local -a files=("$REPO"/packages/ubuntu-*.txt)
-  shopt -u nullglob
-  ((${#files[@]})) || die "no packages/ubuntu-*.txt files found"
+  local -a wanted=() missing=() files=()
+  while IFS= read -r file; do files+=("$file"); done < <(ubuntu_package_files)
   for file in "${files[@]}"; do
     while IFS= read -r package; do wanted+=("$package"); done < <(load_list "$file")
   done
@@ -492,6 +497,10 @@ system_layer() {
   case "$p" in
     windows) windows_prerequisites "$mode" ;;
     ubuntu) ubuntu_prerequisites ;;
+    ubuntu-wsl)
+      ubuntu_prerequisites
+      ensure_fish_login_shell
+      ;;
     omarchy)
       omarchy_prerequisites
       ensure_omarchy_power_settings
@@ -501,7 +510,7 @@ system_layer() {
       if [[ "$mode" == update ]]; then run sudo nix-channel --update; fi
       nixos_rebuild "$p"
       ;;
-    *) die "unsupported platform (supported: NixOS, NixOS-WSL, Ubuntu, Omarchy, Windows via Git Bash)" ;;
+    *) die "unsupported platform (supported: NixOS, NixOS-WSL, Ubuntu, Ubuntu-WSL, Omarchy, Windows via Git Bash)" ;;
   esac
 }
 
@@ -663,7 +672,7 @@ profile_prerequisites() {
   local profile p
   profile="$(read_profile)" || die "no valid profile; run: dotctl init --profile personal|work"
   p="$(platform)"
-  if [[ "$profile" == work && "$p" == ubuntu ]]; then
+  if [[ "$profile" == work && ( "$p" == ubuntu || "$p" == ubuntu-wsl ) ]]; then
     ubuntu_git_credential_manager
   elif [[ "$profile" == work && "$p" == omarchy ]] && ! command -v git-credential-manager >/dev/null 2>&1; then
     info "Installing Git Credential Manager from the AUR"
@@ -675,7 +684,10 @@ profile_prerequisites() {
 stow_packages() {
   local profile="$1" package list="$REPO/packages/stow-common.txt"
   local -a packages=()
-  [[ "$(platform)" == omarchy ]] && list="$REPO/packages/stow-omarchy.txt"
+  case "$(platform)" in
+    omarchy) list="$REPO/packages/stow-omarchy.txt" ;;
+    ubuntu-wsl) list="$REPO/packages/stow-ubuntu-wsl.txt" ;;
+  esac
   while IFS= read -r package; do packages+=("$package"); done < <(load_list "$list")
   packages+=("git-$profile")
   printf '%s\n' "${packages[@]}"
@@ -749,6 +761,11 @@ copy_tree() {
   local source="$1" target="$2"
   [[ -d "$source" ]] || die "missing configuration directory: $source"
   run mkdir -p "$target"
+  # Unlink shared packages that this platform does not select (e.g. desktop
+  # configs on WSL). Unstowing a package that is not linked is a no-op.
+  while IFS= read -r package; do
+    [[ " ${packages[*]} " == *" $package "* ]] || unstow+=("$package")
+  done < <(load_list "$REPO/packages/stow-common.txt")
   run cp -R "$source/." "$target/"
 }
 
@@ -882,10 +899,18 @@ ensure_windows_herdr_wsl_prompt() {
       bash_profile="$HOME/.bash_profile"
       installer_windows="$(cygpath -w "$installer")"
       ;;
-    nixos-wsl)
-      windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' | tr -d '\r')"
-      [[ -n "$windows_home" ]] || die "could not resolve the Windows user profile from WSL"
-      windows_home="$(wslpath -u "$windows_home")"
+    nixos-wsl|ubuntu-wsl)
+      need powershell.exe
+      need wslpath
+      windows_home="$(wsl_windows_home)" || die "could not resolve the Windows user profile from WSL"
+# Windows user profile as a WSL path, resolved through WSL interop.
+wsl_windows_home() {
+  local windows_home
+  windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' 2>/dev/null | tr -d '\r')"
+  [[ -n "$windows_home" ]] || return 1
+  wslpath -u "$windows_home"
+}
+
       target_dir="$windows_home/.config/dotctl"
       bash_profile="$windows_home/.bash_profile"
       installer_windows="$(wslpath -w "$installer")"
@@ -943,7 +968,7 @@ tools_layer() {
     ensure_windows_bash_environment
     ensure_windows_powershell_environment
     ensure_windows_herdr_wsl_prompt
-  elif [[ "$(platform)" == nixos-wsl ]]; then
+  elif [[ "$(platform)" == *-wsl ]]; then
     ensure_windows_herdr_wsl_prompt
   fi
 }
@@ -1094,6 +1119,26 @@ cmd_doctor() {
       if command -v mise >/dev/null 2>&1; then
         local executable
         while IFS= read -r executable; do
+doctor_fish_login_shell() {
+  local login_shell
+  login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
+  login_shell="${login_shell##*:}"
+  if [[ "$login_shell" == "$(command -v fish 2>/dev/null || true)" ]]; then
+    check_ok "Fish is the default login shell"
+  else
+    check_fail "Fish is not the default login shell"
+  fi
+}
+
+doctor_herdr_wsl_bridge() {
+  local dir=""
+  if command -v powershell.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+    if dir="$(wsl_windows_home)"; then dir="$dir/.config/dotctl"; else dir=""; fi
+  fi
+  [[ -n "$dir" && -f "$dir/herdr-wsl-prompt.ps1" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
+  [[ -n "$dir" && -f "$dir/herdr-wsl-bash.sh" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
+}
+
           if mise which --cd "$(mise_workdir)" "$executable" >/dev/null 2>&1; then check_ok "$executable is installed by mise"; else check_fail "$executable is missing from mise"; fi
         done <<'EOF'
 node
@@ -1130,12 +1175,9 @@ EOF
         check_fail "Windows Neovim configuration is missing"
       fi
       ;;
-    ubuntu)
+    ubuntu|ubuntu-wsl)
       local file
-      shopt -s nullglob
-      local -a ubuntu_files=("$REPO"/packages/ubuntu-*.txt)
-      shopt -u nullglob
-      for file in "${ubuntu_files[@]}"; do
+      while IFS= read -r file; do
         while IFS= read -r package; do
           if dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null | grep -q '^ii '; then
             check_ok "Ubuntu package: $package"
@@ -1143,7 +1185,7 @@ EOF
             check_fail "Ubuntu package missing: $package"
           fi
         done < <(load_list "$file")
-      done
+      done < <(ubuntu_package_files)
       check_cmd mise
       ;;
     omarchy)
@@ -1156,31 +1198,12 @@ EOF
       else
         check_fail "Omarchy workspace plugin differs from the repository"
       fi
-      local login_shell
-      login_shell="$(getent passwd "$(id -un)" 2>/dev/null || true)"
-      login_shell="${login_shell##*:}"
-      if [[ "$login_shell" == "$(command -v fish 2>/dev/null || true)" ]]; then
-        check_ok "Fish is the default login shell"
-      else
-        check_fail "Fish is not the default login shell"
-      fi
+      doctor_fish_login_shell
       ;;
     nixos|nixos-wsl)
       for package in git gh stow mise; do check_cmd "$package"; done
       check_cmd nixos-rebuild
-      if [[ "$p" == nixos-wsl ]]; then
-        local windows_home herdr_wsl_prompt herdr_wsl_bash
-        windows_home="$(powershell.exe -NoProfile -NonInteractive -Command '[Environment]::GetFolderPath("UserProfile")' 2>/dev/null | tr -d '\r')"
-        herdr_wsl_prompt=""
-        herdr_wsl_bash=""
-        if [[ -n "$windows_home" ]]; then
-          windows_home="$(wslpath -u "$windows_home")/.config/dotctl"
-          herdr_wsl_prompt="$windows_home/herdr-wsl-prompt.ps1"
-          herdr_wsl_bash="$windows_home/herdr-wsl-bash.sh"
-        fi
-        [[ -n "$herdr_wsl_prompt" && -f "$herdr_wsl_prompt" ]] && check_ok "Herdr WSL PowerShell integration is installed" || check_fail "Herdr WSL PowerShell integration is missing"
-        [[ -n "$herdr_wsl_bash" && -f "$herdr_wsl_bash" ]] && check_ok "Herdr WSL Git Bash integration is installed" || check_fail "Herdr WSL Git Bash integration is missing"
-      fi
+      [[ "$p" == nixos-wsl ]] && doctor_herdr_wsl_bridge
       local expected_nixos_entrypoint current_nixos_entrypoint
       expected_nixos_entrypoint="$(nixos_entrypoint_content "$p")"
       if [[ -f /etc/nixos/configuration.nix && ! -L /etc/nixos/configuration.nix ]]; then
@@ -1190,6 +1213,10 @@ EOF
         else
           check_fail "/etc/nixos/configuration.nix does not import the repository config"
         fi
+      if [[ "$p" == ubuntu-wsl ]]; then
+        doctor_fish_login_shell
+        doctor_herdr_wsl_bridge
+      fi
       else
         check_fail "/etc/nixos/configuration.nix is missing or is a symlink"
       fi
