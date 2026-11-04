@@ -512,6 +512,8 @@ github_auth() {
 }
 
 GIT_CONFIG_DIR="$STOW_DIR/gitconfig/.config/git"
+# Company GitHub Enterprise host; authenticated through gh like github.com.
+WORK_GH_HOST="siempelkamp.ghe.com"
 
 # Git identity ("name<TAB>email"), read from the repository's Git config so
 # the identities are defined in one place. The personal identity is the
@@ -592,8 +594,10 @@ stow_layer() {
   local package
   local -a unstow=()
   [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
-  remove_legacy_git_links
   need stow
+  # A real directory keeps Stow from folding ~/.config/git into a symlink to
+  # the repository, so files Git or other tools create there stay local.
+  [[ -e "$HOME/.config/git" || -L "$HOME/.config/git" ]] || run mkdir -p "$HOME/.config/git"
   local -a packages=()
   while IFS= read -r package; do
     [[ -d "$STOW_DIR/$package" ]] || die "unknown Stow package in package data: $package"
@@ -610,13 +614,16 @@ stow_layer() {
   stow_args+=(-R "${packages[@]}")
   info "Simulating Stow changes"
   stow -n -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  # Only after a successful simulation, so a conflict never leaves the machine
+  # without a Git config. The legacy links do not conflict with the new tree.
+  remove_legacy_git_links
   run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
   # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
   # agents and agents-work together.
   stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
   run stow -d "$STOW_DIR" -t "$HOME" -R agents-work
   [[ "$(platform)" == omarchy ]] && install_omarchy_shell_plugins
-  ok "Dotfiles are linked"
+  if $DRY_RUN; then ok "Dotfiles would be linked"; else ok "Dotfiles are linked"; fi
 }
 
 copy_tree() {
@@ -951,15 +958,16 @@ doctor_git_identities() {
   local personal_name personal_email work_email includes
   IFS=$'\t' read -r personal_name personal_email < <(git_identity personal)
   IFS=$'\t' read -r _ work_email < <(git_identity work)
-  # Run outside any repository so conditional includes do not apply.
-  if [[ "$(git -C / config --global --includes user.name 2>/dev/null || true)" == "$personal_name" \
-    && "$(git -C / config --global --includes user.email 2>/dev/null || true)" == "$personal_email" ]]; then
+  # Effective values outside any repository, so conditional includes do not
+  # apply. Not --global: with a regular ~/.gitconfig it reads only that file.
+  if [[ "$(git -C / config --includes user.name 2>/dev/null || true)" == "$personal_name" \
+    && "$(git -C / config --includes user.email 2>/dev/null || true)" == "$personal_email" ]]; then
     check_ok "default Git identity is personal ($personal_email)"
   else
     check_fail "default Git identity is not $personal_name <$personal_email>"
   fi
   # Include paths are compared literally; Git expands the tilde itself.
-  includes="$(git -C / config --global --get-regexp '^includeif\..*\.path$' 2>/dev/null || true)"
+  includes="$(git config --file "$HOME/.config/git/config" --get-regexp '^includeif\..*\.path$' 2>/dev/null || true)"
   if grep -Fqx 'includeif.gitdir:~/code/work/.path ~/.config/git/work_config' <<< "$includes" \
     && [[ "$(git config --file "$HOME/.config/git/work_config" user.email 2>/dev/null || true)" == "$work_email" ]]; then
     check_ok "repositories below ~/code/work/ use the work Git identity ($work_email)"
@@ -967,7 +975,11 @@ doctor_git_identities() {
     check_fail "work Git identity is not configured for ~/code/work/"
   fi
   if [[ -f "$HOME/.gitconfig" && ! -L "$HOME/.gitconfig" ]]; then
-    warn "$HOME/.gitconfig exists and overrides ~/.config/git/config; move its settings to ~/.gitconfig.local"
+    warn "$HOME/.gitconfig exists and overrides ~/.config/git/config, including the work identity below ~/code/work/; move its settings to ~/.gitconfig.local"
+  fi
+  # Only a warning: machines without work repositories do not need it.
+  if command -v gh >/dev/null 2>&1 && ! gh auth token --hostname "$WORK_GH_HOST" >/dev/null 2>&1; then
+    warn "gh is not logged in to $WORK_GH_HOST; work repositories need: gh auth login --hostname $WORK_GH_HOST"
   fi
 }
 

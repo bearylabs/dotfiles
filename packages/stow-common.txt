@@ -1,4 +1,4 @@
-# Stow packages shared by personal and work profiles.
+# Stow packages linked on every platform unless it has its own selection.
 agents
 doom
 fish

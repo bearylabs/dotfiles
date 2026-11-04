@@ -220,8 +220,9 @@ early guard leaves non-WSL systems unchanged.
 
 ## Git identities
 
-Both Git identities are linked on every machine from
-`stow/gitconfig/.config/git/`:
+Both Git identities are linked on every Linux machine from
+`stow/gitconfig/.config/git/` (native Windows keeps its own Git for Windows
+configuration and is not managed):
 
 - `config` holds the shared settings and the personal identity, which is the
   default everywhere
@@ -230,8 +231,11 @@ Both Git identities are linked on every machine from
   repository (and worktree) below `~/code/work/`
 
 Keep work repositories below `~/code/work/` and everything else elsewhere (e.g.
-`~/code/`). GitHub and the company GitHub Enterprise authenticate through `gh`
-on every machine, so no credential manager or password store is needed.
+`~/code/`). GitHub and the company GitHub Enterprise authenticate through `gh`,
+so no credential manager or password store is needed. `dotctl` logs `gh` in to
+github.com; for work repositories, also run
+`gh auth login --hostname siempelkamp.ghe.com` once (`dotctl doctor` warns
+while that login is missing).
 Machine-local Git settings belong in `~/.gitconfig.local`, which is included
 last. Do not keep a regular `~/.gitconfig`: Git reads it after
 `~/.config/git/config`, so it would override the identities (`dotctl doctor`
@@ -304,9 +308,9 @@ Portable Linux development tools are declared in
 updates mise and native Windows prerequisites such as GCC, while `dotctl`
 copies the Windows mise declaration to the global config shared by Git Bash and
 PowerShell. Platform prerequisites live under `nix/`, `windows/`, and `packages/`.
-Omarchy
-uses `packages/stow-omarchy.txt` instead of the desktop-oriented common Stow
-selection.
+Omarchy uses `packages/stow-omarchy.txt` and Ubuntu-WSL
+`packages/stow-ubuntu-wsl.txt` instead of the desktop-oriented common Stow
+selection; common packages a platform does not select are unstowed.
 
 Integration and plugin sources are also declared in `packages/`. `dotctl`
 installs and updates them idempotently as part of the normal apply flow.
