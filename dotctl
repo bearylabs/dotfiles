@@ -576,6 +576,59 @@ stow_packages() {
   printf '%s\n' "${packages[@]}"
 }
 
+# Packages linked file by file; see packages/stow-no-folding.txt.
+stow_no_folding_packages() { load_list "$REPO/packages/stow-no-folding.txt"; }
+
+# Options for these packages. node_modules hold the repository's dev
+# dependencies (see pi:extensions) and must not be linked file by file.
+STOW_NO_FOLDING_ARGS=(--no-folding --ignore=node_modules)
+
+# Directories of a no-folding package that are still folded into a single
+# symlink to the repository (Stow's default; earlier dotctl versions folded
+# them). Prints paths relative to the package, topmost only.
+folded_package_dirs() {
+  local package="$1" dir rel last=""
+  while IFS= read -r -d '' dir; do
+    rel="${dir#"$STOW_DIR/$package/"}"
+    [[ -n "$last" && "$rel" == "$last/"* ]] && continue
+    if [[ -L "$HOME/$rel" && "$(readlink -f "$HOME/$rel")" == "$(readlink -f "$dir")" ]]; then
+      printf '%s\n' "$rel"
+      last="$rel"
+    fi
+  done < <(find "$STOW_DIR/$package" -mindepth 1 -name node_modules -prune -o -type d -print0 | sort -z)
+}
+
+# Replace a folded directory link with a real directory. The repository
+# directory, including the runtime state written through the link, is moved
+# to $HOME; a rename keeps open files and sockets of running applications
+# valid. Tracked files are then restored in the repository (Stow links them
+# afterwards) and node_modules are moved back.
+unfold_package_dir() {
+  local package="$1" rel="$2" source target path module
+  source="$STOW_DIR/$package/$rel"
+  target="$HOME/$rel"
+  git -C "$REPO" diff --quiet HEAD -- "stow/$package/$rel" \
+    || die "stow/$package/$rel has uncommitted changes; commit or stash them so $target can be unfolded"
+  info "Moving runtime state out of the repository: $target becomes a real directory"
+  run rm -- "$target"
+  run mv -- "$source" "$target"
+  if [[ -n "$(git -C "$REPO" ls-files -- "stow/$package/$rel")" ]]; then
+    run git -C "$REPO" checkout HEAD -- "stow/$package/$rel"
+  fi
+  $DRY_RUN && return
+  while IFS= read -r -d '' path; do
+    rm -f -- "$target/$path"
+  done < <(git -C "$REPO" ls-files -z -- "stow/$package/$rel" | sed -z "s|^stow/$package/$rel/||")
+  # Only dev dependencies of tracked directories (e.g. Pi extensions) go back;
+  # node_modules inside runtime state such as plugin checkouts stay in $HOME.
+  local destination
+  while IFS= read -r -d '' module; do
+    destination="$source/${module#"$target/"}"
+    [[ -d "${destination%/*}" && ! -e "$destination" ]] || continue
+    mv -- "$module" "$destination"
+  done < <(find "$target" -type d -name node_modules -prune -print0)
+}
+
 remove_omarchy_default_dotfiles() {
   local path
   local -a paths=(
@@ -613,13 +666,16 @@ stow_layer() {
   local -a unstow=()
   [[ "$(platform)" == omarchy ]] && remove_omarchy_default_dotfiles
   need stow
-  # A real directory keeps Stow from folding ~/.config/git into a symlink to
-  # the repository, so files Git or other tools create there stay local.
-  [[ -e "$HOME/.config/git" || -L "$HOME/.config/git" ]] || run mkdir -p "$HOME/.config/git"
-  local -a packages=()
+  local -a packages=() folding=() no_folding=() selected_no_folding=()
+  while IFS= read -r package; do no_folding+=("$package"); done < <(stow_no_folding_packages)
   while IFS= read -r package; do
     [[ -d "$STOW_DIR/$package" ]] || die "unknown Stow package in package data: $package"
     packages+=("$package")
+    if [[ " ${no_folding[*]} " == *" $package "* ]]; then
+      selected_no_folding+=("$package")
+    else
+      folding+=("$package")
+    fi
   done < <(stow_packages)
   # Unlink shared packages that this platform does not select (e.g. desktop
   # configs on WSL). Unstowing a package that is not linked is a no-op.
@@ -629,14 +685,26 @@ stow_layer() {
 
   local -a stow_args=()
   ((${#unstow[@]})) && stow_args+=(-D "${unstow[@]}")
-  stow_args+=(-R "${packages[@]}")
+  ((${#folding[@]})) && stow_args+=(-R "${folding[@]}")
   info "Simulating Stow changes"
-  stow -n -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  ((${#stow_args[@]})) && stow -n -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  # Runtime state must leave the repository before these packages are linked
+  # file by file; otherwise Stow would link it like managed files.
+  local rel
+  for package in "${selected_no_folding[@]}"; do
+    while IFS= read -r rel; do unfold_package_dir "$package" "$rel"; done < <(folded_package_dirs "$package")
+  done
+  if ((${#selected_no_folding[@]})) && ! $DRY_RUN; then
+    stow -n "${STOW_NO_FOLDING_ARGS[@]}" -d "$STOW_DIR" -t "$HOME" -R "${selected_no_folding[@]}"
+  fi
   # Only after a successful simulation, so a conflict never leaves the machine
   # without a Git config. The legacy links do not conflict with the new tree.
   remove_legacy_git_links
   remove_gh_generated_gitconfig
-  run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  ((${#stow_args[@]})) && run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
+  if ((${#selected_no_folding[@]})); then
+    run stow "${STOW_NO_FOLDING_ARGS[@]}" -d "$STOW_DIR" -t "$HOME" -R "${selected_no_folding[@]}"
+  fi
   # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
   # agents and agents-work together.
   stow -n -d "$STOW_DIR" -t "$HOME" -R agents-work
@@ -1141,14 +1209,28 @@ EOF
 
   if [[ "$p" != windows ]]; then check_cmd stow; fi
   if [[ "$p" != windows ]] && command -v stow >/dev/null 2>&1; then
-    local -a packages=()
-    while IFS= read -r package; do packages+=("$package"); done < <(stow_packages)
-    # agents-work is simulated separately, as in stow_layer.
-    if stow -n -d "$STOW_DIR" -t "$HOME" "${packages[@]}" >/dev/null 2>&1 \
+    local -a packages=() folding=() no_folding=() selected_no_folding=() folded=()
+    while IFS= read -r package; do no_folding+=("$package"); done < <(stow_no_folding_packages)
+    while IFS= read -r package; do
+      packages+=("$package")
+      if [[ " ${no_folding[*]} " == *" $package "* ]]; then selected_no_folding+=("$package"); else folding+=("$package"); fi
+    done < <(stow_packages)
+    # Same invocations as stow_layer; agents-work is simulated separately.
+    if { ((${#folding[@]} == 0)) || stow -n -d "$STOW_DIR" -t "$HOME" "${folding[@]}" >/dev/null 2>&1; } \
+      && { ((${#selected_no_folding[@]} == 0)) || stow -n "${STOW_NO_FOLDING_ARGS[@]}" -d "$STOW_DIR" -t "$HOME" "${selected_no_folding[@]}" >/dev/null 2>&1; } \
       && stow -n -d "$STOW_DIR" -t "$HOME" agents-work >/dev/null 2>&1; then
       check_ok "Stow package tree has no conflicts"
     else
       check_fail "Stow reports conflicts"
+    fi
+    local folded_rel
+    for package in "${selected_no_folding[@]}"; do
+      while IFS= read -r folded_rel; do folded+=("$HOME/$folded_rel"); done < <(folded_package_dirs "$package")
+    done
+    if ((${#folded[@]} == 0)); then
+      check_ok "application state directories are real directories (no folded Stow links)"
+    else
+      check_fail "folded Stow links let applications write into the repository: ${folded[*]} (run: dotctl stow)"
     fi
     local broken=0 unmanaged=0 rel
     for package in "${packages[@]}" agents-work; do

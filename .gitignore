@@ -5,15 +5,11 @@
 /stow/pi/.pi/agent/settings.json
 /stow/pi/.pi/agent/extensions/herdr-agent-state.ts
 /stow/pi/.pi/agent/extensions/*/node_modules/
+# Pi credentials and sessions live in ~/.pi (see packages/stow-no-folding.txt);
+# kept here as a safety net so they can never be committed.
 /stow/pi/.pi/agent/auth.json
 /stow/pi/.pi/agent/models-store.json
 /stow/pi/.pi/agent/sessions/
-
-# Machine-local Fish and Herdr state (written through the folded Stow links)
-/stow/fish/.config/fish/fish_variables
-/stow/herdr/.config/herdr/.plugins.lock
-/stow/herdr/.config/herdr/plugins.json
-/stow/herdr/.config/herdr/plugins/
 
 # Nix OS
 hardware-configuration.nix

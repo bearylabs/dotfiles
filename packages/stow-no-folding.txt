@@ -1,0 +1,8 @@
+# Stow packages whose target directories the applications also write to
+# (logs, sockets, sessions, credentials, plugin checkouts, universal variables).
+# They are linked file by file (stow --no-folding) into real directories, so
+# this runtime state stays in $HOME instead of ending up in the repository.
+fish
+gitconfig
+herdr
+pi

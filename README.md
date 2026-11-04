@@ -267,6 +267,16 @@ Credential Manager package.
 
 Stow simulates changes before applying them and never uses `--adopt`.
 
+Applications that write next to their configuration (Fish, Git, Herdr, Pi)
+are listed in `packages/stow-no-folding.txt` and linked file by file
+(`stow --no-folding`) into real directories. Their logs, sockets, sessions,
+credentials, and plugin checkouts therefore stay in `$HOME` and never end up
+in the repository; only the files tracked here are links. Other packages may
+still be folded into a single directory link. If such a directory was folded
+by an earlier dotctl version, `dotctl stow` moves it out of the repository
+(including the runtime state written through the link) and relinks the
+tracked files; `dotctl doctor` reports folded directories.
+
 ## Commands
 
 ```text
