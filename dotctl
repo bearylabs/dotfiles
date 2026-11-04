@@ -546,6 +546,24 @@ remove_legacy_git_links() {
   done
 }
 
+# `gh auth login` (setup-git) writes a regular ~/.gitconfig containing only
+# gh credential helpers. ~/.config/git/config already configures them, and a
+# regular ~/.gitconfig would override it, so remove the file when it contains
+# nothing else. Any other content is left alone (doctor reports it).
+remove_gh_generated_gitconfig() {
+  local file="$HOME/.gitconfig" entries entry key value
+  [[ -f "$file" && ! -L "$file" ]] || return 0
+  entries="$(git config --file "$file" --list 2>/dev/null)" || return 0
+  [[ -n "$entries" ]] || return 0
+  while IFS= read -r entry; do
+    key="${entry%%=*}"; value="${entry#*=}"
+    [[ "$key" =~ ^credential\.https://(gist\.)?(github\.com|siempelkamp\.ghe\.com)\.helper$ ]] || return 0
+    [[ -z "$value" || "$value" =~ ^\!([^[:space:]]*/)?gh\ auth\ git-credential$ ]] || return 0
+  done <<< "$entries"
+  info "Removing $file written by gh auth setup-git (helpers are in ~/.config/git/config)"
+  run rm -f -- "$file"
+}
+
 # Platform Stow selection. agents-work is stowed separately (see stow_layer).
 stow_packages() {
   local package list="$REPO/packages/stow-common.txt"
@@ -617,6 +635,7 @@ stow_layer() {
   # Only after a successful simulation, so a conflict never leaves the machine
   # without a Git config. The legacy links do not conflict with the new tree.
   remove_legacy_git_links
+  remove_gh_generated_gitconfig
   run stow -d "$STOW_DIR" -t "$HOME" "${stow_args[@]}"
   # Separate call: Stow 2.4 fails to unfold ~/.agents/skills when restowing
   # agents and agents-work together.
@@ -854,9 +873,13 @@ sync_integrations() {
   while IFS= read -r source; do run mise exec --cd "$workdir" -- herdr plugin install "$source" --yes; done < <(load_list "$plugin_file")
   info "Syncing Herdr agent integrations"
   while IFS= read -r integration; do
-    # Herdr requires Copilot's config directory, but a fresh CLI installation
-    # does not create it until Copilot has been run interactively.
-    [[ "$integration" == copilot ]] && run mkdir -p "$HOME/.copilot"
+    # Herdr requires the agent's config directory, but a fresh CLI
+    # installation does not create it until the agent has been run once.
+    case "$integration" in
+      claude) run mkdir -p "$HOME/.claude" ;;
+      codex) run mkdir -p "$HOME/.codex" ;;
+      copilot) run mkdir -p "$HOME/.copilot" ;;
+    esac
     run mise exec --cd "$workdir" -- herdr integration install "$integration"
   done < <(load_list "$REPO/packages/herdr-integrations.txt")
   if [[ "$(platform)" != windows ]]; then
