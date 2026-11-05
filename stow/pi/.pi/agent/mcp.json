@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "executor": {
+      "url": "https://mcp.executor.sh/mcp",
+      "description": "Executor: connected accounts, apps, skills and automations (Gmail, Calendar, GitHub, Linear, ...)",
+      "timeout": 300
+    }
+  }
+}
