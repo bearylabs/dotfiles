@@ -16,6 +16,11 @@ if command -v zoxide >/dev/null 2>&1 && (( ! $+functions[__zoxide_z] )); then
   eval "$(zoxide init zsh)"
 fi
 
+# Load per-directory env vars, unless NixOS already initialized the hook.
+if command -v direnv >/dev/null 2>&1 && (( ! $+functions[_direnv_hook] )); then
+  eval "$(direnv hook zsh)"
+fi
+
 # Set up the prompt
 
 autoload -Uz promptinit

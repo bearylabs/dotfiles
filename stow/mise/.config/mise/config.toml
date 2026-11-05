@@ -36,6 +36,7 @@ kubectx = "latest"
 k9s = "latest"
 
 # Developer CLI tools
+direnv = "latest"
 ripgrep = "latest"
 fd = "latest"
 fzf = "latest"

@@ -347,8 +347,10 @@ still cannot be pulled.
 
 ## Managed tools and integrations
 
-Portable Linux development tools are declared in
-`stow/mise/.config/mise/config.toml`; the minimal native Windows toolset is in
+Portable Linux development tools, including `direnv`, are declared in
+`stow/mise/.config/mise/config.toml`. Fish and Zsh load the direnv shell hook;
+project `.envrc` files still require an explicit `direnv allow`. NixOS retains
+its system-level direnv/nix-direnv integration as well. The minimal native Windows toolset is in
 `windows/mise.toml`. On Linux, `dotctl` installs mise from `mise.run` into
 `~/.local/bin` and uses `mise self-update`. On Windows, Scoop installs and
 updates mise and native Windows prerequisites such as GCC, while `dotctl`
