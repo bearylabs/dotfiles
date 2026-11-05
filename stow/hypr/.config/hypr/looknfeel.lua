@@ -28,3 +28,8 @@ hl.config({
 -- Omarchy applies a subtle default-opacity window rule. Override it for every
 -- window so focused, unfocused, and fullscreen windows are fully opaque.
 o.window(".*", { opacity = "1.0 override 1.0 override 1.0 override" })
+
+-- Opt another application in to Omarchy's standard transparency.
+-- Find its class with: hyprctl clients
+-- o.transparent_window("my-app")
+-- o.transparent_window("my-app", "0.9 0.85") -- Custom active/inactive opacity.
