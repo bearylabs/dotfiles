@@ -245,6 +245,118 @@ ubuntu_prerequisites() {
   fi
 }
 
+# Docker Desktop supplies its own CLI/socket inside WSL. Never start a second
+# daemon alongside that integration, even when Desktop is currently stopped.
+docker_desktop_integration() {
+  is_wsl || return 1
+  local path target
+  for path in "$(command -v docker 2>/dev/null || true)" /var/run/docker.sock; do
+    [[ -n "$path" ]] || continue
+    target="$(readlink -f "$path" 2>/dev/null || true)"
+    [[ "$target" == /mnt/wsl/docker-desktop/* || "$target" == /mnt/wsl/docker-desktop-*/* ]] && return 0
+  done
+  return 1
+}
+
+docker_package_installed() {
+  dpkg-query -W -f='${db:Status-Abbrev}' "$1" 2>/dev/null | grep -q '^ii '
+}
+
+ubuntu_docker_repository() (
+  # Respect an existing Docker repository and its signing-key configuration.
+  if grep -Eq '^[^#]*https://download\.docker\.com/linux/ubuntu' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null; then
+    return
+  fi
+  local codename arch directory
+  codename="$(. /etc/os-release; printf '%s' "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}")"
+  [[ "$codename" =~ ^[a-z]+$ ]] || die "cannot determine Ubuntu codename for Docker"
+  arch="$(dpkg --print-architecture)"
+  if $DRY_RUN; then
+    info "Would verify Docker supports Ubuntu $codename and configure its signed APT repository ($arch)"
+    return
+  fi
+  # Fail before touching APT on Ubuntu releases Docker does not support yet.
+  curl -fsSL --retry 2 --connect-timeout 10 --max-time 60 -o /dev/null "https://download.docker.com/linux/ubuntu/dists/$codename/Release"
+  directory="$(mktemp -d)"
+  trap 'rm -rf -- "$directory"' EXIT
+  curl -fsSL --retry 2 --connect-timeout 10 --max-time 60 https://download.docker.com/linux/ubuntu/gpg -o "$directory/docker.asc"
+  printf 'Types: deb\nURIs: https://download.docker.com/linux/ubuntu\nSuites: %s\nComponents: stable\nArchitectures: %s\nSigned-By: /etc/apt/keyrings/docker.asc\n' "$codename" "$arch" > "$directory/docker.sources"
+  run sudo install -d -m 755 /etc/apt/keyrings
+  run sudo install -m 644 "$directory/docker.asc" /etc/apt/keyrings/docker.asc
+  run sudo install -m 644 "$directory/docker.sources" /etc/apt/sources.list.d/dotctl-docker.sources
+)
+
+ensure_docker_service() {
+  if [[ -d /run/systemd/system ]]; then
+    if ! systemctl is-enabled --quiet docker.service; then run sudo systemctl enable docker.service; fi
+    if ! systemctl is-active --quiet docker.service; then run sudo systemctl start docker.service; fi
+  else
+    warn "Docker is installed, but systemd is not running; start the daemon manually. On WSL enable [boot] systemd=true in /etc/wsl.conf and restart the distribution."
+  fi
+}
+
+ensure_docker_group() {
+  local user
+  user="$(id -un)"
+  [[ "$user" != root ]] || return 0
+  if id -nG "$user" | tr ' ' '\n' | grep -Fxq docker; then
+    ok "$user is already a member of the docker group"
+  elif $DRY_RUN; then
+    info "Would ask to add $user to the docker group (grants root-equivalent access)"
+  elif confirm "Add $user to the docker group? This grants root-equivalent access"; then
+    run sudo usermod -aG docker "$user"
+    info "Docker group membership takes effect after logging out and back in; until then use sudo docker"
+  else
+    warn "Docker group unchanged; use sudo docker for the local daemon"
+  fi
+}
+
+ubuntu_docker() {
+  if docker_desktop_integration; then
+    ok "Keeping the existing Docker Desktop WSL integration; no local engine installed"
+    return
+  fi
+  local package
+  local -a conflicts=() missing=()
+  # Never silently remove or replace another container runtime.
+  for package in docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc; do
+    docker_package_installed "$package" && conflicts+=("$package")
+  done
+  ((${#conflicts[@]} == 0)) || die "Docker CE conflicts with installed packages: ${conflicts[*]}. Keeping them unchanged; migrate these packages manually before retrying."
+  if command -v docker >/dev/null 2>&1 && ! docker_package_installed docker-ce-cli; then
+    warn "Keeping an unmanaged Docker CLI; not installing a second engine. Check it with dotctl doctor."
+    return
+  fi
+  for package in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do
+    docker_package_installed "$package" || missing+=("$package")
+  done
+  if ((${#missing[@]})); then
+    info "Installing Docker Engine, Compose and Buildx from Docker's official Ubuntu repository"
+    ubuntu_docker_repository
+    run sudo apt-get update
+    run sudo apt-get install -y --no-install-recommends "${missing[@]}"
+  else
+    ok "Docker Engine, Compose and Buildx are installed"
+  fi
+  ensure_docker_service
+  ensure_docker_group
+}
+
+doctor_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    check_fail "Docker CLI is missing (run: dotctl apply --only system)"
+    return
+  fi
+  check_ok "Docker CLI is installed"
+  docker compose version >/dev/null 2>&1 && check_ok "Docker Compose is installed" || check_fail "Docker Compose plugin is missing"
+  docker buildx version >/dev/null 2>&1 && check_ok "Docker Buildx is installed" || check_fail "Docker Buildx plugin is missing"
+  if timeout 15 docker info >/dev/null 2>&1; then
+    check_ok "Docker daemon is reachable by the current user"
+  else
+    check_fail "Docker daemon is unreachable: check the service/Desktop, Docker context, and socket permissions; a new docker group membership needs a new login"
+  fi
+}
+
 omarchy_prerequisites() {
   local package
   local -a wanted=() missing=()
@@ -477,13 +589,19 @@ system_layer() {
   info "System prerequisites ($p)"
   case "$p" in
     windows) windows_prerequisites "$mode" ;;
-    ubuntu) ubuntu_prerequisites ;;
+    ubuntu)
+      ubuntu_prerequisites
+      ubuntu_docker
+      ;;
     ubuntu-wsl)
       ubuntu_prerequisites
+      ubuntu_docker
       ensure_fish_login_shell
       ;;
     omarchy)
       omarchy_prerequisites
+      ensure_docker_service
+      ensure_docker_group
       ensure_omarchy_power_settings
       ensure_fish_login_shell
       ;;
@@ -1198,6 +1316,7 @@ EOF
       fi
       ;;
   esac
+  case "$p" in ubuntu|ubuntu-wsl|omarchy|nixos|nixos-wsl) doctor_docker ;; esac
   if [[ "$p" != windows ]] && command -v git >/dev/null 2>&1; then
     doctor_git_identities
   fi

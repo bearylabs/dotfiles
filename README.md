@@ -20,7 +20,8 @@ git clone https://github.com/hrudek/dotfiles.git ~/dotfiles
 bash ~/dotfiles/dotctl init
 ```
 
-Only missing packages listed in `packages/ubuntu-essential.txt` are installed. mise is
+Missing packages listed in `packages/ubuntu-essential.txt` are installed, along
+with Docker Engine, Compose and Buildx (see [Docker](#docker)). mise is
 installed with its official installer when absent. Nix is never installed.
 Zoxide is installed as a system package, and the managed Fish and Zsh configs
 activate its `z` command automatically in new shell sessions.
@@ -41,7 +42,7 @@ what WSL needs on top of the Ubuntu setup:
 - the Herdr PowerShell/Git Bash cwd integration on the Windows side (see below),
   which requires WSL interop (`powershell.exe`, `wslpath`)
 
-NixOS-only machine settings (Docker, locale, `GH_HOST`, ...) are not replicated.
+Other NixOS-only machine settings (locale, `GH_HOST`, ...) are not replicated.
 
 ### Omarchy
 
@@ -217,6 +218,41 @@ only after the working directory changes. Fish-specific WSL workarounds and
 interoperability helpers are kept together in
 `~/.config/fish/conf.d/wsl.fish`; Fish loads that file automatically and its
 early guard leaves non-WSL systems unchanged.
+
+## Docker
+
+The system layer (`init`, `apply --only system`, full `apply`, and `update`)
+installs Docker on Linux:
+
+- Ubuntu and Ubuntu-WSL use Docker's official signed APT repository for
+  `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-compose-plugin`, and
+  `docker-buildx-plugin`. Only missing packages are installed. Unsupported
+  Ubuntu releases fail before adding a repository. Existing Docker APT sources
+  are reused. Conflicting distro packages (such as `docker.io`, `containerd`,
+  or `podman-docker`) are reported, never automatically removed or replaced;
+  migrate them manually first. An unmanaged Docker CLI is also left untouched.
+- An existing Docker Desktop WSL integration is preserved without installing
+  or starting a second engine. Docker Desktop is not required for native WSL
+  Docker, and is not installed by the native Windows setup.
+- Omarchy installs `docker`, `docker-compose`, and `docker-buildx` from its
+  system packages. NixOS and NixOS-WSL enable Docker declaratively.
+
+On Ubuntu and Omarchy the local Docker service is enabled and started when
+systemd is running. Without systemd, installation succeeds with instructions
+for starting the daemon; on WSL, enable `[boot] systemd=true` in `/etc/wsl.conf`
+and restart the distribution. No Docker daemon configuration is overwritten.
+
+Adding the current user to `docker` grants **root-equivalent access** and
+requires confirmation on Ubuntu and Omarchy. `--yes` accepts it; noninteractive
+runs without `--yes` keep membership unchanged (use `sudo docker`). Log out and
+back in after joining the group. NixOS-WSL retains its existing declarative
+`hrudek` group membership; bare-metal NixOS does not grant it automatically.
+`--dry-run` prints planned actions without changing packages, services, or groups.
+
+`dotctl doctor` checks the CLI, Compose, Buildx, and daemon access as the current
+user. It reports permission problems and stopped/unreachable daemons without
+changing anything. To check a privileged local installation without joining the
+group, run `sudo docker info` yourself.
 
 ## Git identities
 

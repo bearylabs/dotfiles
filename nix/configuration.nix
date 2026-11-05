@@ -128,6 +128,10 @@ in
     openFirewall = true;
   };
 
+  # Native container engine; group access is not granted automatically here.
+  virtualisation.docker.enable = true;
+  virtualisation.docker.package = pkgs.docker_29;
+
   # KVM/QEMU virtualization for VMs (e.g. Windows guest via virt-manager).
   # OVMF gives UEFI + Secure Boot; swtpm emulates TPM 2.0, required by Win11.
   virtualisation.libvirtd = {

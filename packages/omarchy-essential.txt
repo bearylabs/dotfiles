@@ -2,6 +2,10 @@
 base-devel
 ca-certificates
 curl
+# Native container engine and CLI plugins.
+docker
+docker-buildx
+docker-compose
 fish
 git
 github-cli
